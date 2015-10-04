@@ -1,0 +1,32 @@
+*.rdb
+*.iml
+.idea/
+.DS_Store
+.AppleDouble
+.LSOverride
+# Thumbnails
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+.vagrant/
+celerybeat-schedule.db
+celeryev.pid
+### do not include custom staging files
+*/stage_*
+!**/stage_template
+tests/selenium_downloads/*
+!tests/*
+app/productdb/migrations/*
+*.bak
+cisco_api_test_credentials.yaml
+productdb_demo_database.json
+db.sqlite3
