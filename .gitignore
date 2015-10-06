@@ -30,3 +30,4 @@ app/productdb/migrations/*
 cisco_api_test_credentials.yaml
 productdb_demo_database.json
 db.sqlite3
+*.pyc
