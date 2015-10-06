@@ -1,0 +1,26 @@
+- fields:
+    email: ''
+    first_name: ''
+    groups: []
+    is_active: true
+    is_staff: true
+    is_superuser: true
+    last_name: ''
+    password: pbkdf2_sha256$20000$udSkPUGibOP9$uf4X7x2UmFIVuGCbtIa2+fJZ8GhF6jL+EswGC9G0gds=
+    user_permissions: []
+    username: admin
+  model: auth.user
+  pk: 1
+- fields:
+    email: ''
+    first_name: ''
+    groups: []
+    is_active: true
+    is_staff: false
+    is_superuser: false
+    last_name: ''
+    password: pbkdf2_sha256$20000$gOZxwaBZDUtN$SGa1wDZXHQx87jUdQCdrF352OLo9wn/ULTWWzbsLlYQ=
+    user_permissions: []
+    username: api
+  model: auth.user
+  pk: 2

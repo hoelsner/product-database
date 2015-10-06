@@ -1,0 +1,325 @@
+{% extends 'base.html' %}
+{% load staticfiles %}
+
+{% block title %}
+Bulk EoL checks
+{% endblock %}
+
+{% block custom_css %}
+    .paginate_button {
+        /* fix an issue with the pagination on the datatable */
+        padding: 0 !important;
+    }
+    td.details-control {
+        background: url('{% static 'images/details_open.png' %}') no-repeat center center;
+        cursor: pointer;
+    }
+    tr.details td.details-control {
+        background: url('{% static 'images/details_close.png' %}') no-repeat center center;
+    }
+
+    /* Datatables header icon workaround */
+    table.dataTable thead .sorting_asc::after {
+        content: ""
+    }
+    table.dataTable thead .sorting_desc::after {
+        content: ""
+    }
+    table.dataTable thead .sorting::after {
+        content: ""
+    }
+
+    /* customize button panel on datatables */
+    .dt-buttons {
+        margin-top: 20px;
+        margin-bottom: 20px;
+    }
+{% endblock %}
+
+{% block content %}
+    <div class="container">
+        <h1>Bulk EoL check</h1>
+        <p>On this page, you can execute a bulk check of multiple products against the local
+        database. Please enter a list of product IDs in the following text field separated
+        by line breaks.</p>
+        {% if query_result|length > 0 %}
+        <a href="{% url 'productdb:bulk_eol_check' %}" class="btn btn-primary btn-lg btn-block" role="button">Start another Bulk EoL check</a>
+        {% endif %}
+    </div>
+    {% if query_result|length == 0 %}
+    <div class="container">
+        {% if query_no_result %}
+        <div class="alert alert-danger" role="alert">
+            <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
+            <span class="sr-only">Error:</span>
+            Query returned no results.
+        </div>
+        {% endif %}
+        <form class="form-horizontal" method="post">
+            <div class="form-group">
+                <textarea id="db_query" name="db_query"
+                          placeholder="Enter product IDs separated by line breaks here..."
+                          class="form-control" rows="25"></textarea>
+            </div>
+            <div class="text-center">
+                <input class="btn btn-default" type="submit" id="submit" value="Execute EoL bulk check" />
+            </div>
+            {% csrf_token %}
+        </form>
+    </div>
+    {% else %}
+    <div class="container">
+        <h2>Summary bulk check results</h2>
+        <p>The following table shows the product lifecycle state and how often they appeared within the provided data.</p>
+        <p><strong>Please note:</strong> The following table contains also products and/or query string, which are not
+            found in the local database.</p>
+        <div style="margin-top: 25px;">
+            <div id="product_summary_table-buttons-div"></div>
+            <table id="product_summary_table" class="display" cellspacing="0" width="100%">
+                <thead>
+                    <tr>
+                        <th width="20%">Product ID</th>
+                        <th>description</th>
+                        <th width="10%">number</th>
+                        <th width="10%">state</th>
+                    </tr>
+                </thead>
+            </table>
+        </div>
+        <hr>
+        <h2>Detailed lifecycle states</h2>
+        <p>The following table contains the detailed lifecycle information for the products which were found in the
+            provided data.</p>
+        <div style="margin-top: 25px;">
+            <div id="product_table-buttons-div"></div>
+            <table id="product_table" class="display" cellspacing="0" width="100%">
+                <thead>
+                    <tr>
+                        <th>PID</th>
+                        <th width="10%">EoL anno.</th>
+                        <th width="10%">EoS</th>
+                        <th width="10%">EoNewSA</th>
+                        <th width="10%">EoSWM</th>
+                        <th width="10%">EoRFA</th>
+                        <th width="10%">EoSCn</th>
+                        <th width="10%">EoSup</th>
+                        <th width="10%">Link</th>
+                    </tr>
+                </thead>
+            </table>
+        </div>
+        <h2>Ignored/not found</h2>
+        <p>The following Product IDs are not affected by an End of Life announcement or the query does not
+            return a result from the database.</p>
+        <div style="margin-top: 25px;">
+            <div id="skipped_queries_table-buttons-div"></div>
+            <table id="skipped_queries_table" class="display" cellspacing="0" width="50%">
+                <thead>
+                    <tr>
+                        <th>Query/Product ID</th>
+                        <th>result</th>
+                    </tr>
+                </thead>
+            </table>
+        </div>
+        <hr>
+        <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3 class="panel-title">Legend</h3>
+                </div>
+                <div class="panel-body">
+                    <pre id="legend">
+PID       = Product ID
+EoL anno  = End of Life announcement date
+EoS       = End of Sale Date
+EoNewSA   = End of new service attachment date
+EoSWM     = End of Software Maintenance date
+EoRFA     = End of routine failure analysis
+EoSCn     = End of Service Contract renewal
+EoSup     = Last day of support
+                    </pre>
+                </div>
+            </div>
+    </div>
+    {% endif %}
+{% endblock %}
+
+{% block end_of_file_statments %}
+    {% if query_result|length > 0 %}
+    <script type="application/javascript">
+        $(document).ready(function() {
+            update_datatable()
+        });
+
+        function update_datatable() {
+            var query_result_set = [
+                {% for element in query_result %}{% if element.eol_ext_announcement_date != "" %}
+                [ "{{ element.product_id }}",
+                "{{ element.eol_ext_announcement_date }}",
+                "{{ element.end_of_sale_date }}",
+                "{{ element.end_of_new_service_attachment_date }}",
+                "{{ element.end_of_sw_maintenance_date }}",
+                "{{ element.end_of_routine_failure_analysis }}",
+                "{{ element.end_of_service_contract_renewal }}",
+                "{{ element.end_of_support_date }}",
+                "{{ element.eol_reference_number }}",
+                "{{ element.eol_reference_url }}" ],
+                {% endif %}{% endfor %}
+            ];
+
+            var result_stats = [
+                {% for key, value in result_stats.items %}
+                [ "{{ value.product.product_id }}",
+                "{{ value.product.description }}",
+                "{{ value.count }}",
+                "{{ value.state }}" ],
+                {% endfor %}
+            ];
+
+            var skipped_queries = [
+                {% for key, value in skipped_queries.items %}
+                [ "{{ value.query }}",
+                "{{ value.result }}" ],
+                {% endfor %}
+            ];
+
+            var skipped_queries_table = $('#skipped_queries_table').DataTable( {
+                lengthMenu: [ [5, 10, 25, -1], [5, 10, 25, "All"] ],
+                data: skipped_queries,
+                columnDefs: [
+                    {
+                        "targets": 0,
+                        "visible": true,
+                        "searchable": true
+                    },
+                    {
+                        "targets": 1,
+                        "visible": true,
+                        "searchable": true
+                    }
+                ],
+                order: [[0, 'asc']],
+                dom: 'Blfrtip',
+                buttons: [
+                    'copyHtml5',
+                    {
+                        "extend": 'csvHtml5',
+                        "title": "Bulk EoL check (queries and products which are not found)",
+                        "fieldSeparator": ';',
+                        "extension": '.csv'
+                    },
+                    {
+                        "extend": 'pdfHtml5',
+                        "title": "Bulk EoL check (queries and products which are not found)",
+                        "orientation": 'landscape',
+                        "pageSize": 'A4'
+                    }
+                ]
+            });
+            skipped_queries_table.buttons().container().appendTo( '#skipped_queries_table-buttons-div' );
+
+            var product_summary_table = $('#product_summary_table').DataTable( {
+                lengthMenu: [ [5, 10, 25, -1], [5, 10, 25, "All"] ],
+                data: result_stats,
+                columnDefs: [
+                    {
+                        "targets": 0,
+                        "visible": true,
+                        "searchable": true
+                    },
+                    {
+                        "targets": 1,
+                        "visible": true,
+                        "searchable": true
+                    },
+                    {
+                        "targets": 2,
+                        "visible": true,
+                        "searchable": false
+                    }
+                ],
+                order: [[2, 'desc']],
+                dom: 'Blfrtip',
+                buttons: [
+                    'copyHtml5',
+                    {
+                        "extend": 'csvHtml5',
+                        "title": "Bulk EoL check (product summary table)",
+                        "fieldSeparator": ';',
+                        "extension": '.csv'
+                    },
+                    {
+                        "extend": 'pdfHtml5',
+                        "title": "Bulk EoL check (product summary table)",
+                        "orientation": 'landscape',
+                        "pageSize": 'A4'
+                    }
+                ]
+            });
+            product_summary_table.buttons().container().appendTo( '#product_summary_table-buttons-div' );
+
+            var dt = $('#product_table').DataTable( {
+                lengthMenu: [ [50, 100, -1], [50, 100, "All"] ],
+                data: query_result_set,
+                columnDefs: [
+                    {
+                        "targets": 0,
+                        "visible": true,
+                        "searchable": true
+                    },
+                    {
+                        "render": function ( data, type, row ) {
+                            if(row['eol_ext_announcement_date'] == "None") {
+                                return "Not announced"
+                            }
+                            else {
+                                return data
+                            }
+                        },
+                        "targets": 1,
+                        "visible": true,
+                        "searchable": false
+                    },
+                    {
+                        "targets": [2,3,4,5,6,7],
+                        "visible": true,
+                        "searchable": false
+                    },
+                    {
+                        "render": function ( data, type, row ) {
+                            if(data == "None") {
+                                return "N/A"
+                            }
+                            else {
+                                return '<a href="' + row[9] + '" target="_blank">' +
+                                        row[8] + '</a>'
+                            }
+                        },
+                        "targets": 8,
+                        "visible": true,
+                        "searchable": false
+                    }
+                ],
+                order: [[1, 'asc']],
+                dom: 'Blfrtip',
+                buttons: [
+                    'copyHtml5',
+                    {
+                        "extend": 'csvHtml5',
+                        "title": "Bulk EoL check (detailed lifecycle states)",
+                        "fieldSeparator": ';',
+                        "extension": '.csv'
+                    },
+                    {
+                        "extend": 'pdfHtml5',
+                        "title": "Bulk EoL check (detailed lifecycle states)",
+                        "orientation": 'landscape',
+                        "pageSize": 'A4'
+                    }
+                ]
+            });
+            dt.buttons().container().appendTo( '#product_table-buttons-div' );
+        }
+    </script>
+    {% endif %}
+{% endblock %}

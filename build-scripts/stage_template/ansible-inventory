@@ -1,0 +1,2 @@
+[staging]
+<hostname or IP>   ansible_ssh_user=<username for SSH>

@@ -1,0 +1,11 @@
+{% extends "rest_framework/login_base.html" %}
+{% load staticfiles %}
+
+{% block bootstrap_theme %}
+    <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}" type="text/css">
+{% endblock %}
+
+{% block branding %}
+    <h3 style="margin: 0 0 20px;">Product DB Login</h3>
+    <p>Please login to modify the data or <br><a href="{% url 'productdb:home' %}">continue without login.</a></p>
+{% endblock %}

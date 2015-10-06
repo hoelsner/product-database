@@ -1,0 +1,46 @@
+---
+######################################################################################################
+# Tasks that can be included in an Ansible playbook for appliance provisioning
+######################################################################################################
+  - name: register initial_provisioning object
+    stat: path={{ site_directory }}/{{ site_name }}/initial_provisioned
+    register: initial_provisioning
+
+  - include: ansible-tasks/install-packages-tasks.yaml
+
+  - include: ansible-tasks/stop-service-tasks.yaml
+  - include: ansible-tasks/initial-stage-site-tasks.yaml
+  - include: ansible-tasks/clone-source-tasks.yaml
+
+  - name: update site settings (development)
+    shell: python3 configure_site_settings.py {{ site_name }} {{ site_user }} {{ dbname }} {{ ignore_allowedhosts }}
+    args:
+      chdir: "{{ site_directory }}/{{ site_name }}/source/build-scripts/appliance/script/"
+    when: deployment_type != "production"
+
+  - name: update site settings (production)
+    shell: python3 configure_site_settings.py {{ site_name }} {{ site_user }} {{ dbname }} production {{ ignore_allowedhosts }}
+    args:
+      chdir: "{{ site_directory }}/{{ site_name }}/source/build-scripts/appliance/script/"
+    when: deployment_type == "production"
+
+  # depends on sourcecode, configuration occurs after clone of the source directory
+  - include: ansible-tasks/services/configure-nginx-tasks.yaml
+  - include: ansible-tasks/services/configure-postgres-tasks.yaml
+  - include: ansible-tasks/services/configure-gunicorn-tasks.yaml
+  - include: ansible-tasks/services/configure-celery-tasks.yaml
+
+  - name: start postgresql service
+    service: name=postgresql state=started enabled=yes
+    ignore_errors: yes
+    sudo: true
+  - include: ansible-tasks/update-site-tasks.yaml
+  - include: ansible-tasks/start-service-tasks.yaml
+
+  - name: create initial provisioning flag
+    file: path={{ site_directory }}/{{ site_name }}/initial_provisioned state=touch owner={{ site_user }} group={{ site_group }} mode=0644
+    sudo: true
+    when: initial_provisioning.stat.exists == False
+
+  # just a message to nofiy, that there is a site-configuration script installed on the machine
+  - debug: msg="run configure_{{ site_name }} after initial provisioning to complete the configuration"

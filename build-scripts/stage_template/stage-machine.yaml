@@ -1,0 +1,26 @@
+---
+- hosts: staging
+  gather_facts: True
+  vars:
+    site_name: "<hostname>"
+    site_directory: "/var/www"
+    site_user: "<user for page>"
+    site_group: "<group for page>"
+    # system source "file" is used e.g. with Vagrant, otherwise use Git (git is
+    # in every case used)
+    system_source: "git"
+    site_source: "<path to git repository>"
+    #system_source: "file"
+    #site_source: "/vagrant"
+    site_source_branch: "master"
+    git_accept_hostkey: true
+    #git_accept_hostkey: false
+    dbname: <database name>
+    deployment_type: production
+    #deployment_type: development
+    ignore_allowedhosts: False
+
+  tasks:
+   - include: ../appliance/appliance-provision-tasks.yml
+
+   - debug: msg="System {{ inventory_hostname }} is reachable at {{ ansible_all_ipv4_addresses }}"

@@ -1,0 +1,94 @@
+{
+  "product_lists" : [
+    {
+      "product_list_name": "Juniper EX2200"
+    },
+    {
+      "product_list_name": "Juniper EX4200"
+    },
+    {
+      "product_list_name": "Juniper Transceivers"
+    }
+  ],
+  "products" : [
+    {
+      "product_id": "EX2200-24T-4G",
+      "description": "EX 2200, 24-port 10/100/1000BaseT with 4 SFP uplink ports (optics not included)",
+      "list_price": "1595.00",
+      "currency": "USD",
+      "tags": "chassis",
+      "vendor": "Juniper Networks",
+      "eol_ext_announcement_date": "2015-09-02",
+      "end_of_sale_date": "2015-09-02",
+      "lists" : [
+        "Juniper EX2200"
+      ]
+    },
+    {
+      "product_id": "EX2200-24P-4G",
+      "description": "EX 2200, 24-port 10/100/1000BaseT (24-ports PoE+) with 4 SFP uplink ports (optics not included)",
+      "list_price": "2595.00",
+      "currency": "USD",
+      "tags": "chassis",
+      "vendor": "Juniper Networks",
+      "lists" : [
+        "Juniper EX2200"
+      ]
+    },
+    {
+      "product_id": "EX2200-48P-4G",
+      "description": "EX 2200, 48-port 10/100/1000BaseT (48-ports PoE+) with 4 SFP uplink ports (optics not included)",
+      "list_price": "4495.00",
+      "currency": "USD",
+      "tags": "chassis",
+      "vendor": "Juniper Networks",
+      "lists" : [
+        "Juniper EX2200"
+      ]
+    },
+    {
+      "product_id": "EX2200-48T-4G",
+      "description": "EX 2200, 48-port 10/100/1000BaseT with 4 SFP uplink ports (optics not included)",
+      "list_price": "2895.00",
+      "currency": "USD",
+      "tags": "chassis",
+      "vendor": "Juniper Networks",
+      "lists" : [
+        "Juniper EX2200"
+      ]
+    },
+    {
+      "product_id": "EX4200-24F",
+      "description": "EX 4200, 24-port  1000BaseX  SFP + 320W AC PS (optics sold separately), includes 50cm VC cable",
+      "list_price": "16000.00",
+      "currency": "USD",
+      "tags": "chassis",
+      "vendor": "Juniper Networks",
+      "lists" : [
+        "Juniper EX4200"
+      ]
+    },
+    {
+      "product_id": "EX-SFP-1GE-SX",
+      "description": "SFP 1000Base-SX Gigabit Ethernet Optics, 850nm for upto 550m transmission on MMF",
+      "list_price": "500.00",
+      "currency": "USD",
+      "tags": "chassis",
+      "vendor": "Juniper Networks",
+      "lists" : [
+        "Juniper Transceivers"
+      ]
+    },
+    {
+      "product_id": "EX-SFP-1GE-LX",
+      "description": "SFP 1000Base-LX Gigabit Ethernet Optics, 1310nm for 10km transmission on SMF",
+      "list_price": "1000.00",
+      "currency": "USD",
+      "tags": "chassis",
+      "vendor": "Juniper Networks",
+      "lists" : [
+        "Juniper Transceivers"
+      ]
+    }
+  ]
+}

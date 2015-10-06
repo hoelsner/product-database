@@ -1,0 +1,28 @@
+---
+#################
+# Install all required packages with apt
+#################
+  - name: update apt cache
+    apt: update_cache=yes
+    sudo: true
+    # may be required if the client has no internet connectivity
+    ignore_errors: true
+  - name: install required packages for the site
+    apt: pkg={{item}} state=installed
+    sudo: true
+    with_items:
+         - python3.4
+         - python3-pip
+         - python-virtualenv
+         - nginx
+         - ansible
+         - redis-server
+         - postgresql
+         - postgresql-contrib
+         - postgresql-server-dev-9.3
+         - python3-dev
+  - name: install git (if clone is required)
+    apt: name=git state=present
+    sudo: true
+    when: system_source != "file"
+# gunicorn as WSGI provider is part of the python pip requirements of the environement

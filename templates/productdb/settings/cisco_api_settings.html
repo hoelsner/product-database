@@ -1,0 +1,132 @@
+{% extends 'base.html' %}
+{% load staticfiles %}
+
+{% block title %}
+Settings - Cisco API Console
+{% endblock %}
+
+{% block content %}
+    <div class="container">
+        <div class="page-header">
+            <h1>Cisco API settings</h1>
+        </div>
+        <p>
+            The following settings activate the <a href="https://apiconsole.cisco.com/" target="_blank">Cisco API access</a>
+            for various API endpoint which are directly hosted at Cisco Systems. Please also note the
+            <a href="http://www.cisco.com/web/siteassets/legal/terms_condition.html" target="_blank">Terms and Conditions</a>
+            when using this API. The API access is only available for Cisco Partners.
+        </p>
+        <p>
+            The state of <strong>periodic tasks</strong> is available at the <a href="{% url 'productdb:crawler_overview' %}">crawler overview</a>.
+        </p>
+
+        {% if settings.cisco_api_enabled %}
+        {% if settings.cisco_api_credentials_successful_tested %}
+        <div class="alert alert-success" role="alert">
+            <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
+            <span class="sr-only">Cisco API credentials working:</span>
+            The Cisco Hello API is accessible using the credentials below{% if settings.cisco_api_credentials_last_message != "" %} ({{ settings.cisco_api_credentials_last_message }}){% endif %}.
+        </div>
+        {% else %}
+        <div class="alert alert-danger" role="alert">
+            <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
+            <span class="sr-only">Cisco API credentials not working:</span>
+            Verification of the API access failed ({{ settings.cisco_api_credentials_last_message }}).
+        </div>
+        {% endif %}
+
+        <form method="post" class="form-horizontal">
+            {% csrf_token %}
+            {{ settings_form.non_field_errors }}
+
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3 class="panel-title">Common Cisco API Console settings</h3>
+                </div>
+                <div class="panel-body">
+                    <div class="form-group">
+                        {{ settings_form.cisco_api_client_id.errors }}
+                        <label class="col-sm-3 control-label" for="{{ settings_form.cisco_api_client_id.id_for_label }}">Client ID:</label>
+                        <div class="col-sm-9">
+                            {{ settings_form.cisco_api_client_id }}
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        {{ settings_form.cisco_api_client_secret.errors }}
+                        <label class="col-sm-3 control-label" for="{{ settings_form.cisco_api_client_secret.id_for_label }}">Client Secret:</label>
+                        <div class="col-sm-9">
+                            {{ settings_form.cisco_api_client_secret }}
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        {{ settings_form.eox_api_auto_sync_enabled.errors }}
+                        <label class="col-sm-3 control-label" for="{{ settings_form.eox_api_auto_sync_enabled.id_for_label }}">Periodic synchronization of the Cisco EoX states:</label>
+                        <div class="col-sm-9">
+                            {{ settings_form.eox_api_auto_sync_enabled }}
+                            <span id="helpBlock" class="help-block">
+                                This synchronization tasks utilizes the Cisco EoX API and will automatically update the lifecycle state of the products from the configured queries.
+                                It is executed by default <strong>on every Saturday at 3:00 am</strong>.
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% if settings.cisco_eox_api_auto_sync_enabled %}
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3 class="panel-title">Settings for periodic synchronization of the Cisco EoX states</h3>
+                </div>
+                <div class="panel-body">
+                    <p>This synchronization tasks utilizes the Cisco EoX API and will automatically update the lifecycle state of the products from the given queries.</p>
+                    <div class="form-group">
+                        {{ settings_form.eox_auto_sync_auto_create_elements.errors }}
+                        <label class="col-sm-3 control-label" for="{{ settings_form.eox_auto_sync_auto_create_elements.id_for_label }}">Auto-create new products:</label>
+                        <div class="col-sm-9">
+                            {{ settings_form.eox_auto_sync_auto_create_elements }}
+                            <span id="helpBlock" class="help-block">
+                                When enabled, the EoX API will create new products for which a EoL message is available. If disabled, these entries are ignored.
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        {{ settings_form.eox_api_queries.errors }}
+                        <label class="col-sm-3 control-label" for="{{ settings_form.eox_api_queries.id_for_label }}">Cisco EoX API Queries:</label>
+                        <div class="col-sm-9">
+                            {{ settings_form.eox_api_queries }}
+                            <span id="helpBlock" class="help-block">
+                                EoX queries which are executed line by line. Please note, that you require at least three signs to get the
+                                API call working, otherwise it will fail.
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        {{ settings_form.eox_api_blacklist.errors }}
+                        <label class="col-sm-3 control-label" for="{{ settings_form.eox_api_blacklist.id_for_label }}">Blacklist for products:</label>
+                        <div class="col-sm-9">
+                            {{ settings_form.eox_api_blacklist }}
+                            <span id="helpBlock" class="help-block">
+                                product numbers separated by semicolon (;) who should not be added to the database. Only required,
+                                when the automatic import is enabled.
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <input type="submit" class="btn btn-primary btn-block" id="submit" value="Save settings" />
+        </form>
+        {% else %}
+        <div class="alert alert-danger" role="alert">
+            <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
+            <span class="sr-only">Cisco API disabled:</span>
+            Please activate the Cisco API access on the <a href="{% url 'productdb:settings' %}">global configuration</a> page.
+        </div>
+        {% endif %}
+    </div>
+{% endblock %}

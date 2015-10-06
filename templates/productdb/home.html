@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% load staticfiles %}
+
+{% block title %}
+Homepage
+{% endblock %}
+
+{% block content %}
+    <div class="jumbotron">
+        <div class="container">
+            <h1>Product Database</h1>
+            <p>This service provides a central point of management for product information about network equipment.
+            It also provides import, synchronization and crawling functions for certain information from vendors.</p>
+
+            <p>This version includes the following tools:</p>
+            <p><a class="btn btn-primary btn-lg" href="{% url 'productdb:browse_product_lifecycle_information' %}" role="button">View lifecycle information by vendor &raquo;</a></p>
+            <p><a class="btn btn-primary btn-lg" href="{% url 'productdb:bulk_eol_check' %}" role="button">Bulk EoL check &raquo;</a></p>
+
+            <div class="container">
+                <h2>Browse local database</h2>
+                <p>The following views for the local database are currently implemented:</p>
+                <p><a class="btn btn-default btn" href="{% url 'productdb:browse_product_list' %}" role="button">Browse products by product lists &raquo;</a></p>
+                <p><a class="btn btn-default btn" href="{% url 'productdb:browse_vendor_products' %}" role="button">Browse products by vendor &raquo;</a></p>
+            </div>
+
+            <div class="container">
+                <h2>REST API access</h2>
+                <p>This service provides API access to the local database.</p>
+                <p><a class="btn btn-default btn" href="{% url 'productdb:api_redirect' %}" role="button">API Webfrontend &raquo;</a></p>
+                <p><a class="btn btn-default btn" href="{% url 'productdb:apidocs:django.swagger.base.view' %}" role="button">Access API documentation &raquo;</a></p>
+            </div>
+        </div>
+    </div>
+{% endblock %}

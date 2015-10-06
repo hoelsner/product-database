@@ -1,0 +1,62 @@
+---
+#################
+# Updates the Source files within the Django project
+#################
+#
+# Will create the directory structure in the format of
+#   /var/www/<sitename>/database
+#                      /virtualenv
+#                      /static
+#
+# Will copy/clone the source files and updates the rights of the files.
+# Creates the virtualenv and installs/updates the dependencies
+#
+# get sources (from git if system_source is not file), otherwise use a local copy
+#
+  - name: register sourcecode path object
+    stat: path={{ site_directory }}/{{ site_name }}/source
+    register: source_file_exists
+  - name: delete source directory (if existing)
+    file: path={{ site_directory }}/{{ site_name }}/source state=absent
+    when: source_file_exists.stat.exists == True
+  - name: clone source directory from git repository
+    git:
+      repo={{ site_source }}
+      dest={{ site_directory }}/{{ site_name }}/source
+      version={{ site_source_branch }}
+      accept_hostkey={{ git_accept_hostkey }}
+    when: system_source != "file"
+  - name: copy source directory from local directory
+    command: cp -R {{ site_source }} {{ site_directory }}/{{ site_name }}/source
+    when: system_source == "file"
+#
+# set valid directory rights
+#
+  - name: modify rights on source directory (RWX)
+    file: path={{ site_directory }}/{{ site_name }}/source
+      state=directory
+      recurse=yes
+      mode=775
+      owner={{ site_user }}
+      group={{ site_group }}
+    sudo: true
+  - name: change permissions for nginx environment script
+    file: path={{ site_directory }}/{{ site_name }}/source/build-scripts/appliance/script/configure_nginx.sh
+      state=file
+      mode="u+x,g+x,o+x"
+  - name: change permissions for gunicorn environment script
+    file: path={{ site_directory }}/{{ site_name }}/source/build-scripts/appliance/script/configure_gunicorn.sh
+      state=file
+      mode="u+x,g+x,o+x"
+  - name: change permissions for the maintenance scripts
+    file: path={{ site_directory }}/{{ site_name }}/source/build-scripts/appliance/script/configure_maintenance_scripts.sh
+      state=file
+      mode="u+x,g+x,o+x"
+  - name: update python requirements on the new virtualenv for the site
+    pip:
+      requirements={{ site_directory }}/{{ site_name }}/source/requirements.txt
+      virtualenv={{ site_directory }}/{{ site_name }}/virtualenv
+  - name: install psycopg2 for production environment
+    pip:
+      name=psycopg2 version=2.6.1
+      virtualenv={{ site_directory }}/{{ site_name }}/virtualenv

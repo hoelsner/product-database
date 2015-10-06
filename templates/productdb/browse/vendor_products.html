@@ -1,0 +1,160 @@
+{% extends 'base.html' %}
+{% load staticfiles %}
+
+{% block title %}
+Vendor products
+{% endblock %}
+
+{% block custom_css %}
+    .paginate_button {
+        /* fix an issue with the pagination on the datatable */
+        padding: 0 !important;
+    }
+
+    /* Datatables header icon workaround */
+    table.dataTable thead .sorting_asc::after {
+        content: ""
+    }
+    table.dataTable thead .sorting_desc::after {
+        content: ""
+    }
+    table.dataTable thead .sorting::after {
+        content: ""
+    }
+
+    /* customize button panel on datatables */
+    .dt-buttons {
+        margin-top: 20px;
+        margin-bottom: 20px;
+    }
+{% endblock %}
+
+{% block content %}
+    <h1>Browse vendor product lists</h1>
+    <p>On this page, you can browse the local database based on a specific vendor. To see the products that are
+        assigned to a specific product list, you can use the
+        <a href="{% url 'productdb:browse_product_list' %}">browse products lists view</a>.</p>
+    {% if vendors|length > 0 %}
+    <p>Please select a vendor that should be displayed:</p>
+    <div class="container">
+        <form class="form-horizontal" method="post">
+            <div class="form-group">
+                <label for="vendor_selection" class="col-sm-2 control-label">Vendor to display: </label>
+                <div class="col-sm-10">
+                    <select class="form-control" id="vendor_selection" name="vendor_selection">
+                    {% for ven in vendors %}
+                        {% if ven.name != "unassigned" %}
+                            {% if vendor_selection %}
+                                {% ifequal ven.id|add:"0" vendor_selection|add:"0" %}
+                                <option value="{{ ven.id }}" selected>{{ ven.name }}</option>
+                                {% else %}
+                                <option value="{{ ven.id }}">{{ ven.name }}</option>
+                                {% endifequal %}
+                            {% else %}
+                                <option value="{{ ven.id }}">{{ ven.name }}</option>
+                            {% endif %}
+                        {% endif %}
+                    {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="text-center">
+                <input class="btn btn-default" type="submit" id="submit" value="view vendor products" />
+            </div>
+            {% csrf_token %}
+        </form>
+    </div>
+    <hr>
+    <div class="container">
+        <div id="product_table-buttons-div"></div>
+        <table id="product_table" class="display" cellspacing="0" width="100%">
+            <thead>
+                <tr>
+                    <th width="20%">product ID</th>
+                    <th>description</th>
+                    <th width="20%">list price</th>
+                    <th>currency</th>
+                </tr>
+            </thead>
+        </table>
+    </div>
+    {% else %}
+    <div class="container">
+        <div class="alert alert-warning" role="alert">
+            <strong>Warning:</strong> No vendor found in database.
+        </div>
+    </div>
+    {% endif %}
+{% endblock %}
+
+{% block end_of_file_statments %}
+    <script type="application/javascript">
+        $(document).ready(function() {
+            if($('#vendor_selection').val() != null) {
+                update_datatable()
+            }
+        });
+
+        function update_datatable() {
+            var vs = $('#vendor_selection');
+            var table = $('#product_table').DataTable( {
+                dom: 'Blfrtip',
+                "processing": true,
+                "serverSide": true,
+                "columnDefs": [
+                    {
+                        "targets": 0,
+                        "visible": true,
+                        "searchable": true
+                    },
+                    {
+                        "targets": 1,
+                        "visible": true,
+                        "searchable": true
+                    },
+                    {
+                        "render": function ( data, type, row ) {
+                            if (data != null) {
+                                return data + ' ' + row['currency'] + '';
+                            }
+                            else {
+                                return "(not set)"
+                            }
+                        },
+                        "targets": 2,
+                        "visible": true,
+                        "searchable": false
+                    },
+                    {
+                        "visible" : false,
+                        "searchable": false,
+                        "targets": [3]
+                    }
+                ],
+                "columns": [
+                    { "data": "product_id" },
+                    { "data": "description" },
+                    { "data": "list_price" },
+                    { "data": "currency" }
+                ],
+                buttons: [
+                    'copyHtml5',
+                    {
+                        extend: 'csvHtml5',
+                        title: "vendor products - " + vs.find("option[value=" + vs.val() + "]").text(),
+                        fieldSeparator: ';',
+                        extension: '.csv'
+                    },
+                    {
+                        extend: 'pdfHtml5',
+                        title: "vendor products - " + vs.find("option[value=" + vs.val() + "]").text(),
+                        orientation: 'landscape',
+                        pageSize: 'A4'
+                    }
+                ],
+                "ajax": "{% url 'productdb:datatables_vendor_products_view' %}" + vs.val() + "/"
+            });
+            table.buttons().container().appendTo( '#product_table-buttons-div' );
+        }
+    </script>
+{% endblock %}

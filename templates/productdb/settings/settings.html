@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% load staticfiles %}
+
+{% block title %}
+Settings
+{% endblock %}
+
+{% block content %}
+    <div class="container">
+        <div class="page-header">
+            <h1>Product DB Settings</h1>
+        </div>
+
+        <h2>crawler settings</h2>
+        <form method="post" class="form-horizontal">
+            {% csrf_token %}
+            {{ form.non_field_errors }}
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3 class="panel-title">Cisco API settings</h3>
+                </div>
+                <div class="panel-body">
+                    <p>
+                        The following settings activate the <a href="https://apiconsole.cisco.com/" target="_blank">Cisco API Console access</a>
+                        for various API endpoint which are directly hosted at Cisco Systems. Please also note the
+                        <a href="http://www.cisco.com/web/siteassets/legal/terms_condition.html" target="_blank">Terms and Conditions</a>
+                        when using this API. The API access is only available for Cisco Partners.
+                    </p>
+                    <div class="form-group">
+                        {{ form.cisco_api_enabled.errors }}
+                        <div class="col-sm-7 col-md-offset-2">
+                            <div class="checkbox">
+                                <label>
+                                    {{ form.cisco_api_enabled }}
+                                    <b>Enable Cisco API</b>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-sm-2">
+                            {% if settings.cisco_api_enabled %}
+                            <a class="btn btn-default" href="{% url 'productdb:cisco_api_settings' %}">modify settings</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <input type="submit" class="btn btn-primary btn-block" id="submit" value="Save settings" />
+        </form>
+    </div>
+{% endblock %}

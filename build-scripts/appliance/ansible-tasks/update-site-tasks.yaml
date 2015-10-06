@@ -1,0 +1,46 @@
+---
+#
+# Update site settings and refresh static files
+#
+  - name: update static files
+    command: "{{ site_directory }}/{{ site_name }}/virtualenv/bin/python3 manage.py collectstatic --noinput"
+    args:
+      chdir: "{{ site_directory }}/{{ site_name }}/source/"
+  - name: create database migrations
+    command: "{{ site_directory }}/{{ site_name }}/virtualenv/bin/python3 manage.py makemigrations"
+    args:
+      chdir: "{{ site_directory }}/{{ site_name }}/source/"
+  - name: apply database migrations
+    command: "{{ site_directory }}/{{ site_name }}/virtualenv/bin/python3 manage.py migrate --noinput"
+    args:
+      chdir: "{{ site_directory }}/{{ site_name }}/source/"
+  - name: apply database fixtures for default values (on initial provisioning)
+    command: "{{ site_directory }}/{{ site_name }}/virtualenv/bin/python3 manage.py loaddata {{ item }}"
+    args:
+      chdir: "{{ site_directory }}/{{ site_name }}/source/"
+    with_items:
+      - "default_users.yaml"
+      - "default_vendors.yaml"
+    when: initial_provisioning.stat.exists == False
+#
+# some playbooks are copied to the /etc/ansible file for the use within the maintenance scripts
+#
+  - name: copy start-services playbook
+    command: cp start-service-tasks.yaml /etc/ansible/{{ site_name }}-start-service-tasks.yaml
+    args:
+      chdir: "{{ site_directory }}/{{ site_name }}/source/build-scripts/appliance/ansible-tasks/"
+    sudo: true
+  - name: copy stop-services playbook
+    command: cp stop-service-tasks.yaml /etc/ansible/{{ site_name }}-stop-service-tasks.yaml
+    args:
+      chdir: "{{ site_directory }}/{{ site_name }}/source/build-scripts/appliance/ansible-tasks/"
+    sudo: true
+  - name: create maintenance scripts on the appliance
+    shell: build-scripts/appliance/script/configure_maintenance_scripts.sh {{ site_name }} {{ site_user }} {{ site_group }} {{ deployment_type }}
+    args:
+      chdir: "{{ site_directory }}/{{ site_name }}/source/"
+    sudo: true
+  - name: append localhost to the ansible inventory on initial staging
+    lineinfile: dest=/etc/ansible/hosts line="localhost ansible_connection=local"
+    sudo: true
+    when: initial_provisioning.stat.exists == False

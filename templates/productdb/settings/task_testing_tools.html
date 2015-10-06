@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% load staticfiles %}
+
+{% block title %}
+Settings - Task overview and status
+{% endblock %}
+
+{% block custom_header %}
+    {% if settings.eox_api_sync_task_id %}
+        <META HTTP-EQUIV="refresh" CONTENT="5">
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+    <div class="container">
+        <div class="page-header">
+            <h1>Task testing tools</h1>
+        </div>
+        <p>
+            This page provides testing tools for various crawlers.
+        </p>
+
+        {% if settings.cisco_api_enabled %}
+        {# Print state of the credentials for the Cisco API access #}
+        {% if settings.cisco_api_credentials_successful_tested %}
+        <div class="alert alert-success" role="alert">
+            <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
+            <span class="sr-only">Cisco API credentials working:</span>
+            The Cisco Hello API is accessible using the credentials below{% if settings.cisco_api_credentials_last_message != "" %} ({{ settings.cisco_api_credentials_last_message }}){% endif %}.
+        </div>
+        {% else %}
+        <div class="alert alert-danger" role="alert">
+            <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
+            <span class="sr-only">Cisco API credentials not working:</span>
+            Verification of the API access failed ({{ settings.cisco_api_credentials_last_message }}).
+        </div>
+        {% endif %}
+
+        <h2>Cisco API testing tool (testing and debugging)</h2>
+        <form method="post" class="form-horizontal">
+            {% csrf_token %}
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3 class="panel-title">Manual synchronization with Cisco EoX API</h3>
+                </div>
+                <div class="panel-body">
+                    <p>With this panel, you can directly execute a query to synchronize between the local database and the Cisco EoX API.</p>
+                    <div class="alert alert-warning" role="alert"><strong>Please note:</strong> This function is executed
+                    on the server side, without an asynchronous task! Please keep you query small to avoid timeout issues.</div>
+                    <div class="input-group">
+                        <span class="input-group-addon" id="api-query">EoX API query</span>
+                        <input id="sync_cisco_eox_states_query" name="sync_cisco_eox_states_query"
+                               type="text" class="form-control" placeholder="Product ID or query" aria-describedby="api-query">
+                    </div>
+                    <div class="checkbox">
+                        <label>
+                            <input id="sync_cisco_eox_states_now" name="sync_cisco_eox_states_now"
+                                   type="checkbox" value="sync_cisco_eox_states_now" />
+                            execute synchronization query against Cisco EoX API
+                        </label>
+                    </div>
+                </div>
+                {% if eox_api_update_records %}
+                <div class="panel-body">
+                    <pre id="direct_query_result_log">
+Query: {{ query_executed }}
+{% for record in eox_api_update_records %}{{ record }}
+{% endfor %}
+                    </pre>
+                </div>
+                {% endif %}
+            </div>
+            <input type="submit" class="btn btn-primary btn-block" id="submit" value="execute selected tasks" />
+        </form>
+        {% else %}
+        <div class="alert alert-danger" role="alert">
+            <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
+            <span class="sr-only">Cisco API disabled:</span>
+            Please activate the Cisco API access on the <a href="{% url 'productdb:settings' %}">global configuration</a> page.
+        </div>
+        {% endif %}
+    </div>
+{% endblock %}

@@ -1,0 +1,28 @@
+---
+#################
+# Stop services on the server
+#################
+  - name: stop celeryworker service
+    service: name=celeryworker-{{ site_name }} state=stopped enabled=yes
+    ignore_errors: yes
+    sudo: true
+  - name: stop celerycam service
+    service: name=celerycam-{{ site_name }} state=stopped enabled=yes
+    ignore_errors: yes
+    sudo: true
+  - name: stop postgresql service
+    service: name=postgresql state=stopped enabled=yes
+    ignore_errors: yes
+    sudo: true
+  - name: stop nginx service
+    service: name=nginx state=stopped enabled=yes
+    ignore_errors: yes
+    sudo: true
+  - name: stop redis service
+    service: name=redis-server state=stopped enabled=yes
+    ignore_errors: yes
+    sudo: true
+  - name: stop gunicorn service
+    service: name=gunicorn-{{ site_name }} state=stopped enabled=yes
+    ignore_errors: yes
+    sudo: true

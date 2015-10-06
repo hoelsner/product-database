@@ -1,0 +1,12 @@
+- model: productdb.Vendor
+  pk: 0
+  fields:
+    name: "unassigned"
+- model: productdb.Vendor
+  pk: 1
+  fields:
+    name: "Cisco Systems"
+- model: productdb.Vendor
+  pk: 2
+  fields:
+    name: "Juniper Networks"

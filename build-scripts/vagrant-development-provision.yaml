@@ -1,0 +1,20 @@
+---
+- hosts: productdb_dev
+  gather_facts: true
+  vars:
+    site_name: "productdb_dev"
+    site_directory: "/var/www"
+    site_user: "vagrant"
+    site_group: "users"
+    # system source "file" is used e.g. with Vagrant, otherwise use Git (git is
+    # in every case used)
+    system_source: "file"
+    site_source: "/vagrant"
+    site_source_branch: "master"
+    git_accept_hostkey: true
+    dbname: product_dev_db
+    deployment_type: development
+    ignore_allowedhosts: False
+
+  tasks:
+   - include: appliance/appliance-provision-tasks.yaml

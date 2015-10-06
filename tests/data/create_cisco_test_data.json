@@ -1,0 +1,425 @@
+{
+  "product_lists" : [
+    {
+      "product_list_name": "Cisco Catalyst 2960"
+    },
+    {
+      "product_list_name": "Cisco Catalyst 2960X"
+    },
+    {
+      "product_list_name": "Cisco Catalyst 3850"
+    },
+    {
+      "product_list_name": "Cisco Transceivers"
+    }
+  ],
+  "products" : [
+    {
+      "product_id": "WS-C2960-48TT-L",
+      "tags": "chassis",
+      "vendor": "Cisco Systems",
+      "lists" : [
+        "Cisco Catalyst 2960"
+      ]
+    },
+    {
+      "product_id": "WS-C2960-24-S",
+      "description": "not set",
+      "tags": "chassis",
+      "vendor": "Cisco Systems",
+      "eox_update_time_stamp": "2015-01-23",
+      "end_of_sale_date": "2014-01-31",
+      "end_of_support_date": "2019-01-31",
+      "eol_ext_announcement_date": "2013-01-31",
+      "end_of_sw_maintenance_date": "2015-01-31",
+      "end_of_routine_failure_analysis": "2015-01-31",
+      "end_of_service_contract_renewal": "2019-01-29",
+      "end_of_new_service_attachment_date": "2015-01-31",
+      "eol_reference_number": "EOL9449",
+      "eol_reference_url": "http://www.cisco.com/en/US/prod/collateral/switches/ps5718/ps6406/eos-eol-notice-c51-730121.html",
+      "lists" : [
+        "Cisco Catalyst 2960"
+      ]
+    },
+    {
+      "product_id": "WS-C2960-24LC-S",
+      "description": "Catalyst 2960 24 10/100 (8 PoE) + 2 T/SFP LAN Lite Image",
+      "tags": "chassis",
+      "vendor": "Cisco Systems",
+      "eox_update_time_stamp": "2015-01-23",
+      "end_of_sale_date": "2014-01-31",
+      "end_of_support_date": "2019-01-31",
+      "eol_ext_announcement_date": "2013-01-31",
+      "end_of_sw_maintenance_date": "2015-01-31",
+      "end_of_routine_failure_analysis": "2015-01-31",
+      "end_of_service_contract_renewal": "2019-01-29",
+      "end_of_new_service_attachment_date": "2015-01-31",
+      "eol_reference_number": "EOL9449",
+      "eol_reference_url": "http://www.cisco.com/en/US/prod/collateral/switches/ps5718/ps6406/eos-eol-notice-c51-730121.html",
+      "lists" : [
+        "Cisco Catalyst 2960"
+      ]
+    },
+    {
+      "product_id": "WS-C2960-24LC-S-RF",
+      "description": "Cat 2960 24 10/100 (8 PoE) + 2 T/SFP LAN Lite REFURBISHED",
+      "tags": "chassis",
+      "vendor": "Cisco Systems",
+      "eox_update_time_stamp": "2015-01-23",
+      "end_of_sale_date": "2018-01-31",
+      "end_of_support_date": "2019-01-31",
+      "eol_ext_announcement_date": "2018-01-02",
+      "end_of_sw_maintenance_date": null,
+      "end_of_routine_failure_analysis": null,
+      "end_of_service_contract_renewal": "2018-01-31",
+      "end_of_new_service_attachment_date": "2018-01-31",
+      "eol_reference_number": "RFEOL9449",
+      "eol_reference_url": "http://www.cisco.com/en/US/products/ps6406/index.html",
+      "lists" : [
+        "Cisco Catalyst 2960"
+      ]
+    },
+    {
+      "product_id": "WS-C2960-24LT-L",
+      "description": "Catalyst 2960 24 10/100 (8 PoE)+ 2 1000BT LAN Base Image",
+      "tags": "chassis",
+      "vendor": "Cisco Systems",
+      "eox_update_time_stamp": "2015-01-23",
+      "end_of_sale_date": "2014-01-31",
+      "end_of_support_date": "2019-01-31",
+      "eol_ext_announcement_date": "2013-01-31",
+      "end_of_sw_maintenance_date": "2015-01-31",
+      "end_of_routine_failure_analysis": "2015-01-31",
+      "end_of_service_contract_renewal": "2019-01-29",
+      "end_of_new_service_attachment_date": "2015-01-31",
+      "eol_reference_number": "EOL9449",
+      "eol_reference_url": "http://www.cisco.com/en/US/prod/collateral/switches/ps5718/ps6406/eos-eol-notice-c51-730121.html",
+      "lists" : [
+        "Cisco Catalyst 2960"
+      ]
+    },
+    {
+      "product_id": "WS-C2960-24PC-S",
+      "description": "Catalyst 2960 24 10/100 PoE + 2 T/SFP LAN Lite Image",
+      "tags": "chassis",
+      "vendor": "Cisco Systems",
+      "eox_update_time_stamp": "2015-01-23",
+      "end_of_sale_date": "2014-01-31",
+      "end_of_support_date": "2019-01-31",
+      "eol_ext_announcement_date": "2013-01-31",
+      "end_of_sw_maintenance_date": "2015-01-31",
+      "end_of_routine_failure_analysis": "2015-01-31",
+      "end_of_service_contract_renewal": "2019-01-29",
+      "end_of_new_service_attachment_date": "2015-01-31",
+      "eol_reference_number": "EOL9449",
+      "eol_reference_url": "http://www.cisco.com/en/US/prod/collateral/switches/ps5718/ps6406/eos-eol-notice-c51-730121.html",
+      "lists" : [
+        "Cisco Catalyst 2960"
+      ]
+    },
+    {
+      "product_id": "WS-C2960-48PST-S",
+      "description": "Cat 2960 24 10/100 PoE +2 T/SFP LAN Lite Image REFURBISHED",
+      "tags": "chassis",
+      "vendor": "Cisco Systems",
+      "eox_update_time_stamp": "2015-01-23",
+      "end_of_sale_date": "2014-01-31",
+      "end_of_support_date": "2019-01-31",
+      "eol_ext_announcement_date": "2013-01-31",
+      "end_of_sw_maintenance_date": "2015-01-31",
+      "end_of_routine_failure_analysis": "2015-01-31",
+      "end_of_service_contract_renewal": "2019-01-29",
+      "end_of_new_service_attachment_date": "2015-01-31",
+      "eol_reference_number": "EOL9449",
+      "eol_reference_url": "http://www.cisco.com/en/US/prod/collateral/switches/ps5718/ps6406/eos-eol-notice-c51-730121.html",
+      "lists" : [
+        "Cisco Catalyst 2960"
+      ]
+    },
+    {
+      "product_id": "WS-C2960-24TC-L",
+      "description": "Catalyst 2960 24 10/100 + 2T/SFP LAN Base Image",
+      "tags": "chassis",
+      "vendor": "Cisco Systems",
+      "eox_update_time_stamp": "2015-01-23",
+      "end_of_sale_date": "2014-01-31",
+      "end_of_support_date": "2019-01-31",
+      "eol_ext_announcement_date": "2013-01-31",
+      "end_of_sw_maintenance_date": "2015-01-31",
+      "end_of_routine_failure_analysis": "2015-01-31",
+      "end_of_service_contract_renewal": "2019-01-29",
+      "end_of_new_service_attachment_date": "2015-01-31",
+      "eol_reference_number": "EOL9449",
+      "eol_reference_url": "http://www.cisco.com/en/US/prod/collateral/switches/ps5718/ps6406/eos-eol-notice-c51-730121.html",
+      "lists" : [
+        "Cisco Catalyst 2960"
+      ]
+    },
+    {
+      "product_id": "WS-C2960-24TC-S",
+      "description": "not set",
+      "tags": "chassis",
+      "vendor": "Cisco Systems",
+      "eox_update_time_stamp": "2015-01-23",
+      "end_of_sale_date": "2014-01-31",
+      "end_of_support_date": "2019-01-31",
+      "eol_ext_announcement_date": "2013-01-31",
+      "end_of_sw_maintenance_date": "2015-01-31",
+      "end_of_routine_failure_analysis": "2015-01-31",
+      "end_of_service_contract_renewal": "2019-01-29",
+      "end_of_new_service_attachment_date": "2015-01-31",
+      "eol_reference_number": "EOL9449",
+      "eol_reference_url": "http://www.cisco.com/en/US/prod/collateral/switches/ps5718/ps6406/eos-eol-notice-c51-730121.html",
+      "lists" : [
+        "Cisco Catalyst 2960"
+      ]
+    },
+    {
+      "product_id": "WS-C2960-24TT-L",
+      "description": "Catalyst 2960 24 10/100 + 2 1000BT LAN Base Image",
+      "tags": "chassis",
+      "vendor": "Cisco Systems",
+      "eox_update_time_stamp": "2015-01-23",
+      "end_of_sale_date": "2014-01-31",
+      "end_of_support_date": "2019-01-31",
+      "eol_ext_announcement_date": "2013-01-31",
+      "end_of_sw_maintenance_date": "2015-01-31",
+      "end_of_routine_failure_analysis": "2015-01-31",
+      "end_of_service_contract_renewal": "2019-01-29",
+      "end_of_new_service_attachment_date": "2015-01-31",
+      "eol_reference_number": "EOL9449",
+      "eol_reference_url": "http://www.cisco.com/en/US/prod/collateral/switches/ps5718/ps6406/eos-eol-notice-c51-730121.html",
+      "lists" : [
+        "Cisco Catalyst 2960"
+      ]
+    },
+    {
+      "product_id": "WS-C2960-48PST-L",
+      "description": "Catalyst 2960 48 10/100 PoE + 2 1000BT +2 SFP LAN Base Image",
+      "tags": "chassis",
+      "vendor": "Cisco Systems",
+      "eox_update_time_stamp": "2015-01-23",
+      "end_of_sale_date": "2014-01-31",
+      "end_of_support_date": "2019-01-31",
+      "eol_ext_announcement_date": "2013-01-31",
+      "end_of_sw_maintenance_date": "2015-01-31",
+      "end_of_routine_failure_analysis": "2015-01-31",
+      "end_of_service_contract_renewal": "2019-01-29",
+      "end_of_new_service_attachment_date": "2015-01-31",
+      "eol_reference_number": "EOL9449",
+      "eol_reference_url": "http://www.cisco.com/en/US/prod/collateral/switches/ps5718/ps6406/eos-eol-notice-c51-730121.html",
+      "lists" : [
+        "Cisco Catalyst 2960"
+      ]
+    },
+    {
+      "product_id": "WS-C2960X-24PD-L",
+      "description": "Catalyst 2960-X 24 GigE PoE 370W, 2 x 10G SFP+, LAN Base",
+      "list_price": "4595.00",
+      "currency": "USD",
+      "tags": "chassis",
+      "vendor": "Cisco Systems",
+      "lists" : [
+        "Cisco Catalyst 2960X"
+      ]
+    },
+    {
+      "product_id": "CAB-ACE",
+      "description": "AC Power Cord (Europe), C13, CEE 7, 1.5M",
+      "list_price": "0.00",
+      "currency": "USD",
+      "tags": "power_cord",
+      "vendor": "Cisco Systems",
+      "lists" : [
+        "Cisco Catalyst 2960X"
+      ]
+    },
+    {
+      "product_id": "C2960X-STACK",
+      "description": "Catalyst 2960-X FlexStack Plus Stacking Module",
+      "list_price": "1195",
+      "currency": "USD",
+      "tags": "spare",
+      "vendor": "Cisco Systems",
+      "lists" : [
+        "Cisco Catalyst 2960X"
+      ]
+    },
+    {
+      "product_id": "CAB-STK-E-0.5M",
+      "description": "Cisco FlexStack 50cm stacking cable",
+      "list_price": "0.00",
+      "currency": "USD",
+      "tags": "spare",
+      "vendor": "Cisco Systems",
+      "lists" : [
+        "Cisco Catalyst 2960X"
+      ]
+    },
+    {
+      "product_id": "WS-C2960X-24PS-L",
+      "description": "Catalyst 2960-X 24 GigE PoE 370W, 4 x 1G SFP, LAN Base",
+      "list_price": "3195.00",
+      "currency": "USD",
+      "tags": "chassis",
+      "vendor": "Cisco Systems",
+      "lists" : [
+        "Cisco Catalyst 2960X"
+      ]
+    },
+    {
+      "product_id": "WS-C2960X-24TD-L",
+      "description": "Catalyst 2960-X 24 GigE, 2 x 10G SFP+, LAN Base",
+      "list_price": "3795.00",
+      "currency": "USD",
+      "tags": "chassis",
+      "vendor": "Cisco Systems",
+      "lists" : [
+        "Cisco Catalyst 2960X"
+      ]
+    },
+    {
+      "product_id": "WS-C2960X-24TS-L",
+      "description": "Catalyst 2960-X 24 GigE, 4 x 1G SFP, LAN Base",
+      "list_price": "2395.00",
+      "currency": "USD",
+      "tags": "chassis",
+      "vendor": "Cisco Systems",
+      "lists" : [
+        "Cisco Catalyst 2960X"
+      ]
+    },
+    {
+      "product_id": "WS-C3850-12S-S",
+      "description": "Cisco Catalyst 3850 12 Port GE SFP IP Base",
+      "list_price": "10000.00",
+      "currency": "USD",
+      "tags": "chassis",
+      "vendor": "Cisco Systems",
+      "lists" : [
+        "Cisco Catalyst 3850"
+      ]
+    },
+    {
+      "product_id": "S3850UK9-37E",
+      "description": "CAT3850 Universal k9 image",
+      "list_price": "0.00",
+      "currency": "USD",
+      "tags": "software",
+      "vendor": "Cisco Systems",
+      "lists" : [
+        "Cisco Catalyst 3850"
+      ]
+    },
+    {
+      "product_id": "C3850-NM-4-1G",
+      "description": "Cisco Catalyst 3850 4 x 1GE Network Module",
+      "list_price": "500.00",
+      "currency": "USD",
+      "tags": "spare",
+      "vendor": "Cisco Systems",
+      "lists" : [
+        "Cisco Catalyst 3850"
+      ]
+    },
+    {
+      "product_id": "CAB-TA-EU",
+      "description": "Europe AC Type A Power Cable",
+      "list_price": "0.00",
+      "currency": "USD",
+      "tags": "power_cord included_product",
+      "vendor": "Cisco Systems",
+      "lists" : [
+        "Cisco Catalyst 3850"
+      ]
+    },
+    {
+      "product_id": "STACK-T1-50CM",
+      "description": "50CM Type 1 Stacking Cable",
+      "list_price": "0.00",
+      "currency": "USD",
+      "tags": "included_product",
+      "vendor": "Cisco Systems",
+      "lists" : [
+        "Cisco Catalyst 3850"
+      ]
+    },
+    {
+      "product_id": "CAB-SPWR-30CM",
+      "description": "Catalyst 3750X and 3850 Stack Power Cable 30 CM",
+      "list_price": "0",
+      "currency": "USD",
+      "tags": "included_product",
+      "vendor": "Cisco Systems",
+      "lists" : [
+        "Cisco Catalyst 3850"
+      ]
+    },
+    {
+      "product_id": "PWR-C1-350WAC",
+      "description": "350W AC Config 1 Power Supply",
+      "list_price": "0.00",
+      "currency": "USD",
+      "tags": "included_product",
+      "vendor": "Cisco Systems",
+      "lists" : [
+        "Cisco Catalyst 3850"
+      ]
+    },
+    {
+      "product_id": "WS-C3850-12S-E",
+      "description": "Cisco Catalyst 3850 12 Port GE SFP IP Services",
+      "list_price": "12000",
+      "currency": "USD",
+      "tags": "chassis",
+      "vendor": "Cisco Systems",
+      "lists" : [
+        "Cisco Catalyst 3850"
+      ]
+    },
+    {
+      "product_id": "C3850-NM-2-10G",
+      "description": "Cisco Catalyst 3850 2 x 10GE Network Module",
+      "list_price": "2500.00",
+      "currency": "USD",
+      "tags": "spare",
+      "vendor": "Cisco Systems",
+      "lists" : [
+        "Cisco Catalyst 3850"
+      ]
+    },
+    {
+      "product_id": "GLC-SX-MMD=",
+      "description": "1000BASE-SX SFP transceiver module, MMF, 850nm, DOM",
+      "list_price": "500.00",
+      "currency": "USD",
+      "tags": "transceiver spare",
+      "vendor": "Cisco Systems",
+      "lists" : [
+        "Cisco Transceivers"
+      ]
+    },
+    {
+      "product_id": "GLC-LH-SMD=",
+      "description": "1000BASE-LX/LH SFP transceiver module, MMF/SMF, 1310nm, DOM",
+      "list_price": "995.00",
+      "currency": "USD",
+      "tags": "transceiver spare",
+      "vendor": "Cisco Systems",
+      "lists" : [
+        "Cisco Transceivers"
+      ]
+    },
+    {
+      "product_id": "CAB-STK-E-0.5M=",
+      "description": "Cisco Bladeswitch 0.5M stack cable",
+      "list_price": "100.00",
+      "currency": "USD",
+      "tags": "spare",
+      "vendor": "Cisco Systems",
+      "lists" : [
+        "Cisco Catalyst 2960X"
+      ]
+    }
+  ]
+}

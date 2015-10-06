@@ -1,0 +1,4 @@
+- model: productdb.Settings
+  pk: 0
+  fields:
+    demo_mode: True
