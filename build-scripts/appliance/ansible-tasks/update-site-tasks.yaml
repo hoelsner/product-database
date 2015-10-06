@@ -7,7 +7,9 @@
     args:
       chdir: "{{ site_directory }}/{{ site_name }}/source/"
   - name: create database migrations
-    command: "{{ site_directory }}/{{ site_name }}/virtualenv/bin/python3 manage.py makemigrations"
+    command: "{{ site_directory }}/{{ site_name }}/virtualenv/bin/python3 manage.py makemigrations {{ item }}"
+    with_items:
+         - productdb
     args:
       chdir: "{{ site_directory }}/{{ site_name }}/source/"
   - name: apply database migrations
