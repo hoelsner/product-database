@@ -10,3 +10,4 @@ from .test_api_endpoints.test_api_interaction import *
 from .test_datatables_api import *
 from .test_celery_task_creation import *
 from .test_crawler.test_cisco_eox_crawler import *
+from .test_excel_import import *
