@@ -9,3 +9,6 @@ gunicorn==19.3.0
 requests==2.7.0
 selenium==2.47.1
 redis==2.10.3
+numpy==1.10.0.post2
+xlrd==0.9.4
+pandas==0.17.0

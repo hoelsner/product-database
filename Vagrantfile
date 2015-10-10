@@ -11,7 +11,7 @@ Vagrant.configure(2) do |config|
     end
 
     productdb_dev.vm.provider "virtualbox" do |vb|
-      vb.memory = "512"
+      vb.memory = "1024"
     end
 
     productdb_dev.vm.provision "ansible" do |ansible|
@@ -32,7 +32,7 @@ Vagrant.configure(2) do |config|
     end
 
     productdb.vm.provider "virtualbox" do |vb|
-      vb.memory = "512"
+      vb.memory = "1024"
     end
 
     productdb.vm.provision "ansible" do |ansible|

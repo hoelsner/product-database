@@ -13,6 +13,7 @@
     with_items:
          - python3.4
          - python3-pip
+         - python-dev
          - python-virtualenv
          - nginx
          - ansible
