@@ -67,10 +67,14 @@ class TestLifecycleViewByVendor(DestructiveProductDbFunctionalTest):
 
         # the table performs the search function and a defined amount of rows is displayed
         expected_table_content = """Product ID End of Sale End of SW Maintenance End of Support
-Product ID End of Sale End of SW Maintenance End of Support
-WS-C2960-24LC-S 2014/01/31 2015/01/31 2019/01/31
-WS-C2960-24LT-L 2014/01/31 2015/01/31 2019/01/31
-WS-C2960-24LC-S-RF 2018/01/31 2019/01/31"""
+Product ID End of Sale End of SW Maintenance End of Support"""
+        table_rows = [
+            "WS-C2960-24LC-S 2014/01/31 2015/01/31 2019/01/31",
+            "WS-C2960-24LT-L 2014/01/31 2015/01/31 2019/01/31",
+            "WS-C2960-24LC-S-RF 2018/01/31 2019/01/31",
+        ]
 
         table = self.browser.find_element_by_id('product_table')
         self.assertIn(expected_table_content, table.text)
+        for r in table_rows:
+            self.assertIn(r, table.text)

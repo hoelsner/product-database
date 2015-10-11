@@ -38,7 +38,7 @@ class BrowseProductsByVendor(DestructiveProductDbFunctionalTest):
 
         # the table shows 10 entries from the list (below the table, there is a string "Showing 1 to 10 of \d+ entries"
         dt_wrapper = self.browser.find_element_by_id("product_table_info")
-        self.assertRegex(dt_wrapper.text, ".*Showing 1 to 10 of \d+ entries.*")
+        self.assertRegex(dt_wrapper.text, r".*Showing 1 to 10 of \d+ entries.*")
 
         # the page reloads and the table contains now the element "C2960X-STACK" as the first element of the table
         table = self.browser.find_element_by_id('product_table')
@@ -99,9 +99,13 @@ class BrowseProductsByVendor(DestructiveProductDbFunctionalTest):
         time.sleep(3)
 
         # the table performs the search function and a defined amount of rows is displayed
-        expected_table_content = """product ID description list price
-WS-C2960X-24PD-L Catalyst 2960-X 24 GigE PoE 370W, 2 x 10G SFP+, LAN Base 4595.00 USD
-WS-C2960X-24PS-L Catalyst 2960-X 24 GigE PoE 370W, 4 x 1G SFP, LAN Base 3195.00 USD"""
+        expected_table_content = """product ID description list price"""
+        table_rows = [
+            'WS-C2960X-24PD-L Catalyst 2960-X 24 GigE PoE 370W, 2 x 10G SFP+, LAN Base 4595.00 USD',
+            'WS-C2960X-24PS-L Catalyst 2960-X 24 GigE PoE 370W, 4 x 1G SFP, LAN Base 3195.00 USD',
+        ]
 
         table = self.browser.find_element_by_id('product_table')
-        self.assertEqual(expected_table_content, table.text)
+        self.assertIn(expected_table_content, table.text)
+        for r in table_rows:
+            self.assertIn(r, table.text)
