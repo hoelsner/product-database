@@ -50,7 +50,8 @@ urlpatterns = [
     url(r'^settings/crawler/ciscoapi/$', views.cisco_api_settings, name='cisco_api_settings'),
     url(r'^settings/crawler/overview/$', views.crawler_overview, name='crawler_overview'),
     url(r'^settings/testtools/$', views.test_tools, name='test_tools'),
-    url(r'^settings/$', views.settings_view, name='settings' ),
+    url(r'^settings/$', views.settings_view, name='settings'),
+    url(r'^import/products/$', views.import_products, name='import_products'),
     url(r'^about/$', views.about_view, name='about'),
     url(r'^$', views.home, name='home'),
 ]

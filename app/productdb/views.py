@@ -1,3 +1,4 @@
+import tempfile
 import logging
 
 from django.shortcuts import render_to_response
@@ -17,11 +18,13 @@ from app.productdb.models import Settings
 from app.productdb.models import Product
 from app.productdb.forms import CiscoApiSettingsForm
 from app.productdb.forms import CommonSettingsForm
+from app.productdb.forms import ImportProductsFileUploadForm
 from app.productdb.extapi import ciscoapiconsole
 from app.productdb.extapi.exception import InvalidClientCredentialsException
 from app.productdb.extapi.exception import CiscoApiCallFailed
 from app.productdb.extapi.exception import ConnectionFailedException
 from app.productdb.crawler.cisco_eox_api_crawler import update_cisco_eox_database
+from app.productdb.excel_import import ImportProductsExcelFile
 
 logger = logging.getLogger(__name__)
 
@@ -491,3 +494,52 @@ def schedule_cisco_eox_api_sync_now(request):
     s.save()
 
     return redirect(request.GET.get('redirect_url', "/productdb/settings/"))
+
+
+@login_required()
+@permission_required('is_superuser')
+def import_products(request):
+    """view for the import of products using Excel
+
+    :param request:
+    :return:
+    """
+    context = {}
+    if request.method == "POST":
+        form = ImportProductsFileUploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            # file is valid, execute the import
+            uploaded_file = request.FILES['excel_file']
+
+            tmp = tempfile.NamedTemporaryFile(suffix="." + uploaded_file.name.split(".")[-1])
+
+            uploaded_file.open()
+            tmp.write(uploaded_file.read())
+
+            try:
+                import_products_excel = ImportProductsExcelFile(tmp.name)
+                import_products_excel.verify_file()
+                import_products_excel.import_products_to_database()
+
+                context['import_valid_imported_products'] = import_products_excel.valid_imported_products
+                context['import_invalid_products'] = import_products_excel.invalid_products
+                context['import_messages'] = import_products_excel.import_result_messages
+                context['import_result'] = "success"
+
+            except Exception as ex:
+                msg = "unexpected error occurred during import (%s)" % ex
+                logger.error(msg, ex)
+                context['import_messages'] = msg
+                context['import_result'] = "error"
+
+            finally:
+                tmp.close()
+
+    else:
+        form = ImportProductsFileUploadForm()
+
+    context['form'] = form
+
+    return render_to_response("productdb/settings/import_products.html",
+                              context=context,
+                              context_instance=RequestContext(request))
