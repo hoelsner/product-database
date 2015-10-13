@@ -25,7 +25,6 @@ celeryev.pid
 !**/stage_template
 tests/selenium_downloads/*
 !tests/*
-app/productdb/migrations/*
 *.bak
 cisco_api_test_credentials.yaml
 productdb_demo_database.json

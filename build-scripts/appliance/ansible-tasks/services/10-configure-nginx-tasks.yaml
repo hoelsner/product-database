@@ -1,0 +1,9 @@
+---
+  - name: delete nginx default configuration
+    file: path=/etc/nginx/sites-enabled/default state=absent
+    sudo: true
+  - name: configure nginx for website
+    shell: ./source/build-scripts/appliance/script/configure_nginx.sh {{ site_name }}
+    sudo: true
+    args:
+      chdir: "{{ site_directory }}/{{ site_name }}/"

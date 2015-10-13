@@ -1,7 +1,4 @@
 ---
-#################
-# configure celery environment
-#################
   - name: configure celery worker and camera service
     shell: ./build-scripts/appliance/script/configure_celery.sh {{ site_name }} {{ site_user }} {{ site_group }}
     sudo: true

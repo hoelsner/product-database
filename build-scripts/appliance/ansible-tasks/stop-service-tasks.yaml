@@ -1,7 +1,4 @@
 ---
-#################
-# Stop services on the server
-#################
   - name: stop celeryworker service
     service: name=celeryworker-{{ site_name }} state=stopped enabled=yes
     ignore_errors: yes

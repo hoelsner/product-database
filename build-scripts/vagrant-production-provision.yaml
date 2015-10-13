@@ -11,7 +11,6 @@
     system_source: "file"
     site_source: "/vagrant"
     site_source_branch: "master"
-    git_accept_hostkey: true
     dbname: product_db
     deployment_type: production
     ignore_allowedhosts: True

@@ -1,7 +1,4 @@
 ---
-#################
-# Tasks to stage/update the site on the server
-#################
   - name: create directory for virtualenv
     file:
       path={{ site_directory }}/{{ site_name }}/virtualenv
