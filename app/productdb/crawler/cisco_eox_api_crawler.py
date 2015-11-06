@@ -15,8 +15,8 @@ def convert_time_format(date_format):
     :return:
     """
     if date_format == "YYYY-MM-DD":
-        return "%Y-%M-%d"
-    return "%Y-%M-%d"
+        return "%Y-%m-%d"
+    return "%Y-%m-%d"
 
 
 def update_local_db_based_on_record(eox_record, create_missing=False):
@@ -89,10 +89,12 @@ def update_local_db_based_on_record(eox_record, create_missing=False):
             if "LastDateOfSupport" in eox_record.keys():
                 value = eox_record['LastDateOfSupport']['value']
                 if value != " ":
+                    print("Before: %s" % value)
                     eosud = datetime.strptime(value,
                                               convert_time_format(
                                                   eox_record['LastDateOfSupport']['dateFormat']
                                               )).date()
+                    print("After: %s" % eosud)
                     product.end_of_support_date = eosud
             if "EOXExternalAnnouncementDate" in eox_record.keys():
                 value = eox_record['EOXExternalAnnouncementDate']['value']
