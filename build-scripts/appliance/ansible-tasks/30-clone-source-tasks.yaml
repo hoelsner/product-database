@@ -28,15 +28,15 @@
   - name: change permissions for nginx environment script
     file: path={{ site_directory }}/{{ site_name }}/source/build-scripts/appliance/script/configure_nginx.sh
       state=file
-      mode="u+x,g+x,o+x"
+      mode=775
   - name: change permissions for gunicorn environment script
     file: path={{ site_directory }}/{{ site_name }}/source/build-scripts/appliance/script/configure_gunicorn.sh
       state=file
-      mode="u+x,g+x,o+x"
+      mode=775
   - name: change permissions for the maintenance scripts
     file: path={{ site_directory }}/{{ site_name }}/source/build-scripts/appliance/script/configure_maintenance_scripts.sh
       state=file
-      mode="u+x,g+x,o+x"
+      mode=775
   - name: update python requirements on the new virtualenv for the site
     pip:
       requirements={{ site_directory }}/{{ site_name }}/source/requirements.txt
