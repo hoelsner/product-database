@@ -1,14 +1,15 @@
 
 # Product Database
 
-Version 0.1 (beta) - see [Changelog](CHANGELOG.md) for details
+Version 0.2 - see [Changelog](CHANGELOG.md) for details
 
 This Django based web service provides a central point of management for product information, which is targeted primarily for network products. The primary intention to create this the web service was to get in touch with the Django web framework and to create a tool, which automates end of life checks for various Cisco products.
 
 It currently focuses to the following use cases:
 
 * automatic check of lifecycle states for a list of products against the local database (bulk EoL check)
-* REST API access to a central database which holds various information about products from network vendors 
+* REST API access to a central database which holds various information about products from network vendors
+* import products using an Excel template (limited to 20000 records per Excel file)
 * easy setup on a single Linux Server using Ansible
 
 This web service is based on python 3.4.3 and Django 1.8. It uses the following packages and libraries:
@@ -23,15 +24,21 @@ This web service is based on python 3.4.3 and Django 1.8. It uses the following 
 * django-datatables-view
 * django-annoying
 * gunicorn
+* pandas
+* xlrd
 * requests
 * redis
 * [JSZip](https://stuk.github.io/jszip/) Version 2.5 (required for buttons extension)
 * [PDFMake](http://pdfmake.org) Version 0.1.18 (required for buttons extension)
-* selenium (for test cases) 
+* selenium (for test only) 
 
 ## License
 
 See the [license](LICENSE.md) file for license rights and limitations (MIT).
+
+## Server requirements
+
+* min. 1 GB RAM
 
 ## Cisco EoX API
 
@@ -57,6 +64,8 @@ These credentials can be created in the Cisco API administration. The following 
 
 ## Setup and Installation
 
+Please note that the build-scripts 
+
 ### using Vagrant (production)
 
 This project is shipped with a vagrant file along with some Ansible playbooks. To run it out of the box using Vagrant just clone the repository and run
@@ -67,11 +76,7 @@ This will create a local machine running the production configuration of the pro
 
 ### Server setup
 
-You can also setup the web service on a server. Please note, that this Django application must be the only application that's running on the server. It is tested with Ubuntu Version 14.04. Within the build-tools directory, you can find a template to stage the web service on a machine (folder stage_template). It will execute an Ansible playbook on the given server IPs from the custom Ansible inventory file within the same directory.
-
-### default users
-
-The staging script will create two users by default: one "admin" user with the password "admin", which can be used for administration tasks and one "api" user with the password "api" for write actions on the REST API. Any read action is permitted without authentication.
+You can also setup the web service on a server. Please note, that this Django application must be the only application that's running on the server. It is tested with Ubuntu Version 14.04. In the `build-tools` directory, you find a template to stage the web service on a machine (folder `stage_template`). It will execute an Ansible playbook on the given server IPs from the custom Ansible inventory file within the same directory.
 
 ## detailed explanation of the build script 
 
@@ -85,18 +90,20 @@ The following variables are used within the ansible provisioning scripts of this
                           (defaults to "/var/www")
     site_user             username which is used for the site/processes
     site_group            group which is used to the site/processes
-    system_source         identifies, where the files are located (used for Vagrant), set to "file" will instruct the playbooks to copy files from a local directory 
+    system_source         identifies, where the files are located (used for Vagrant), set to "file" will 
+                          instruct the playbooks to copy files from a local directory 
                           (defaults to "git")
     site_source           repository or file path of the django project
                           (defaults to github repository)
     site_source_branch    (only used with git) identifies the branch to checkout during the git
                           (defaults to the latest stable version)
-    git_accept_hostkey    True to accept hostkeys during the git pull
     dbname                Valid postgres DB name (alphanumeric with underscores)
                           (defaults to "productdatabase")
     deployment_type       Type of deployment, will enable debugging if set to development
                           (defaults to "production")
-    ignore_allowedhosts   instructs the configuration script for the site to skip the creation of the ALLOWED_HOSTS variable within the deploy configuration (limit the access to the Django app to specific targets)
+    ignore_allowedhosts   instructs the configuration script for the site to skip the creation of the 
+                          ALLOWED_HOSTS variable within the deploy configuration (limit the access to the 
+                          Django app to specific targets)
 
 ### directory structure
 
@@ -121,7 +128,7 @@ Always installed packages:
 * nginx
 * ansible
 * redis
-* git (if clone required)
+* git
 * postgresql
 * postgresql contrib
 * postgresql-server-dev-9.3
@@ -130,9 +137,9 @@ The required python libraries are outlined in the [requirements.txt](requirement
 
 ### Django configuration
 
-When executing the Ansible playbook for provisioning, it will execute the python script located at build-scripts/script/configure_site_settings.py which creates a random security key located at the SITE_SOURCE directory and a deploy.py configuration in the django_project/settings path on the server. This will be included in the server environment. 
+When executing the Ansible playbook for provisioning, it will execute the python script located at `build-scripts/script/configure_site_settings.py` which creates a random security key located at the `SITE_SOURCE` directory and a `deploy.py` configuration in the `/django_project/settings` path on the server. This will be included in the server environment. 
 
-Furthermore it will set the allowed hosts variable to the site name, if the ignore_allowedhosts is set to false during staging.
+Furthermore it will set the allowed hosts variable to the site name, if the `ignore_allowedhosts` is set to false during staging.
 
 ### appliance provisioning
 
@@ -141,7 +148,11 @@ This project ships with a Vagrantfile which creates a VM based on a public Ubunt
 * Local copy of the source files (required for vagrant deployment)
 * Git clone on the github repository (using the system_source parameter within the Ansible playbook)
 
-Basically, you just need to write another YAML file for Ansible and include the appliance-provision-tasks.yml file from the build-scripts directory. As an alternative, you can copy the stage_template directory, which contains template files for staging (shell script to trigger the Ansible playbook, the Ansible playbook itself and an ansible-inventory, which defines the target server.
+Basically, you just need to write another YAML file for Ansible and include the `appliance-provision-tasks.yml` file from the `build-scripts` directory. As an alternative, you can copy the `stage_template` directory, which contains template files for staging (shell script to trigger the Ansible playbook, the Ansible playbook itself and an ansible-inventory, which defines the target server.
+
+### default users
+
+The staging script will create two users by default: one "admin" user with the password "admin", which can be used for administration tasks and one "api" user with the password "api" for write actions on the REST API. Any read action is permitted without authentication.
 
 ### maintenance scripts
 
@@ -150,13 +161,18 @@ The build tools integrate the following maintenance scripts:
     configure_<sitename>    initial configuration script (set the password for the admin user)
     restart_<sitename>      restart all services of the product database (su privileges required)
 
+To create a backup of the relevant database content, you can use the following two python scripts:
+
+* `app/create_backup.py` - create a backup of the relevant database objects and save the result to the `../backup` directory on the server
+* `app/restore_backup.py` - restore a backup from the `../backup` directory on the server
+
 ## development notes
 
 ### executing the test cases
 
-Before running the test cases, you need access to the Cisco API console. Copy the file "ciscoapi.client_credentials.json.sample" from the root directory, rename it to "ciscoapi.client_credentials.json.bak" and enter the test credentials.
+Before running the test cases, you need access to the Cisco API console. Copy the file `ciscoapi.client_credentials.json.sample` from the root directory, rename it to `ciscoapi.client_credentials.json.bak` and enter the test credentials.
 
-To get the unit tests running, you need to add a fixture to the app/productdb/fixtures directory. Copy the "cisco_api_test_credentials.yaml.sample" and rename it to "cisco_api_test_credentails.yaml" and enter your test credentials. 
+To get the unit tests running, you need to add a fixture to the `app/productdb/fixtures` directory. Copy the `cisco_api_test_credentials.yaml.sample` and rename it to `cisco_api_test_credentails.yaml` and enter your test credentials. 
 
 The unit-tests are located at
 
@@ -177,7 +193,7 @@ They are structured similar to the unit-tests. There is also the possibility to 
 
     --liveserver=<ip/dns name>:<port>
 
-### Importing test data to a development server
+### Import test data to a development server
 
 The repository contains some fictional test data, which are used within the functional and/or unit tests. They are created during the test instantiation using the REST API and the JSON files from the following directory:
 
