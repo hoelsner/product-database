@@ -102,6 +102,7 @@ class DestructiveProductDbFunctionalTest(FunctionalTest):
         u.is_staff = False
         u.save()
 
+        self.clean_db()
         self.create_test_data()
 
         # set API endpoints

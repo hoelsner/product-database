@@ -32,7 +32,6 @@ class TestLifecycleViewByVendor(DestructiveProductDbFunctionalTest):
         # enter a "WS-C2960" in the search text
         search = self.browser.find_element_by_xpath('//div[@class="dataTables_filter"]/label/input[@type="search"]')
         search.send_keys("WS-C2960")
-        self.browser.implicitly_wait(2)
 
         # there are less elements visible
         dt_wrapper = self.browser.find_element_by_id("product_table_info")

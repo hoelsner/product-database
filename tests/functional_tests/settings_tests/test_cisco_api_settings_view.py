@@ -1,5 +1,8 @@
+from selenium.webdriver.common.keys import Keys
+
 from tests.base.django_test_cases import DestructiveProductDbFunctionalTest
 import json
+import time
 
 
 class CiscoApiSettingsTest(DestructiveProductDbFunctionalTest):
@@ -18,7 +21,6 @@ class CiscoApiSettingsTest(DestructiveProductDbFunctionalTest):
         self.browser.find_element_by_id("id_username").send_keys(self.ADMIN_USERNAME)
         self.browser.find_element_by_id("id_password").send_keys(self.ADMIN_PASSWORD)
         self.browser.find_element_by_id("submit-id-submit").click()
-        self.browser.implicitly_wait(3)
 
         # check that the user sees the title
         page_text = self.browser.find_element_by_tag_name('body').text
@@ -29,15 +31,12 @@ class CiscoApiSettingsTest(DestructiveProductDbFunctionalTest):
         self.assertIn("Cisco API settings", page_text)
         self.browser.find_element_by_id("id_cisco_api_enabled").click()
         self.browser.find_element_by_id("submit").click()
-        self.browser.implicitly_wait(3)
 
         # after the refresh of the page, a modify settings button is visible
         page_text = self.browser.find_element_by_tag_name('body').text
-        self.browser.implicitly_wait(3)
         self.assertIn("modify settings", page_text)
 
         self.browser.find_element_by_link_text("modify settings").click()
-        self.browser.implicitly_wait(3)
 
         # now, the user is navigated to the Cisco API console settings
         page_text = self.browser.find_element_by_tag_name("body").text
@@ -61,7 +60,6 @@ class CiscoApiSettingsTest(DestructiveProductDbFunctionalTest):
         api_client_secret.send_keys(credentials['client_secret'])
 
         self.browser.find_element_by_id("submit").click()
-        self.browser.implicitly_wait(5)
 
         # after the page refreshes, the user will see a message that the connection to the
         # Hello API was successful (test case running in demo mode, anything will work)
@@ -87,6 +85,9 @@ class CiscoApiSettingsTest(DestructiveProductDbFunctionalTest):
         self.assertIn("Settings for periodic synchronization of the Cisco EoX states", page_text)
         auto_create_new_products = self.browser.find_element_by_id("id_eox_auto_sync_auto_create_elements")
         auto_create_new_products.click()
+        if not auto_create_new_products.is_selected():
+            time.sleep(1)
+            auto_create_new_products.send_keys(Keys.SPACE)
 
         queries = self.browser.find_element_by_id("id_eox_api_queries")
         queries.send_keys("WS-C\nABC")
@@ -95,7 +96,7 @@ class CiscoApiSettingsTest(DestructiveProductDbFunctionalTest):
         blacklist.send_keys("WS-C3750;WS-C2960")
 
         self.browser.find_element_by_id("submit").click()
-        self.browser.implicitly_wait(5)
+        time.sleep(3)
 
         # verify the content of the query and blacklist field
         auto_create_new_products = self.browser.find_element_by_id("id_eox_auto_sync_auto_create_elements")
@@ -109,19 +110,16 @@ class CiscoApiSettingsTest(DestructiveProductDbFunctionalTest):
 
         # go back to the global settings
         self.browser.get(self.server_url + "/productdb/settings/")
-        self.browser.implicitly_wait(3)
 
         # disable the Cisco API console access
         self.browser.find_element_by_id("id_cisco_api_enabled").click()
         self.browser.find_element_by_id("submit").click()
-        self.browser.implicitly_wait(3)
 
         page_text = self.browser.find_element_by_tag_name('body').text
         self.assertNotIn("modify settings", page_text)
 
         # navigate manually to the cisco api configuration page
         self.browser.get(self.server_url + "/productdb/settings/crawler/ciscoapi/")
-        self.browser.implicitly_wait(5)
 
         # verify that the following error message is displayed
         error_msg = "Please activate the Cisco API access on the global configuration page."

@@ -14,9 +14,7 @@ class TestImportProducts(DestructiveProductDbFunctionalTest):
             self.fail("local file for upload not found: %s" % filename)
 
         self.browser.find_element_by_id("id_excel_file").send_keys(filename)
-        self.browser.implicitly_wait(2)
         self.browser.find_element_by_id("submit_form").click()
-        self.browser.implicitly_wait(10)
 
     def handle_login_dialog(self, username, password, expected_content):
         # perform user login with the given credentials
@@ -26,7 +24,6 @@ class TestImportProducts(DestructiveProductDbFunctionalTest):
         self.browser.find_element_by_id("id_username").send_keys(username)
         self.browser.find_element_by_id("id_password").send_keys(password)
         self.browser.find_element_by_id("submit-id-submit").click()
-        self.browser.implicitly_wait(3)
 
         # check that the user sees the expected title
         page_text = self.browser.find_element_by_tag_name('body').text
@@ -45,7 +42,6 @@ class TestImportProducts(DestructiveProductDbFunctionalTest):
         self.handle_upload_dialog(test_excel_file)
 
         # the process is not works not asynchron, therefore it takes some time before the results are displayed
-        self.browser.implicitly_wait(15)
 
         # verify the output of the upload dialog
         expected_title = "You have imported 25 valid products and 0 invalid products."

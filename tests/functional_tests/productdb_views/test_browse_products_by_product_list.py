@@ -1,6 +1,8 @@
 """
 Test of the "browse products by product list" view
 """
+from selenium.webdriver.common.keys import Keys
+
 from tests.base.django_test_cases import DestructiveProductDbFunctionalTest
 from selenium.webdriver.support.ui import Select
 import os
@@ -49,11 +51,10 @@ class ProductDbBrowseProductsByProductListTest(DestructiveProductDbFunctionalTes
         # the user chooses the list named "Juniper Networks" and press the button "view product list"
         pl_selection.select_by_visible_text("Juniper Transceivers")
         self.browser.find_element_by_id("submit").click()
-        self.browser.implicitly_wait(5)
+        time.sleep(3)
 
         # the page reloads and the table contains now the element "EX-SFP-1GE-LX" as the first element of the table
         table = self.browser.find_element_by_id('product_table')
-        self.browser.implicitly_wait(5)
         rows = table.find_elements_by_tag_name('tr')
 
         self.assertIn(expected_juniper_row, [row.text for row in rows])

@@ -1,3 +1,7 @@
+import time
+
+from selenium.webdriver.common.keys import Keys
+
 from tests.base.django_test_cases import DestructiveProductDbFunctionalTest
 import json
 
@@ -27,7 +31,6 @@ class SyncLocalDatabaseWithCiscoApi(DestructiveProductDbFunctionalTest):
         self.browser.find_element_by_id("id_username").send_keys(self.ADMIN_USERNAME)
         self.browser.find_element_by_id("id_password").send_keys(self.ADMIN_PASSWORD)
         self.browser.find_element_by_id("submit-id-submit").click()
-        self.browser.implicitly_wait(3)
 
         # check that the user sees the title
         page_text = self.browser.find_element_by_tag_name('body').text
@@ -38,14 +41,12 @@ class SyncLocalDatabaseWithCiscoApi(DestructiveProductDbFunctionalTest):
         self.assertIn("Cisco API settings", page_text)
         self.browser.find_element_by_id("id_cisco_api_enabled").click()
         self.browser.find_element_by_id("submit").click()
-        self.browser.implicitly_wait(3)
 
         # After the refresh of the page, a modify settings button is visible
         page_text = self.browser.find_element_by_tag_name('body').text
         self.assertIn("modify settings", page_text)
 
         self.browser.find_element_by_link_text("modify settings").click()
-        self.browser.implicitly_wait(3)
 
         # now, the user is navigated to the Cisco API Console settings
         page_text = self.browser.find_element_by_tag_name("body").text
@@ -69,7 +70,6 @@ class SyncLocalDatabaseWithCiscoApi(DestructiveProductDbFunctionalTest):
         api_client_secret.send_keys(credentials['client_secret'])
 
         self.browser.find_element_by_id("submit").click()
-        self.browser.implicitly_wait(8)
 
         # after the page refreshes, the user will see a message that the connection to the
         # Hello API was successful (test case running in demo mode, anything will work but not triggered)
@@ -81,7 +81,6 @@ class SyncLocalDatabaseWithCiscoApi(DestructiveProductDbFunctionalTest):
         self.browser.find_element_by_id("id_eox_api_auto_sync_enabled").click()
 
         self.browser.find_element_by_id("submit").click()
-        self.browser.implicitly_wait(5)
 
         # After the page refreshes a more detailed configuration section for the synchronization of the Cisco EoX states
         # is visible
@@ -101,7 +100,6 @@ class SyncLocalDatabaseWithCiscoApi(DestructiveProductDbFunctionalTest):
         blacklist.send_keys("WS-C2960-24-S-WS;WS-C2960-24-S-RF")
 
         self.browser.find_element_by_id("submit").click()
-        self.browser.implicitly_wait(5)
 
         # Verify the content of the query and blacklist field
         queries = self.browser.find_element_by_id("id_eox_api_queries")
@@ -112,7 +110,6 @@ class SyncLocalDatabaseWithCiscoApi(DestructiveProductDbFunctionalTest):
 
         # switch to the testing tools page and test Cisco EoX API query
         self.browser.get(self.server_url + "/productdb/settings/testtools/")
-        self.browser.implicitly_wait(3)
 
         # enter "WS-C2960-*" as query and check that this query should be executed
         self.browser.find_element_by_id("sync_cisco_eox_states_query").send_keys("WS-C2960-*")
@@ -120,7 +117,6 @@ class SyncLocalDatabaseWithCiscoApi(DestructiveProductDbFunctionalTest):
 
         # execute query to test API update
         self.browser.find_element_by_id("submit").click()
-        self.browser.implicitly_wait(10)
 
         # check lifecycle values of WS-C2960-48TT-L using the REST API (should be now not null)
         direct_query_result_log = self.browser.find_element_by_id("direct_query_result_log").text
@@ -134,12 +130,14 @@ class SyncLocalDatabaseWithCiscoApi(DestructiveProductDbFunctionalTest):
 
         # switch to Cisco API settings and activate the auto-create feature
         self.browser.get(self.server_url + "/productdb/settings/crawler/ciscoapi/")
-        self.browser.implicitly_wait(3)
 
         auto_create_new_products = self.browser.find_element_by_id("id_eox_auto_sync_auto_create_elements")
         auto_create_new_products.click()
+        if not auto_create_new_products.is_selected():
+            time.sleep(1)
+            auto_create_new_products.send_keys(Keys.SPACE)
+
         self.browser.find_element_by_id("submit").click()
-        self.browser.implicitly_wait(3)
 
         # verify results
         auto_create_new_products = self.browser.find_element_by_id("id_eox_auto_sync_auto_create_elements")
@@ -147,7 +145,6 @@ class SyncLocalDatabaseWithCiscoApi(DestructiveProductDbFunctionalTest):
 
         # switch to the testing tools page and test Cisco EoX API query
         self.browser.get(self.server_url + "/productdb/settings/testtools/")
-        self.browser.implicitly_wait(3)
 
         # execute the same query and execute it again
         # enter "WS-C2960-*" as query and check that this query should be executed
@@ -156,7 +153,6 @@ class SyncLocalDatabaseWithCiscoApi(DestructiveProductDbFunctionalTest):
 
         # execute query to test API update
         self.browser.find_element_by_id("submit").click()
-        self.browser.implicitly_wait(10)
 
         # check lifecycle values of WS-C2960-48TT-L using the REST API (should be now not null)
         direct_query_result_log = self.browser.find_element_by_id("direct_query_result_log").text
@@ -171,7 +167,6 @@ class SyncLocalDatabaseWithCiscoApi(DestructiveProductDbFunctionalTest):
 
         # execute query to test API update
         self.browser.find_element_by_id("submit").click()
-        self.browser.implicitly_wait(10)
 
         # check result
         direct_query_result_log = self.browser.find_element_by_id("direct_query_result_log").text
@@ -180,19 +175,16 @@ class SyncLocalDatabaseWithCiscoApi(DestructiveProductDbFunctionalTest):
 
         # go back to the global settings
         self.browser.get(self.server_url + "/productdb/settings/")
-        self.browser.implicitly_wait(3)
 
         # disable the Cisco API console access
         self.browser.find_element_by_id("id_cisco_api_enabled").click()
         self.browser.find_element_by_id("submit").click()
-        self.browser.implicitly_wait(3)
 
         page_text = self.browser.find_element_by_tag_name('body').text
         self.assertNotIn("modify settings", page_text)
 
         # navigate manually to the cisco api configuration page
         self.browser.get(self.server_url + "/productdb/settings/crawler/ciscoapi/")
-        self.browser.implicitly_wait(5)
 
         # verify that the following error message is displayed
         error_msg = "Please activate the Cisco API access on the global configuration page."
