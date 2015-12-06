@@ -35,13 +35,12 @@
                        settings <span class="caret"></span>
                    </a>
                     <ul class="dropdown-menu" aria-labelledby="apiMenu">
-                        <li><a href="{% url 'productdb:settings' %}">global settings</a></li>
-                        <li><a href="{% url 'productdb:cisco_api_settings' %}">Cisco API settings</a></li>
+                        <li><a href="{% url 'productdb:settings' %}">settings</a></li>
                         <li role="separator" class="divider"></li>
                         <li><a href="{% url 'productdb:crawler_overview' %}">crawler overview</a></li>
                         <li><a href="{% url 'productdb:test_tools' %}">test tools</a></li>
                         <li role="separator" class="divider"></li>
-                        <li><a href="/admin" target="_blank">Django admin</a></li>
+                        <li><a href="/productdb/admin" target="_blank">Django admin</a></li>
                     </ul>
                 </li>
                 <li class="dropdown">

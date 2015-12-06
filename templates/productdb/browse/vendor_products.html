@@ -43,16 +43,14 @@ Vendor products
                 <div class="col-sm-10">
                     <select class="form-control" id="vendor_selection" name="vendor_selection">
                     {% for ven in vendors %}
-                        {% if ven.name != "unassigned" %}
-                            {% if vendor_selection %}
-                                {% ifequal ven.id|add:"0" vendor_selection|add:"0" %}
-                                <option value="{{ ven.id }}" selected>{{ ven.name }}</option>
-                                {% else %}
-                                <option value="{{ ven.id }}">{{ ven.name }}</option>
-                                {% endifequal %}
+                        {% if vendor_selection %}
+                            {% ifequal ven.id|add:"0" vendor_selection|add:"0" %}
+                            <option value="{{ ven.id }}" selected>{{ ven.name }}</option>
                             {% else %}
-                                <option value="{{ ven.id }}">{{ ven.name }}</option>
-                            {% endif %}
+                            <option value="{{ ven.id }}">{{ ven.name }}</option>
+                            {% endifequal %}
+                        {% else %}
+                            <option value="{{ ven.id }}">{{ ven.name }}</option>
                         {% endif %}
                     {% endfor %}
                     </select>

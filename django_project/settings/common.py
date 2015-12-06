@@ -58,9 +58,13 @@ USE_TZ = True
 
 LOGIN_URL = "/productdb/api/login/"
 LOGOUT_URL = "/productdb/api/logout/"
+LOGIN_REDIRECT_URL = "/productdb/"
 
-STATIC_URL = '/static/'
+STATIC_URL = '/productdb/static/'
 STATIC_ROOT = os.path.abspath(os.path.join(BASE_DIR, '../../static'))
 STATICFILES_DIRS = (
     os.path.join(BASE_DIR, "../static"),
 )
+
+# enable session timeout
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
