@@ -4,6 +4,8 @@ import math
 
 
 class CustomPagination(PageNumberPagination):
+    page_size_query_param = 'page_size'
+
     def get_paginated_response(self, data):
         used_page_size = int(self.request.GET.get('page_size', self.page_size))
         if self.page.paginator.count / used_page_size <= 1:

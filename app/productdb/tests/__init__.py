@@ -3,7 +3,7 @@ from rest_framework.test import APITestCase, APIClient
 
 # verification and error string delivered by the API
 STRING_VERIFICATION_ERROR = "Spaces are not allowed"
-STRING_UNIQUE_FIELD_REQUIRED = "This field must be unique."
+STRING_UNIQUE_FIELD_REQUIRED = "already exists."
 STRING_INVALID_CHARACTER = "Invalid character detected"
 STRING_JSON_VERIFICATION_FAILED = "JSON string not parseable, invalid format"
 STRING_LIST_PRICE_VERIFICATION_FAILED = "A valid number is required."

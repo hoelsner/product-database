@@ -4,6 +4,7 @@ Functions to test the API interface
 These functions are used to create and remove test data during the execution of the unit tests for the API endpoints.
 """
 import json
+import re
 
 import app.productdb.tests.base.api_endpoints as apiurl
 
@@ -208,7 +209,17 @@ def result_contains_error(api_test_case, error_msg, json_key, content):
     """
     json_results = json.loads(content)
     if json_key in json_results.keys():
-        if error_msg in json_results[json_key]:
+        found = False
+        if type(json_results[json_key]) is list:
+            for msg in json_results[json_key]:
+                if error_msg in msg:
+                    found = True
+                    break
+        else:
+            if error_msg in json_results[json_key]:
+                found = True
+
+        if found:
             return True
         else:
             api_test_case.fail("Invalid response, key '%s' not found, content\n%s" % (json_key, content))

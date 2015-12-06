@@ -15,6 +15,5 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.SessionAuthentication',
     ),
     'DEFAULT_PAGINATION_CLASS': 'django_project.pagination.CustomPagination',
-    'PAGINATE_BY': 25,
-    'PAGINATE_BY_PARAM': 'page_size',
+    'PAGE_SIZE': 25,
 }
