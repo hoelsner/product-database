@@ -1,4 +1,4 @@
-Django==1.8.4
+Django==1.8.7
 celery==3.1.18
 django-celery==3.1.17
 django-datatables-view==1.12.1
