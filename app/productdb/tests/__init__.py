@@ -18,8 +18,13 @@ class BaseApiUnitTest(APITestCase):
     PASSWORD = "admin"
 
     def setUp(self):
-        u = User.objects.create_user(username=self.USERNAME, password=self.PASSWORD, email="admin@local.local")
-        u.save()
+        try:
+            User.objects.get(username=self.USERNAME)
+
+        except:
+            u = User.objects.create_user(username=self.USERNAME, password=self.PASSWORD, email="admin@local.local")
+            u.save()
+
         client = APIClient()
 
         if not client.login(username=self.USERNAME, password=self.PASSWORD):
