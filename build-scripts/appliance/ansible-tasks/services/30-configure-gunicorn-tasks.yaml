@@ -1,6 +1,0 @@
----
-  - name: configure gunicorn for website
-    shell: ./build-scripts/appliance/script/configure_gunicorn.sh {{ site_name }} {{ site_user }} {{ site_group }}
-    sudo: true
-    args:
-      chdir: "{{ site_directory }}/{{ site_name }}/source/"

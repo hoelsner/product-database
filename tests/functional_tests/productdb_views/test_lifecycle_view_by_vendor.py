@@ -1,6 +1,8 @@
 """
 Test of the "view vendor lifecycle information" view
 """
+from selenium.webdriver.common.keys import Keys
+
 from tests.base.django_test_cases import DestructiveProductDbFunctionalTest
 from selenium.webdriver.support.ui import Select
 import time
@@ -40,7 +42,7 @@ class TestLifecycleViewByVendor(DestructiveProductDbFunctionalTest):
         # switch to Vendor "Juniper Networks"
         pl_selection.select_by_visible_text("Juniper Networks")
         time.sleep(2)
-        self.browser.find_element_by_id("submit").click()
+        self.browser.find_element_by_id("submit").send_keys(Keys.ENTER)
         time.sleep(2)
 
         # there is only one element visible

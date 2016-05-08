@@ -1,20 +1,20 @@
 ---
   - name: restart nginx service
     service: name=nginx state=restarted enabled=yes
-    sudo: true
+    become: true
   - name: restart redis service
     service: name=redis-server state=restarted enabled=yes
-    sudo: true
+    become: true
   - name: restart postgresql service
     service: name=postgresql state=restarted enabled=yes
     ignore_errors: yes
-    sudo: true
+    become: true
   - name: restart gunicorn service
-    service: name=gunicorn-{{ site_name }} state=restarted enabled=yes
-    sudo: true
+    service: name=productdb-gunicorn state=restarted enabled=yes
+    become: true
   - name: restart celeryworker service
-    service: name=celeryworker-{{ site_name }} state=restarted enabled=yes
-    sudo: true
+    service: name=productdb-celeryworker state=restarted enabled=yes
+    become: true
   - name: restart celerycam service
-    service: name=celerycam-{{ site_name }} state=restarted enabled=yes
-    sudo: true
+    service: name=productdb-celerycamera state=restarted enabled=yes
+    become: true

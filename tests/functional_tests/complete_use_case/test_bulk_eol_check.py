@@ -1,3 +1,5 @@
+from selenium.webdriver.common.keys import Keys
+
 from tests.base.django_test_cases import DestructiveProductDbFunctionalTest
 import os
 
@@ -88,7 +90,7 @@ MOH
         # download detailed lifecycle state table
         dt_buttons = self.browser.find_element_by_xpath('//div[@id="product_table-buttons-div"]/'
                                                         'div[@class="dt-buttons btn-group"]')
-        dt_buttons.find_element_by_link_text("CSV").click()
+        dt_buttons.find_element_by_link_text("CSV").send_keys(Keys.ENTER)
 
         # The file should download automatically (firefox is configured this way)
 
@@ -101,7 +103,7 @@ MOH
         # download skipped queries table
         dt_buttons = self.browser.find_element_by_xpath('//div[@id="skipped_queries_table-buttons-div"]/'
                                                         'div[@class="dt-buttons btn-group"]')
-        dt_buttons.find_element_by_link_text("CSV").click()
+        dt_buttons.find_element_by_link_text("CSV").send_keys(Keys.ENTER)
 
         # The file should download automatically (firefox is configured this way)
 

@@ -22,7 +22,7 @@ celerybeat-schedule.db
 celeryev.pid
 ### do not include custom staging files
 */stage_*
-!**/stage_template
+!deploy/stage_template
 tests/selenium_downloads/*
 !tests/*
 *.bak

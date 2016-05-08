@@ -1,0 +1,24 @@
+---
+- hosts: productdb
+  gather_facts: true
+  vars:
+    # defaults to the ansible ssh user
+    site_user: "{{ ansible_user_id }}"
+    site_group: "users"
+
+    # by default, git is used as source (clone of the product-database GitHub repository)
+    system_source: "git"
+    site_source_branch: "master"
+
+    # when using vagrant, use the 'file' system_source (should be used with vagrant)
+    #   system_source: "file"
+    #   site_source: "/vagrant"
+
+    # database settings
+    db_name: "product_database"
+    db_user: "productdb"            # the database password is generated during the staging of the server
+    db_host: "127.0.0.1"            # remote Postgres-SQL server are not tested
+    db_port: "5432"
+
+  tasks:
+   - include: appliance/setup-productdb.yaml

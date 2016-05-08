@@ -7,7 +7,6 @@ def configure_logging(log_level, basedir, filename):
     #
     # configure development logging
     #
-
     logging_config = {
         'version': 1,
         'disable_existing_loggers': False,
@@ -69,11 +68,7 @@ def configure_logging(log_level, basedir, filename):
                 'backupCount': U_LOGFILE_COUNT,
                 'filename': os.path.join(basedir, "root." + filename),
                 'formatter': 'verbose',
-            },
-            'null': {
-                'level': 'DEBUG',
-                'class': 'django.utils.log.NullHandler',
-            },
+            }
         },
         'loggers': {
             'app': {
@@ -107,9 +102,9 @@ def configure_logging(log_level, basedir, filename):
                 'propagate': True,
             },
             'django.db.backends': {
-                'handlers': ['null'],
+                'handlers': ['catch_all'],
                 'propagate': False,
-                'level': 'DEBUG',
+                'level': log_level,
             }
         },
         'root': {

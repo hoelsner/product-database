@@ -1,0 +1,384 @@
+---
+######################################################################################################
+# all tasks that are required to deploy the Product Database on a Ubuntu server version 16.04
+######################################################################################################
+#
+# requires Ansible > 2.x
+#
+  - name: register initial provisioning flag
+    stat: path=/var/www/productdb/initial_provisioned
+    register: initial_provisioning
+
+  - name: update apt cache
+    apt: update_cache=yes cache_valid_time=10800
+    become: true
+    ignore_errors: true
+
+  - name: install required packages for the site
+    apt: pkg={{ item }} state=installed
+    become: true
+    with_items:
+         - python-dev
+         - python-virtualenv
+         - python-pip
+         - python3.5
+         - python3-pip
+         - python3-dev
+         - nginx
+         - ansible
+         - git
+         - redis-server
+         - postgresql
+         - postgresql-contrib
+         - postgresql-server-dev-9.5
+         - python-psycopg2
+
+  - name: create .bash_profile for user
+    command: touch /home/{{ site_user }}/.bash_profile
+    args:
+      creates: /home/{{ site_user }}/.bash_profile
+  - name: add locale to bash_profile
+    lineinfile:
+      dest: /home/{{ site_user }}/.bash_profile
+      regexp: ^export LC_ALL=en_US.UTF-8
+      line: export LC_ALL=en_US.UTF-8
+
+  - name: create directory for static files
+    file:
+      path=/var/www/productdb/static
+      state=directory
+      owner={{ site_user }}
+      group={{ site_group }}
+      recurse=yes
+      mode=0775
+    become: true
+  - name: create directory for log files
+    file:
+      path=/var/www/productdb/logs
+      state=directory
+      owner={{ site_user }}
+      group={{ site_group }}
+      recurse=yes
+      mode=0775
+    become: true
+
+  #
+  # create virtualenv for the site
+  - name: create virtualenv directory
+    file:
+      path=/var/www/productdb/virtualenv
+      state=directory
+      owner={{ site_user }}
+      group={{ site_group }}
+      recurse=yes
+      mode=0775
+    become: true
+  - name: create python virtualenv for the product database
+    command:
+      virtualenv /var/www/productdb/virtualenv -p python3.5
+      creates=/var/www/productdb/virtualenv/bin/python3
+
+  #
+  # copy/clone the source files to the server
+  - name: register sourcecode path object
+    stat: path=/var/www/productdb/source
+    register: source_file_exists
+
+  - name: delete source directory (if existing)
+    file: path=/var/www/productdb/source state=absent
+    when: (source_file_exists.stat.exists == True) and (system_source == "file")
+  - name: copy source directory from local directory
+    command: cp -rfu {{ site_source }} /var/www/productdb/source
+    when: system_source == "file"
+
+  - name: clone source directory from GitHub
+    git:
+      repo=https://github.com/hoelsner/product-database.git
+      dest=/var/www/productdb/source
+      version={{ site_source_branch }}
+    when: system_source != "file"
+
+  - name: clean permissions on source directory
+    file: path=/var/www/productdb/source
+      state=directory
+      recurse=yes
+      mode=775
+      owner={{ site_user }}
+      group={{ site_group }}
+    become: true
+
+  - name: update python requirements on the new virtualenv for the site
+    pip:
+      requirements=/var/www/productdb/source/requirements.txt
+      virtualenv=/var/www/productdb/virtualenv
+
+  #
+  # create key file for Django
+  - name: generate common secret key for Django
+    shell: ../virtualenv/bin/python3 deploy/appliance/scripts/create_key_file.py
+    become: true
+    become_user: "{{ site_user }}"
+    args:
+      creates: /var/www/productdb/secret_key.key
+      chdir: /var/www/productdb/source
+  - name: get generated secret_key
+    shell: cat /var/www/productdb/secret_key.key
+    register: SECRET_KEY
+  - name: generate postgres key file
+    shell: ../virtualenv/bin/python3 deploy/appliance/scripts/create_key_file.py /var/www/productdb/postgres.key 8
+    become: true
+    become_user: "{{ site_user }}"
+    args:
+      creates: /var/www/productdb/postgres.key
+      chdir: /var/www/productdb/source
+  - name: get generated postgres key
+    shell: cat /var/www/productdb/postgres.key
+    register: POSTGRES_KEY
+
+  #
+  # configure NGINX
+  - name: delete nginx default configuration
+    become: true
+    file:
+      path=/etc/nginx/sites-enabled/default
+      state=absent
+  - name: copy nginx configuration
+    become: true
+    copy:
+      src=appliance/templates/nginx.template.conf
+      dest=/etc/nginx/sites-available/product_db
+      force=yes
+  - name: enable site in nginx
+    become: true
+    file:
+      src=/etc/nginx/sites-available/product_db
+      dest=/etc/nginx/sites-enabled/product_db
+      state=link
+
+  #
+  # configure POSTGRESQL DATABASE
+  - name: create database
+    postgresql_db: name={{ db_name }}
+    become: yes
+    become_user: postgres
+  - name: configure separate PostgreSQL user
+    postgresql_user: db={{ db_name }} name={{ db_user }}
+                     password={{ POSTGRES_KEY.stdout }} priv=ALL
+                     role_attr_flags=NOSUPERUSER
+    become: yes
+    become_user: postgres
+
+  #
+  # configure GUNICORN
+  - name: create gunicorn service
+    become: true
+    copy:
+      src=appliance/templates/gunicorn.template.service
+      dest=/etc/systemd/system/productdb-gunicorn.service
+  - name: set secret key on gunicorn environment configuration
+    become: true
+    replace:
+      dest=/etc/systemd/system/productdb-gunicorn.service
+      regexp='__DJANGO_SECRET_KEY__'
+      replace='{{ SECRET_KEY.stdout }}'
+  - name: set username on gunicorn environment configuration
+    become: true
+    replace:
+      dest=/etc/systemd/system/productdb-gunicorn.service
+      regexp='__USERNAME__'
+      replace={{ site_user }}
+  - name: set group on gunicorn environment configuration
+    become: true
+    replace:
+      dest=/etc/systemd/system/productdb-gunicorn.service
+      regexp='__GROUP__'
+      replace={{ site_group }}
+  - name: set database name on gunicorn environment configuration
+    become: true
+    replace:
+      dest=/etc/systemd/system/productdb-gunicorn.service
+      regexp='__PDB_DATABASE_NAME__'
+      replace={{ db_name }}
+  - name: set database user on gunicorn environment configuration
+    become: true
+    replace:
+      dest=/etc/systemd/system/productdb-gunicorn.service
+      regexp='__PDB_DATABASE_USER__'
+      replace={{ db_user }}
+  - name: set database password on gunicorn environment configuration
+    become: true
+    replace:
+      dest=/etc/systemd/system/productdb-gunicorn.service
+      regexp='__PDB_DATABASE_PASSWORD__'
+      replace={{ POSTGRES_KEY.stdout }}
+  - name: set database host on gunicorn environment configuration
+    become: true
+    replace:
+      dest=/etc/systemd/system/productdb-gunicorn.service
+      regexp='__PDB_DATABASE_HOST__'
+      replace={{ db_host }}
+  - name: set database port on gunicorn environment configuration
+    become: true
+    replace:
+      dest=/etc/systemd/system/productdb-gunicorn.service
+      regexp='__PDB_DATABASE_PORT__'
+      replace={{ db_port }}
+
+  #
+  # configure CELERY WORKER service
+  - name: create celery_worker service
+    become: true
+    copy:
+      src=appliance/templates/celery_worker.template.service
+      dest=/etc/systemd/system/productdb-celeryworker.service
+  - name: set secret key on celery_worker environment configuration
+    become: true
+    replace:
+      dest=/etc/systemd/system/productdb-celeryworker.service
+      regexp='__DJANGO_SECRET_KEY__'
+      replace='{{ SECRET_KEY.stdout }}'
+  - name: set username on celery_worker environment configuration
+    become: true
+    replace:
+      dest=/etc/systemd/system/productdb-celeryworker.service
+      regexp='__USERNAME__'
+      replace={{ site_user }}
+  - name: set group on celery_worker environment configuration
+    become: true
+    replace:
+      dest=/etc/systemd/system/productdb-celeryworker.service
+      regexp='__GROUP__'
+      replace={{ site_group }}
+  - name: set database name on celery_worker environment configuration
+    become: true
+    replace:
+      dest=/etc/systemd/system/productdb-celeryworker.service
+      regexp='__PDB_DATABASE_NAME__'
+      replace={{ db_name }}
+  - name: set database user on celery_worker environment configuration
+    become: true
+    replace:
+      dest=/etc/systemd/system/productdb-celeryworker.service
+      regexp='__PDB_DATABASE_USER__'
+      replace={{ db_user }}
+  - name: set database password on celery_worker environment configuration
+    become: true
+    replace:
+      dest=/etc/systemd/system/productdb-celeryworker.service
+      regexp='__PDB_DATABASE_PASSWORD__'
+      replace={{ POSTGRES_KEY.stdout }}
+  - name: set database host on celery_worker environment configuration
+    become: true
+    replace:
+      dest=/etc/systemd/system/productdb-celeryworker.service
+      regexp='__PDB_DATABASE_HOST__'
+      replace={{ db_host }}
+  - name: set database port on celery_worker environment configuration
+    become: true
+    replace:
+      dest=/etc/systemd/system/productdb-celeryworker.service
+      regexp='__PDB_DATABASE_PORT__'
+      replace={{ db_port }}
+
+  #
+  # configure CELERYCAM service
+  - name: create celery_camera service
+    become: true
+    copy:
+      src=appliance/templates/celery_camera.template.service
+      dest=/etc/systemd/system/productdb-celerycamera.service
+  - name: set secret key on celery_camera environment configuration
+    become: true
+    replace:
+      dest=/etc/systemd/system/productdb-celerycamera.service
+      regexp='__DJANGO_SECRET_KEY__'
+      replace='{{ SECRET_KEY.stdout }}'
+  - name: set username on celery_camera environment configuration
+    become: true
+    replace:
+      dest=/etc/systemd/system/productdb-celerycamera.service
+      regexp='__USERNAME__'
+      replace={{ site_user }}
+  - name: set group on celery_camera environment configuration
+    become: true
+    replace:
+      dest=/etc/systemd/system/productdb-celerycamera.service
+      regexp='__GROUP__'
+      replace={{ site_group }}
+  - name: set database name on celery_camera environment configuration
+    become: true
+    replace:
+      dest=/etc/systemd/system/productdb-celerycamera.service
+      regexp='__PDB_DATABASE_NAME__'
+      replace={{ db_name }}
+  - name: set database user on celery_camera environment configuration
+    become: true
+    replace:
+      dest=/etc/systemd/system/productdb-celerycamera.service
+      regexp='__PDB_DATABASE_USER__'
+      replace={{ db_user }}
+  - name: set database password on celery_camera environment configuration
+    become: true
+    replace:
+      dest=/etc/systemd/system/productdb-celerycamera.service
+      regexp='__PDB_DATABASE_PASSWORD__'
+      replace={{ POSTGRES_KEY.stdout }}
+  - name: set database host on celery_camera environment configuration
+    become: true
+    replace:
+      dest=/etc/systemd/system/productdb-celerycamera.service
+      regexp='__PDB_DATABASE_HOST__'
+      replace={{ db_host }}
+  - name: set database port on celery_camera environment configuration
+    become: true
+    replace:
+      dest=/etc/systemd/system/productdb-celerycamera.service
+      regexp='__PDB_DATABASE_PORT__'
+      replace={{ db_port }}
+
+  #
+  # collect static files
+  - name: update static files
+    command: "/var/www/productdb/virtualenv/bin/python3 manage.py collectstatic --noinput"
+    args:
+      chdir: "/var/www/productdb/source/"
+
+  #
+  # build database
+  - name: apply database migrations
+    command: "/var/www/productdb/virtualenv/bin/python3 manage.py migrate --noinput"
+    environment:
+      DJANGO_SECRET_KEY: "{{ SECRET_KEY.stdout }}"
+      PDB_DATABASE_NAME: "{{ db_name }}"
+      PDB_DATABASE_USER: "{{ db_user }}"
+      PDB_DATABASE_PASSWORD: "{{ POSTGRES_KEY.stdout }}"
+      PDB_DATABASE_HOST: "{{ db_host }}"
+      PDB_DATABASE_PORT: "{{ db_port }}"
+    args:
+      chdir: "/var/www/productdb/source/"
+
+  - name: apply database fixtures for default values (on initial provisioning)
+    command: "/var/www/productdb/virtualenv/bin/python3 manage.py loaddata {{ item }}"
+    args:
+      chdir: "/var/www/productdb/source/"
+    environment:
+      DJANGO_SECRET_KEY: "{{ SECRET_KEY.stdout }}"
+      PDB_DATABASE_NAME: "{{ db_name }}"
+      PDB_DATABASE_USER: "{{ db_user }}"
+      PDB_DATABASE_PASSWORD: "{{ POSTGRES_KEY.stdout }}"
+      PDB_DATABASE_HOST: "{{ db_host }}"
+      PDB_DATABASE_PORT: "{{ db_port }}"
+    with_items:
+      - "default_users.yaml"
+      - "default_vendors.yaml"
+    when: initial_provisioning.stat.exists == False
+
+  - name: execute systemctl daemon-reload
+    become: true
+    shell: systemctl daemon-reload
+  - include: appliance/restart-service-tasks.yaml
+
+  - name: create initial provisioning flag
+    file: path=/var/www/productdb/initial_provisioned state=touch owner={{ site_user }} group={{ site_group }} mode=0644
+    become: true
+    when: initial_provisioning.stat.exists == False

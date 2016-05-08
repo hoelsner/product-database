@@ -1,10 +1,10 @@
 ---
   - name: stop celeryworker service
-    service: name=celeryworker-{{ site_name }} state=stopped enabled=yes
+    service: name=productdb-celeryworker state=stopped enabled=yes
     ignore_errors: yes
     sudo: true
   - name: stop celerycam service
-    service: name=celerycam-{{ site_name }} state=stopped enabled=yes
+    service: name=productdb-celerycamera state=stopped enabled=yes
     ignore_errors: yes
     sudo: true
   - name: stop postgresql service
@@ -20,6 +20,6 @@
     ignore_errors: yes
     sudo: true
   - name: stop gunicorn service
-    service: name=gunicorn-{{ site_name }} state=stopped enabled=yes
+    service: name=productdb-gunicorn state=stopped enabled=yes
     ignore_errors: yes
     sudo: true

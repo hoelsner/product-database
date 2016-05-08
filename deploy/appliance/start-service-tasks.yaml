@@ -12,14 +12,14 @@
     ignore_errors: yes
     sudo: true
   - name: start gunicorn service
-    service: name=gunicorn-{{ site_name }} state=started enabled=yes
+    service: name=productdb-gunicorn state=started enabled=yes
     ignore_errors: yes
     sudo: true
   - name: start celeryworker service
-    service: name=celeryworker-{{ site_name }} state=started enabled=yes
+    service: name=productdb-celeryworker state=started enabled=yes
     ignore_errors: yes
     sudo: true
   - name: start celerycam service
-    service: name=celerycam-{{ site_name }} state=started enabled=yes
+    service: name=productdb-celerycamera state=started enabled=yes
     ignore_errors: yes
     sudo: true

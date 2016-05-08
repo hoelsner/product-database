@@ -12,7 +12,6 @@ from djcelery.models import WorkerState
 
 import app.productdb.tasks as tasks
 from app.productdb import util as app_util
-from app.productdb.models import ProductList
 from app.productdb.models import Vendor
 from app.productdb.models import Settings
 from app.productdb.models import Product
@@ -45,32 +44,6 @@ def about_view(request):
     :return:
     """
     return render_to_response("productdb/about.html", context={}, context_instance=RequestContext(request))
-
-
-def browse_product_list(request):
-    """View to browse the product by product list
-
-    :param request:
-    :return:
-    """
-    context = {
-        "product_lists": ProductList.objects.all()
-    }
-    selected_product_list = ""
-
-    if request.method == "POST":
-        selected_product_list = request.POST['product_list_selection']
-    else:
-        default_list_name = "Cisco Catalyst 2960X"
-        for product_list in context['product_lists']:
-            if product_list.product_list_name == default_list_name:
-                selected_product_list = product_list.id
-                break
-
-    context['selected_product_list'] = selected_product_list
-    return render_to_response("productdb/browse/product_lists.html",
-                              context=context,
-                              context_instance=RequestContext(request))
 
 
 def browse_vendor_products(request):
@@ -216,7 +189,7 @@ def settings_view(request):
     :param request:
     :return:
     """
-    settings, created = Settings.objects.get_or_create(id=0)
+    settings, created = Settings.objects.get_or_create(id=1)
 
     if request.method == 'POST':
         # create a form instance and populate it with data from the request:
@@ -263,7 +236,7 @@ def cisco_api_settings(request):
     :param request:
     :return: :raise:
     """
-    settings, created = Settings.objects.get_or_create(id=0)
+    settings, created = Settings.objects.get_or_create(id=1)
 
     if request.method == "POST":
         # create a form instance and populate it with data from the request:
@@ -350,7 +323,7 @@ def crawler_overview(request):
     :param request:
     :return:
     """
-    settings, created = Settings.objects.get_or_create(id=0)
+    settings, created = Settings.objects.get_or_create(id=1)
 
     context = {
         "settings": settings
@@ -403,7 +376,7 @@ def test_tools(request):
     :param request:
     :return:
     """
-    settings, created = Settings.objects.get_or_create(id=0)
+    settings, created = Settings.objects.get_or_create(id=1)
 
     context = {
         "settings": settings
@@ -487,7 +460,7 @@ def schedule_cisco_eox_api_sync_now(request):
     :param request:
     :return:
     """
-    s = Settings.objects.get(id=0)
+    s = Settings.objects.get(id=1)
 
     task = tasks.execute_task_to_synchronize_cisco_eox_states.delay()
     s.eox_api_sync_task_id = task.id

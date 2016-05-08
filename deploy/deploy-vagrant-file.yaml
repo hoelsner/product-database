@@ -1,0 +1,18 @@
+---
+- hosts: productdb
+  gather_facts: true
+  vars:
+    site_user: "{{ ansible_user_id }}"
+    site_group: "users"
+
+    # system source "file" is used with Vagrant
+    system_source: "file"
+    site_source: "/vagrant"
+
+    db_name: "product_database"
+    db_user: "productdb"
+    db_host: "127.0.0.1"
+    db_port: "5432"
+
+  tasks:
+   - include: appliance/setup-productdb.yaml

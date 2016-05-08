@@ -13,7 +13,7 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 # task results expire after 4 weeks
 CELERY_TASK_RESULT_EXPIRES = 2419200
-CELERYBEAT_SCHEDULE_FILENAME = "../database/celerybeat-schedule.db"
+CELERYBEAT_SCHEDULE_FILENAME = "../celerybeat-schedule.db"
 CELERYBEAT_PIDFILE = "../celerybeat.pid"
 CELERYBEAT_SCHEDULER = 'djcelery.schedulers.DatabaseScheduler'
 CELERY_TIMEZONE = TIME_ZONE

@@ -1,3 +1,6 @@
+"""
+Product Database URL configuration
+"""
 from django.conf.urls import include, url
 from django.views.generic.base import RedirectView
 from app.productdb import api_views
@@ -7,7 +10,6 @@ import app.productdb.datatables as datatables
 
 router = routers.DefaultRouter()
 router.register(r'vendors', api_views.VendorViewSet, base_name="vendors")
-router.register(r'productlists', api_views.ProductListViewSet, base_name="productlists")
 router.register(r'products', api_views.ProductViewSet, base_name="products")
 
 urlpatterns = [
@@ -43,7 +45,6 @@ urlpatterns = [
         views.schedule_cisco_eox_api_sync_now,
         name="schedule_cisco_eox_api_sync_now"),
 
-    url(r'^browse/$', views.browse_product_list, name='browse_product_list'),
     url(r'^vendor/$', views.browse_vendor_products, name='browse_vendor_products'),
     url(r'^lifecycle/bulkcheck/$', views.bulk_eol_check, name='bulk_eol_check'),
     url(r'^lifecycle/$', views.browse_product_lifecycle_information, name='browse_product_lifecycle_information'),

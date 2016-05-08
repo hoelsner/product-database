@@ -1,6 +1,8 @@
 """
 Test of the "browse products by vendor" view
 """
+from selenium.webdriver.common.keys import Keys
+
 from tests.base.django_test_cases import DestructiveProductDbFunctionalTest
 from selenium.webdriver.support.ui import Select
 import os
@@ -48,7 +50,7 @@ class BrowseProductsByVendor(DestructiveProductDbFunctionalTest):
 
         # the user chooses the list named "Juniper Networks" and press the button "view product list"
         pl_selection.select_by_visible_text("Juniper Networks")
-        self.browser.find_element_by_id("submit").click()
+        self.browser.find_element_by_id("submit").send_keys(Keys.ENTER)
 
         # the page reloads and the table contains now the element "EX-SFP-1GE-LX" as the first element of the table
         table = self.browser.find_element_by_id('product_table')

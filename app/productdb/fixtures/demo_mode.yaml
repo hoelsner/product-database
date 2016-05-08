@@ -1,4 +1,4 @@
 - model: productdb.Settings
-  pk: 0
+  pk: 1
   fields:
     demo_mode: True
