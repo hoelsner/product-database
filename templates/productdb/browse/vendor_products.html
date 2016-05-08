@@ -31,9 +31,7 @@ Vendor products
 
 {% block content %}
     <h1>Browse vendor product lists</h1>
-    <p>On this page, you can browse the local database based on a specific vendor. To see the products that are
-        assigned to a specific product list, you can use the
-        <a href="{% url 'productdb:browse_product_list' %}">browse products lists view</a>.</p>
+    <p>On this page, you can browse the local database based on a specific vendor.</p>
     {% if vendors|length > 0 %}
     <p>Please select a vendor that should be displayed:</p>
     <div class="container">

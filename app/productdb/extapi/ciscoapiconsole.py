@@ -37,7 +37,7 @@ class BaseCiscoApiConsole:
 
     def load_client_credentials(self):
         logger.debug("load client credentials from database")
-        api_settings, created = CiscoApiAuthSettings.objects.get_or_create(id=0)
+        api_settings, created = CiscoApiAuthSettings.objects.get_or_create(id=1)
 
         # load client credentials
         self.client_id = api_settings.api_client_id
@@ -45,7 +45,7 @@ class BaseCiscoApiConsole:
 
     def save_client_credentials(self):
         logger.debug("save new client credentials to database")
-        api_settings, created = CiscoApiAuthSettings.objects.get_or_create(id=0)
+        api_settings, created = CiscoApiAuthSettings.objects.get_or_create(id=1)
 
         api_settings.api_client_id = self.client_id
         api_settings.api_client_secret = self.client_secret
@@ -61,7 +61,7 @@ class BaseCiscoApiConsole:
         temp_auth_token = dict()
         temp_auth_token['http_auth_header'] = self.http_auth_header
         temp_auth_token['expire_datetime'] = self.token_expire_datetime.strftime("%Y-%m-%d %H:%M:%S.%f")
-        api_settings, created = CiscoApiAuthSettings.objects.get_or_create(id=0)
+        api_settings, created = CiscoApiAuthSettings.objects.get_or_create(id=1)
 
         api_settings.cached_http_auth_header = json.dumps(temp_auth_token)
         api_settings.save()
@@ -69,7 +69,7 @@ class BaseCiscoApiConsole:
 
     def __load_cached_temp_token__(self):
         logger.debug("load cached temp token from database")
-        api_settings, created = CiscoApiAuthSettings.objects.get_or_create(id=0)
+        api_settings, created = CiscoApiAuthSettings.objects.get_or_create(id=1)
 
         try:
             if len(api_settings.cached_http_auth_header) == 0:
@@ -145,7 +145,7 @@ class BaseCiscoApiConsole:
         self.__save_cached_temp_token__()
 
     def drop_cached_token(self):
-        api_settings, created = CiscoApiAuthSettings.objects.get_or_create(id=0)
+        api_settings, created = CiscoApiAuthSettings.objects.get_or_create(id=1)
 
         api_settings.cached_http_auth_header = ""
         api_settings.save()

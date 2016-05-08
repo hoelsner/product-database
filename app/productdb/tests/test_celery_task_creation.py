@@ -15,7 +15,7 @@ class TestCeleryTaskCreation(TestCase):
         :return:
         """
         print("--> remember to start a redis server when executing this test")
-        s, created = Settings.objects.get_or_create(id=0)
+        s, created = Settings.objects.get_or_create(id=1)
         s.cisco_api_enabled = True
         s.cisco_eox_api_auto_sync_enabled = True
         s.save()
@@ -27,6 +27,6 @@ class TestCeleryTaskCreation(TestCase):
         self.assertEqual(resp.status_code, 302)
 
         # verify that task ID is saved in settings (set by the schedule call)
-        s = Settings.objects.get(id=0)
+        s = Settings.objects.get(id=1)
         self.assertNotEqual(s.eox_api_sync_task_id, "")
 

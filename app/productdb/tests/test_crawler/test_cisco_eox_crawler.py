@@ -6,12 +6,13 @@ import os
 
 
 class TestCiscoEoxCrawler(TestCase):
-    fixtures = ['default_vendors.yaml']
     """
     test the Cisco EoX API classes
     """
+    fixtures = ['default_vendors.yaml']
+
     def test_eox_update_call_with_sample_data(self):
-        s, create = Settings.objects.get_or_create(id=0)
+        s, create = Settings.objects.get_or_create(id=1)
         s.cisco_api_enabled = True
         s.cisco_eox_api_auto_sync_enabled = True
         eox_sample_response = os.path.join("app",
@@ -29,7 +30,7 @@ class TestCiscoEoxCrawler(TestCase):
         test, that no issue exists when the '%' sign is present in the ProductID
         :return:
         """
-        s, create = Settings.objects.get_or_create(id=0)
+        s, create = Settings.objects.get_or_create(id=1)
         s.cisco_api_enabled = True
         s.cisco_eox_api_auto_sync_enabled = True
         eox_db_record = """{

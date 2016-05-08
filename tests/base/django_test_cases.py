@@ -1,8 +1,8 @@
 from selenium import webdriver
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 from tests.api import create_real_test_data
-from tests.api import drop_all_product_lists, drop_all_products
-from tests.base.rest_calls import PRODUCT_LISTS_API_ENDPOINT, PRODUCTS_API_ENDPOINT
+from tests.api import drop_all_products
+from tests.base.rest_calls import PRODUCTS_API_ENDPOINT
 from django.contrib.auth.models import User
 import sys
 import os
@@ -10,7 +10,7 @@ import os
 
 class FunctionalTest(StaticLiveServerTestCase):
     """
-    Common functional test class which provides the ability to work against a remote server
+    Common functional test class which provides the ability to test against a remote server
 
     use attribute --liveserver=staging.ubuntu.local in with execution to test against a staging server
     """
@@ -33,7 +33,7 @@ class FunctionalTest(StaticLiveServerTestCase):
 
     def setUp(self):
         self.download_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                                    "selenium_downloads")
+                                         "selenium_downloads")
         print("Selenium Download directory set to %s" % self.download_dir)
 
         for the_file in os.listdir(self.download_dir):
@@ -68,12 +68,9 @@ class DestructiveProductDbFunctionalTest(FunctionalTest):
         dropy any usage data form the system, use with care when testing again a live server
         :return:
         """
-        drop_all_product_lists(server=self.server_url,
-                           username=self.API_USERNAME,
-                           password=self.API_PASSWORD)
         drop_all_products(server=self.server_url,
-                       username=self.API_USERNAME,
-                       password=self.API_PASSWORD)
+                          username=self.API_USERNAME,
+                          password=self.API_PASSWORD)
 
     def create_test_data(self):
         base_path = os.path.join("tests", "data")
@@ -106,8 +103,6 @@ class DestructiveProductDbFunctionalTest(FunctionalTest):
         self.create_test_data()
 
         # set API endpoints
-        self.PRODUCT_LIST_API_URL = self.server_url + PRODUCT_LISTS_API_ENDPOINT
-        self.PRODUCT_LIST_BY_NAME_API_URL = self.server_url + PRODUCT_LISTS_API_ENDPOINT + "byname/"
         self.PRODUCT_API_URL = self.server_url + PRODUCTS_API_ENDPOINT
         self.PRODUCT_BY_NAME_API_URL = self.server_url + PRODUCTS_API_ENDPOINT + "byname/"
 

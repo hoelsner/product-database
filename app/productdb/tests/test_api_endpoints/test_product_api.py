@@ -14,7 +14,8 @@ from app.productdb.tests import *
 class ProductApiEndpointTest(BaseApiUnitTest):
     fixtures = ['default_vendors.yaml']
 
-    def clean_null_values_from_dict(self, dictionary):
+    @staticmethod
+    def clean_null_values_from_dict(dictionary):
         # remove all None values from the result
         empty_keys = [k for k, v in dictionary.items() if not v]
         for k in empty_keys:
@@ -240,38 +241,6 @@ class ProductApiEndpointTest(BaseApiUnitTest):
         # cleanup
         apicalls.clean_db(self.client)
 
-    def test_create_with_valid_json_data(self):
-        """
-        The JSON data are stored as a string, the REST API will only provide a JSON string, the parsing of the data
-        must happen afterwards
-        :return:
-        """
-        json_data = {
-            'custom_key': '1234567890'
-        }
-        apicall_data = {
-            "product_id": "json_test_valid_data",
-            "json_data": json.dumps(json_data)
-        }
-
-        response = self.client.post(apiurl.PRODUCT_API_ENDPOINT, apicall_data, format='json')
-
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.content.decode("utf-8"))
-        self.assertRegex(response.content.decode("utf-8"), '.*"product_id":"%s".*' % apicall_data['product_id'])
-        response_json = json.loads(response.content.decode("utf-8"))
-
-        # to use the JSON data from the API, it must be converted to valid JSON syntax by replacing ' with "
-        try:
-            returned_json = json.loads(response_json['json_data'].replace("'", '"'))
-            if "custom_key" not in returned_json.keys():
-                self.fail("Expected JSON key not found")
-            self.assertEqual(returned_json['custom_key'], '1234567890')
-        except Exception as ex:
-            print(ex)
-            self.fail("Cannot parse JSON result: %s" % ex)
-
-        apicalls.clean_db(self.client)
-
     def test_create_with_valid_lifecycle_dates(self):
         apicall_data = {
             "product_id": "test_create_with_valid_lifecycle_dates",
@@ -374,36 +343,6 @@ class ProductApiEndpointTest(BaseApiUnitTest):
         self.assertIn('"end_of_service_contract_renewal":%s' % date_error, response.content.decode("utf-8"))
         self.assertIn('"end_of_new_service_attachment_date":%s' % date_error, response.content.decode("utf-8"))
 
-
-        apicalls.clean_db(self.client)
-
-    def test_update_with_null_value_json_data_string(self):
-        product_name = "json_field_test"
-
-        product = apicalls.create_product(self.client, product_name)
-        self.assertEqual(product['json_data'], None)
-
-        # remove all None values from the result
-        product = self.clean_null_values_from_dict(product)
-
-        # null value in json data
-        product['json_data'] = None
-        response = self.client.put(apiurl.PRODUCT_DETAIL_API_ENDPOINT % product['id'], product, format='json')
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK, response.content.decode("utf-8"))
-
-        # null value in json data without format = json will lead to a 400 with a verification failure
-        product['json_data'] = None
-        response = self.client.put(apiurl.PRODUCT_DETAIL_API_ENDPOINT % product['id'], product)
-
-        self.assertEqual(response.status_code,
-                         status.HTTP_400_BAD_REQUEST,
-                         response.content.decode("utf-8"))
-        apicalls.result_contains_error(self,
-                                       STRING_JSON_VERIFICATION_FAILED,
-                                       "json_data",
-                                       response.content.decode("utf-8"))
-
         apicalls.clean_db(self.client)
 
     def test_update_with_null_value_list_price_string(self):
@@ -434,26 +373,6 @@ class ProductApiEndpointTest(BaseApiUnitTest):
                                        response.content.decode("utf-8"))
 
         apicalls.clean_db(self.client)
-
-    def test_create_with_invalid_json_structured_data(self):
-        corrupt_json_strings = [
-            "{'custom_key''1234567890'}",       # structural issue
-            "{'custom_key':'1234567890'}",      # single quotes are no valid JSON format
-        ]
-
-        for corrupt_json_string in corrupt_json_strings:
-            apicall_data = {
-                "product_id": "json_test_invalid_data",
-                "json_data": corrupt_json_string
-            }
-
-            response = self.client.post(apiurl.PRODUCT_API_ENDPOINT, apicall_data, format='json')
-
-            self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-            apicalls.result_contains_error(self,
-                                           STRING_JSON_VERIFICATION_FAILED,
-                                           "json_data",
-                                           response.content.decode("utf-8"))
 
     def test_create_with_valid_list_price(self):
         """
@@ -627,60 +546,6 @@ class ProductApiEndpointTest(BaseApiUnitTest):
         self.assertEqual(response.content.decode("utf-8"),
                          '{"count":%s}' % test_data_count)
         apicalls.clean_db(self.client)
-
-    def test_assign_product_to_product_list(self):
-        test_product_name = "product_in_all_lists"
-        product_lists_to_associated = [
-            "product_list-0001",
-            "product_list-0002",
-            "product_list-0003",
-        ]
-
-        # create test data
-        product = apicalls.create_product(self.client, test_product_name)
-        product['lists'] = product_lists_to_associated
-
-        # associate product lists to product (which does not work, therefore I don't care if the product_lists
-        # are existing or not)
-        response = self.client.put(apiurl.PRODUCT_DETAIL_API_ENDPOINT % product['id'], product, format='json')
-
-        # Lists are read-only in product API endpoint, but no error is thrown
-        # Data is not changes
-        self.assertEqual(response.status_code,
-                         status.HTTP_200_OK,
-                         "FAIL: %s" % response.content.decode("utf-8"))
-
-        # verify, that the new list does not contain any list associations
-        self.assertRegex(response.content.decode("utf-8"), '.*"lists":\[\].*')
-
-        apicalls.clean_db(self.client)
-
-    def test_product_meta_api_endpoint(self):
-        test_product_name = "json_meta_endpoint_test"
-        json_data = {
-            'custom_key': '1234567890'
-        }
-        apicall_data = {
-            "product_id": test_product_name,
-            "json_data": json.dumps(json_data)
-        }
-
-        response = self.client.post(apiurl.PRODUCT_API_ENDPOINT, apicall_data, format='json')
-
-        self.assertEqual(response.status_code,
-                         status.HTTP_201_CREATED,
-                         "Cannot create demo data: %s" % response.content.decode("utf-8"),)
-        self.assertRegex(response.content.decode("utf-8"),
-                         '.*"product_id":"%s".*' % test_product_name,
-                         "product name not in result: %s" % response.content.decode("utf-8"))
-        response_json = json.loads(response.content.decode("utf-8"))
-
-        # call meta endpoint
-        response = self.client.get(apiurl.PRODUCT_DETAIL_META_API_ENDPOINT % response_json['id'], format='json')
-
-        second_json = json.loads(response.content.decode("utf-8"))
-
-        self.assertSetEqual(set(json_data.keys()), set(second_json.keys()))
 
     def test_product_pagination_defaults(self):
         for i in range(1, 55 + 1):

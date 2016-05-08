@@ -1,5 +1,5 @@
 from django.test import TestCase
-from app.productdb.models import Vendor, Product, ProductList
+from app.productdb.models import Vendor, Product
 
 
 class VendorDataModelTest(TestCase):
@@ -42,13 +42,3 @@ class ProductDataModelTest(TestCase):
         p = Product.objects.create(product_id=product_id)
         self.assertEquals(product_id, str(p))
         self.assertEquals(product_id, p.__unicode__())
-
-
-class ProductListDataModelTest(TestCase):
-    fixtures = ['default_vendors.yaml']
-
-    def test_verify_string_conversion(self):
-        product_list_name = "TestProductList"
-        p = ProductList.objects.create(product_list_name=product_list_name)
-        self.assertEquals(product_list_name, str(p))
-        self.assertEquals(product_list_name, p.__unicode__())

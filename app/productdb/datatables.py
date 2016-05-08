@@ -1,6 +1,6 @@
 from django_datatables_view.base_datatable_view import BaseDatatableView
 from app.productdb import util as app_util
-from .models import Product, ProductList
+from .models import Product
 from django.db.models import Q
 
 

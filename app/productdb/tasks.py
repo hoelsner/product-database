@@ -22,7 +22,7 @@ def execute_task_to_synchronize_cisco_eox_states():
     # update based on the configured query settings
     result = cisco_eox_api_crawler.synchronize_with_cisco_eox_api()
     logger.info("result: %s" % str(result))
-    s = Settings.objects.get(id=0)
+    s = Settings.objects.get(id=1)
     s.eox_api_sync_task_id = ""
     s.save()
     return result

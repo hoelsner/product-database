@@ -1,14 +1,5 @@
 from django.contrib import admin
-from app.productdb.models import Product, ProductList, Vendor, Settings
-
-
-class ProductListAdmin(admin.ModelAdmin):
-    fields = (
-        'product_list_name',
-        'products',
-    )
-
-admin.site.register(ProductList, ProductListAdmin)
+from app.productdb.models import Product, Vendor, Settings
 
 
 class ProductAdmin(admin.ModelAdmin):

@@ -225,14 +225,14 @@ def update_cisco_eox_database(api_queries=None):
     :return:
     """
     # load application settings and check, that the API is enabled
-    settings, created = Settings.objects.get_or_create(id=0)
+    settings, created = Settings.objects.get_or_create(id=1)
 
     if (not settings.cisco_api_enabled) or (not settings.cisco_api_credentials_successful_tested):
         msg = "Cisco API not configured/enabled"
         logger.warn(msg)
         raise CiscoApiCallFailed(msg)
 
-    cisco_api_auth_settings, created = CiscoApiAuthSettings.objects.get_or_create(id=0)
+    cisco_api_auth_settings, created = CiscoApiAuthSettings.objects.get_or_create(id=1)
     if created:
         msg = "Cisco API not configured correctly, credentials not found"
         logger.error(msg)
@@ -272,7 +272,7 @@ def synchronize_with_cisco_eox_api(api_queries=None):
     :param api_queries: query to execute against the Cisco EoX API, if None than the settings parameters are executed
     :return:
     """
-    settings = Settings.objects.get(id=0)
+    settings = Settings.objects.get(id=1)
     # update based on the configured query settings
     if settings.cisco_eox_api_auto_sync_enabled and (settings.cisco_eox_api_auto_sync_queries is not ""):
         result = update_cisco_eox_database(api_queries=api_queries)

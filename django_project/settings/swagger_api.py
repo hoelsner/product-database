@@ -13,7 +13,7 @@ SWAGGER_SETTINGS = {
     'permission_denied_handler': None,
     'resource_access_handler': None,
     'info': {
-        'description': 'Documentation of the Product database API',
+        'description': 'Documentation of the Product Database API',
         'license': 'MIT',
         'title': 'Product Database API documentation',
     },

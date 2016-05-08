@@ -10,7 +10,6 @@ from tests.functional_tests.api.test_swagger_interface import *
 from tests.functional_tests.complete_use_case.test_bulk_eol_check import *
 from tests.functional_tests.complete_use_case.test_import_products import *
 
-from tests.functional_tests.productdb_views.test_browse_products_by_product_list import *
 from tests.functional_tests.productdb_views.test_browse_products_by_vendor import *
 from tests.functional_tests.productdb_views.test_views_with_empty_db import *
 from tests.functional_tests.productdb_views.test_home_page import *

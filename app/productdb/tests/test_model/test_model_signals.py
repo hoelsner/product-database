@@ -1,7 +1,4 @@
 from django.test import TestCase
-from app.productdb.models import Settings
-from djcelery.models import PeriodicTask
-from django.core.exceptions import ObjectDoesNotExist
 from app.productdb.signals import *
 
 
@@ -9,7 +6,7 @@ class ModelSignalTests(TestCase):
     fixtures = ['default_vendors.yaml']
 
     def test_create_cisco_eox_sync_task(self):
-        s, created = Settings.objects.get_or_create()
+        s, created = Settings.objects.get_or_create(id=1)
         task_name = CISCO_EOX_API_TASK_NAME
 
         self.assertFalse(s.cisco_api_enabled)

@@ -79,20 +79,6 @@ class Product(models.Model):
         on_delete=models.SET_DEFAULT
     )
 
-    json_data = JSONField(
-        blank=True,
-        null=True,
-        help_text="free JSON data (will be delivered with the meta API endpoint",
-        validators=[validate_json]
-    )
-
-    lists = models.ManyToManyField(
-        'ProductList',
-        default=[],
-        blank=True,
-        help_text="associated lists"
-    )
-
     eox_update_time_stamp = models.DateField(
         null=True,
         blank=True,
@@ -161,29 +147,6 @@ class Product(models.Model):
 
     class Meta:
         ordering = ('product_id',)
-
-
-class ProductList(models.Model):
-    product_list_name = models.TextField(
-        max_length=128,
-        unique=True
-    )
-
-    products = models.ManyToManyField(
-        'Product',
-        through=Product.lists.through,
-        blank=True,
-        default=[]
-    )
-
-    def __str__(self):
-        return self.product_list_name
-
-    def __unicode__(self):
-        return self.product_list_name
-
-    class Meta:
-        ordering = ('product_list_name',)
 
 
 class Settings(models.Model):

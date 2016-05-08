@@ -1,5 +1,5 @@
 from tests.api import create_real_test_data
-from tests.api import drop_all_product_lists, drop_all_products
+from tests.api import drop_all_products
 import sys
 
 if __name__ == "__main__":
@@ -11,5 +11,4 @@ if __name__ == "__main__":
         create_real_test_data(sys.argv[1], "admin", "admin")
 
     input("Press any key to continue")
-    drop_all_product_lists(sys.argv[1], "admin", "admin")
     drop_all_products(sys.argv[1], "admin", "admin")
