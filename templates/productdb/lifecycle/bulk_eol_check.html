@@ -5,37 +5,6 @@
 Bulk EoL checks
 {% endblock %}
 
-{% block custom_css %}
-    .paginate_button {
-        /* fix an issue with the pagination on the datatable */
-        padding: 0 !important;
-    }
-    td.details-control {
-        background: url('{% static 'images/details_open.png' %}') no-repeat center center;
-        cursor: pointer;
-    }
-    tr.details td.details-control {
-        background: url('{% static 'images/details_close.png' %}') no-repeat center center;
-    }
-
-    /* Datatables header icon workaround */
-    table.dataTable thead .sorting_asc::after {
-        content: ""
-    }
-    table.dataTable thead .sorting_desc::after {
-        content: ""
-    }
-    table.dataTable thead .sorting::after {
-        content: ""
-    }
-
-    /* customize button panel on datatables */
-    .dt-buttons {
-        margin-top: 20px;
-        margin-bottom: 20px;
-    }
-{% endblock %}
-
 {% block content %}
     <div class="container">
         <h1>Bulk EoL check</h1>
@@ -75,7 +44,7 @@ Bulk EoL checks
             found in the local database.</p>
         <div style="margin-top: 25px;">
             <div id="product_summary_table-buttons-div"></div>
-            <table id="product_summary_table" class="display" cellspacing="0" width="100%">
+            <table id="product_summary_table" class="table table-striped table-hover" cellspacing="0" width="100%">
                 <thead>
                     <tr>
                         <th width="20%">Product ID</th>
@@ -92,7 +61,7 @@ Bulk EoL checks
             provided data.</p>
         <div style="margin-top: 25px;">
             <div id="product_table-buttons-div"></div>
-            <table id="product_table" class="display" cellspacing="0" width="100%">
+            <table id="product_table" class="table table-striped table-hover" cellspacing="0" width="100%">
                 <thead>
                     <tr>
                         <th>PID</th>
@@ -113,7 +82,7 @@ Bulk EoL checks
             return a result from the database.</p>
         <div style="margin-top: 25px;">
             <div id="skipped_queries_table-buttons-div"></div>
-            <table id="skipped_queries_table" class="display" cellspacing="0" width="50%">
+            <table id="skipped_queries_table" class="table table-striped table-hover" cellspacing="0" width="50%">
                 <thead>
                     <tr>
                         <th>Query/Product ID</th>
@@ -199,13 +168,19 @@ EoSup     = Last day of support
                     }
                 ],
                 order: [[0, 'asc']],
-                dom: 'Blfrtip',
+                dom: "<'row'<'col-sm-4'l><'col-sm-4'<'text-center'B>><'col-sm-4'f>>" +
+                     "<'row'<'col-sm-12'tr>>" +
+                     "<'row'<'col-sm-5'i><'col-sm-7'p>>",
                 buttons: [
                     'copyHtml5',
                     {
                         "extend": 'csvHtml5',
                         "title": "Bulk EoL check (queries and products which are not found)",
                         "fieldSeparator": ';',
+                        fieldBoundary: "",
+                        exportOptions: {
+                            columns: ':visible'
+                        },
                         "extension": '.csv'
                     },
                     {
@@ -239,13 +214,19 @@ EoSup     = Last day of support
                     }
                 ],
                 order: [[2, 'desc']],
-                dom: 'Blfrtip',
+                dom: "<'row'<'col-sm-4'l><'col-sm-4'<'text-center'B>><'col-sm-4'f>>" +
+                     "<'row'<'col-sm-12'tr>>" +
+                     "<'row'<'col-sm-5'i><'col-sm-7'p>>",
                 buttons: [
                     'copyHtml5',
                     {
                         "extend": 'csvHtml5',
                         "title": "Bulk EoL check (product summary table)",
                         "fieldSeparator": ';',
+                        fieldBoundary: "",
+                        exportOptions: {
+                            columns: ':visible'
+                        },
                         "extension": '.csv'
                     },
                     {
@@ -301,13 +282,19 @@ EoSup     = Last day of support
                     }
                 ],
                 order: [[1, 'asc']],
-                dom: 'Blfrtip',
+                dom: "<'row'<'col-sm-4'l><'col-sm-4'<'text-center'B>><'col-sm-4'f>>" +
+                     "<'row'<'col-sm-12'tr>>" +
+                     "<'row'<'col-sm-5'i><'col-sm-7'p>>",
                 buttons: [
                     'copyHtml5',
                     {
                         "extend": 'csvHtml5',
                         "title": "Bulk EoL check (detailed lifecycle states)",
                         "fieldSeparator": ';',
+                        fieldBoundary: "",
+                        exportOptions: {
+                            columns: ':visible'
+                        },
                         "extension": '.csv'
                     },
                     {

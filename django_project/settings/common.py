@@ -64,6 +64,7 @@ STATIC_URL = '/productdb/static/'
 STATIC_ROOT = os.path.abspath(os.path.join(BASE_DIR, '../../static'))
 STATICFILES_DIRS = (
     os.path.join(BASE_DIR, "../static"),
+    os.path.join(BASE_DIR, "../node_modules"),
 )
 
 # enable session timeout

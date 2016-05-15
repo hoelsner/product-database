@@ -47,7 +47,7 @@ class TestLifecycleViewByVendor(DestructiveProductDbFunctionalTest):
 
         # there is only one element visible
         dt_wrapper = self.browser.find_element_by_id("product_table_info")
-        self.assertRegex(dt_wrapper.text, r".*Showing 1 to 1 of \d+ entries.*")
+        self.assertRegex(dt_wrapper.text, ".*Showing 1 to 1 of \d+ entries.*")
 
         # check expected product
         expected_product = "EX2200-24T-4G"
@@ -61,7 +61,7 @@ class TestLifecycleViewByVendor(DestructiveProductDbFunctionalTest):
 
         # he enters a search term in the search box
         search_term = "WS-C2960-24L"
-        search_xpath = '//div[@id="product_table_wrapper"]/div[@id="product_table_filter"]/label/input[@type="search"]'
+        search_xpath = '//div[@class="col-sm-6"]/div[@id="product_table_filter"]/label/input[@type="search"]'
         search = self.browser.find_element_by_xpath(search_xpath)
         search.send_keys(search_term)
         time.sleep(3)

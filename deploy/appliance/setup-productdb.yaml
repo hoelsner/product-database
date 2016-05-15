@@ -32,6 +32,8 @@
          - postgresql-contrib
          - postgresql-server-dev-9.5
          - python-psycopg2
+         - npm
+         - nodejs-legacy
 
   - name: create .bash_profile for user
     command: touch /home/{{ site_user }}/.bash_profile
@@ -134,6 +136,20 @@
   - name: get generated postgres key
     shell: cat /var/www/productdb/postgres.key
     register: POSTGRES_KEY
+
+  #
+  # get frontend dependencies (bootstrap etc.) via node
+  - name: install npm dependencies
+    npm: path=/var/www/productdb/source
+         global=no
+  - name: install bower dependencies
+    command: node_modules/.bin/bower install
+    args:
+      chdir: /var/www/productdb/source
+  - name: directory cleanup
+    command: node_modules/.bin/grunt clean
+    args:
+      chdir: /var/www/productdb/source
 
   #
   # configure NGINX

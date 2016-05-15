@@ -84,7 +84,7 @@ MOH
         # Verify that the file is a CSV formatted field (with ";" as delimiter)
         file = os.path.join(self.download_dir, "Bulk EoL check (product summary table).csv")
         f = open(file, "r")
-        self.assertEqual("Product ID;description;number;state\n", f.readline())
+        self.assertEqual("\ufeffProduct ID;description;number;state\n", f.readline())
         f.close()
 
         # download detailed lifecycle state table
@@ -97,7 +97,7 @@ MOH
         # Verify that the file is a CSV formatted field (with ";" as delimiter)
         file = os.path.join(self.download_dir, "Bulk EoL check (detailed lifecycle states).csv")
         f = open(file, "r")
-        self.assertEqual("PID;EoL anno.;EoS;EoNewSA;EoSWM;EoRFA;EoSCn;EoSup;Link\n", f.readline())
+        self.assertEqual("\ufeffPID;EoL anno.;EoS;EoNewSA;EoSWM;EoRFA;EoSCn;EoSup;Link\n", f.readline())
         f.close()
 
         # download skipped queries table
@@ -110,7 +110,7 @@ MOH
         # Verify that the file is a CSV formatted field (with ";" as delimiter)
         file = os.path.join(self.download_dir, "Bulk EoL check (queries and products which are not found).csv")
         f = open(file, "r")
-        self.assertEqual("Query/Product ID;result\n", f.readline())
+        self.assertEqual("\ufeffQuery/Product ID;result\n", f.readline())
         f.close()
 
     def test_invalid_entry(self):

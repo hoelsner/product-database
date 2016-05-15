@@ -85,7 +85,7 @@ class BrowseProductsByVendor(DestructiveProductDbFunctionalTest):
         # verify that the file is a CSV formatted field (with ";" as delimiter)
         file = os.path.join(self.download_dir, "vendor products - %s.csv" % vendor_name)
         f = open(file, "r+")
-        self.assertEqual("product ID;description;list price;currency\n", f.readline())
+        self.assertEqual("\ufeffproduct ID;description;list price\n", f.readline())
         f.close()
 
     def test_search_function(self):
@@ -95,7 +95,7 @@ class BrowseProductsByVendor(DestructiveProductDbFunctionalTest):
 
         # he enters a search term in the search box
         search_term = "WS-C2960X-24P"
-        search_xpath = '//div[@id="product_table_wrapper"]/div[@id="product_table_filter"]/label/input[@type="search"]'
+        search_xpath = '//div[@class="col-sm-4"]/div[@id="product_table_filter"]/label/input[@type="search"]'
         search = self.browser.find_element_by_xpath(search_xpath)
         search.send_keys(search_term)
         time.sleep(3)

@@ -33,3 +33,5 @@ db.sqlite3
 *.log
 *.retry
 *.pid
+static/lib
+node_modules
