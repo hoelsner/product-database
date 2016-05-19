@@ -2,7 +2,6 @@
 All test that don't require an internet connection
 """
 from .test_model.test_model import *
-from .test_model.test_model_signals import *
 from .test_api_endpoints.test_product_api import *
 from .test_api_endpoints.test_vendor_api import *
 from .test_api_endpoints.test_api_interaction import *

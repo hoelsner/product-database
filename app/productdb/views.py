@@ -1,6 +1,7 @@
 import tempfile
 import logging
 
+from django.conf import settings
 from django.shortcuts import render_to_response
 from django.shortcuts import redirect
 from django.shortcuts import resolve_url
@@ -11,9 +12,10 @@ from django.utils.safestring import mark_safe
 from djcelery.models import WorkerState
 
 import app.productdb.tasks as tasks
+from app.config import AppSettings
+from app.config.utils import update_periodic_cisco_eox_api_crawler_task, test_cisco_hello_api_access
 from app.productdb import util as app_util
 from app.productdb.models import Vendor
-from app.productdb.models import Settings
 from app.productdb.models import Product
 from app.productdb.forms import CiscoApiSettingsForm
 from app.productdb.forms import CommonSettingsForm
@@ -184,43 +186,59 @@ def bulk_eol_check(request):
 @login_required()
 @permission_required('is_superuser')
 def settings_view(request):
-    """View for common product DB settings
+    """View for common Product Database settings
 
     :param request:
     :return:
     """
-    settings, created = Settings.objects.get_or_create(id=1)
+    app_config = AppSettings()
+    app_config.read_file()
 
     if request.method == 'POST':
         # create a form instance and populate it with data from the request:
         form = CommonSettingsForm(request.POST)
         if form.is_valid():
             # process the data in form.cleaned_data as required
-            settings.cisco_api_enabled = form.cleaned_data['cisco_api_enabled']
-            if not settings.cisco_api_enabled:
+            app_config.set_cisco_api_enabled(form.cleaned_data['cisco_api_enabled'])
+
+            if not app_config.is_cisco_api_enabled():
                 # reset values from API configuration
                 base_api = ciscoapiconsole.BaseCiscoApiConsole()
                 base_api.client_id = "PlsChgMe"
                 base_api.client_secret = "PlsChgMe"
                 base_api.save_client_credentials()
 
-                settings.cisco_eox_api_auto_sync_enabled = False
-                settings.eox_api_blacklist = ""
-                settings.cisco_eox_api_auto_sync_queries = ""
-                settings.cisco_api_credentials_last_message = "not tested"
-                settings.cisco_api_credentials_successful_tested = False
+                app_config.set_cisco_api_client_id("")
+                app_config.set_cisco_api_client_secret("")
+                app_config.set_product_blacklist_regex("")
+                app_config.set_cisco_eox_api_queries("")
+                app_config.set_cisco_eox_api_auto_sync_last_execution_result(False)
+                app_config.set_cisco_api_credentials_successful_tested(False)
+                app_config.set_periodic_sync_enabled(False)
+                update_periodic_cisco_eox_api_crawler_task(False)       # disable periodic sync
 
-            settings.save()
+                app_config.set(
+                    value="not tested",
+                    key="cisco_api_credentials_last_message",
+                    section=AppSettings.CISCO_API_SECTION
+                )
+                app_config.set(
+                    value=False,
+                    key="cisco_api_credentials_successful_tested",
+                    section=AppSettings.CISCO_API_SECTION
+                )
+
+            app_config.write_file()
 
             return redirect(resolve_url("productdb:settings"))
 
     else:
         form = CommonSettingsForm()
-        form.fields['cisco_api_enabled'].initial = settings.cisco_api_enabled
+        form.fields['cisco_api_enabled'].initial = app_config.is_cisco_api_enabled()
 
     context = {
         "form": form,
-        "settings": settings
+        "cisco_api_enabled": app_config.is_cisco_api_enabled()
     }
 
     return render_to_response("productdb/settings/settings.html",
@@ -236,59 +254,60 @@ def cisco_api_settings(request):
     :param request:
     :return: :raise:
     """
-    settings, created = Settings.objects.get_or_create(id=1)
+    app_config = AppSettings()
+    app_config.read_file()
 
     if request.method == "POST":
         # create a form instance and populate it with data from the request:
         form = CiscoApiSettingsForm(request.POST)
         if form.is_valid():
-            # process the data in form.cleaned_data as required
-            settings.cisco_eox_api_auto_sync_auto_create_elements = \
-                form.cleaned_data['eox_auto_sync_auto_create_elements']
-            settings.cisco_eox_api_auto_sync_enabled = form.cleaned_data['eox_api_auto_sync_enabled']
-            settings.cisco_eox_api_auto_sync_queries = form.cleaned_data['eox_api_queries']
-            settings.eox_api_blacklist = form.cleaned_data['eox_api_blacklist']
-
-            base_api = ciscoapiconsole.CiscoHelloApi()
-            base_api.load_client_credentials()
-
-            old_credentials = str(base_api.client_id) + str(base_api.client_secret)
+            old_credentials = app_config.get_cisco_api_client_id() + app_config.get_cisco_api_client_secret()
             new_credentials = form.cleaned_data['cisco_api_client_id'] + form.cleaned_data['cisco_api_client_secret']
 
-            # Test of the credentials is only required if these are changed
             if not new_credentials == old_credentials:
-                base_api.client_id = form.cleaned_data['cisco_api_client_id']
-                base_api.client_secret = form.cleaned_data['cisco_api_client_secret']
-                base_api.save_client_credentials()
-
                 # test credentials (if not in demo mode)
-                if settings.demo_mode:
+                if settings.DEMO_MODE:
                     logger.warn("skipped verification of the Hello API call to test the credentials, "
                                 "DEMO MODE enabled")
-                    settings.cisco_api_credentials_successful_tested = True
-                    settings.cisco_api_credentials_last_message = "Demo Mode"
+                    app_config.set_cisco_api_credentials_last_message("Demo Mode")
+                    app_config.set_cisco_api_credentials_successful_tested(True)
+
                 else:
                     try:
-                        base_api.hello_api_call()
-                        settings.cisco_api_credentials_successful_tested = True
-                        settings.cisco_api_credentials_last_message = "successful connected"
+                        test_cisco_hello_api_access(
+                            form.cleaned_data['cisco_api_client_id'],
+                            form.cleaned_data['cisco_api_client_secret']
+                        )
+                        app_config.set_cisco_api_credentials_last_message("successful connected")
+                        app_config.set_cisco_api_credentials_successful_tested(True)
 
                     except InvalidClientCredentialsException as ex:
-                        settings.cisco_api_credentials_successful_tested = False
                         logger.warn("verification of client credentials failed", exc_info=True)
-                        settings.cisco_api_credentials_last_message = str(ex)
+                        app_config.set_cisco_api_credentials_last_message(str(ex))
+                        app_config.set_cisco_api_credentials_successful_tested(False)
 
-            settings.save()
+            # process the data in form.cleaned_data as required
+            app_config.set_periodic_sync_enabled(form.cleaned_data['eox_api_auto_sync_enabled'])
+            update_periodic_cisco_eox_api_crawler_task(form.cleaned_data['eox_api_auto_sync_enabled'])
+
+            app_config.set_cisco_eox_api_queries(form.cleaned_data['eox_api_queries'])
+            app_config.set_product_blacklist_regex(form.cleaned_data['eox_api_blacklist'])
+            app_config.set_auto_create_new_products(form.cleaned_data['eox_auto_sync_auto_create_elements'])
+
+            app_config.set_cisco_api_client_id(form.cleaned_data['cisco_api_client_id'])
+            app_config.set_cisco_api_client_secret(form.cleaned_data['cisco_api_client_secret'])
+
+            app_config.write_file()
             return redirect(resolve_url("productdb:cisco_api_settings"))
 
     else:
         form = CiscoApiSettingsForm()
-        form.fields['eox_auto_sync_auto_create_elements'].initial = settings.cisco_eox_api_auto_sync_auto_create_elements
-        form.fields['eox_api_auto_sync_enabled'].initial = settings.cisco_eox_api_auto_sync_enabled
-        form.fields['eox_api_queries'].initial = settings.cisco_eox_api_auto_sync_queries
-        form.fields['eox_api_blacklist'].initial = settings.eox_api_blacklist
+        form.fields['eox_auto_sync_auto_create_elements'].initial = app_config.is_auto_create_new_products()
+        form.fields['eox_api_auto_sync_enabled'].initial = app_config.is_periodic_sync_enabled()
+        form.fields['eox_api_queries'].initial = app_config.get_cisco_eox_api_queries()
+        form.fields['eox_api_blacklist'].initial = app_config.get_product_blacklist_regex()
 
-        if settings.cisco_api_enabled:
+        if app_config.is_cisco_api_enabled():
             try:
                 base_api = ciscoapiconsole.CiscoHelloApi()
                 base_api.load_client_credentials()
@@ -307,8 +326,9 @@ def cisco_api_settings(request):
 
     context = {
         "settings_form": form,
-        "settings": settings
+        "settings": app_config.to_dictionary()
     }
+    print(app_config.to_dictionary())
 
     return render_to_response("productdb/settings/cisco_api_settings.html",
                               context=context,
@@ -323,10 +343,11 @@ def crawler_overview(request):
     :param request:
     :return:
     """
-    settings, created = Settings.objects.get_or_create(id=1)
+    app_config = AppSettings()
+    app_config.read_file()
 
     context = {
-        "settings": settings
+        "settings": app_config.to_dictionary()
     }
 
     # determine worker status
@@ -376,10 +397,11 @@ def test_tools(request):
     :param request:
     :return:
     """
-    settings, created = Settings.objects.get_or_create(id=1)
+    app_config = AppSettings()
+    app_config.read_file()
 
     context = {
-        "settings": settings
+        "settings": app_config.to_dictionary()
     }
 
     if request.method == "POST":
@@ -392,7 +414,7 @@ def test_tools(request):
                     if len(query.split(" ")) == 1:
                         context['query_executed'] = query
                         try:
-                            eox_api_update_records = update_cisco_eox_database(api_queries=query)
+                            eox_api_update_records = update_cisco_eox_database(api_query=query)
 
                         except ConnectionFailedException as ex:
                             eox_api_update_records = ["Cannot contact Cisco API, error message:\n%s" % ex]
@@ -460,11 +482,16 @@ def schedule_cisco_eox_api_sync_now(request):
     :param request:
     :return:
     """
-    s = Settings.objects.get(id=1)
+    app_config = AppSettings()
+    app_config.read_file()
 
     task = tasks.execute_task_to_synchronize_cisco_eox_states.delay()
-    s.eox_api_sync_task_id = task.id
-    s.save()
+    app_config.set(
+        section=AppSettings.CISCO_EOX_CRAWLER_SECTION,
+        key="eox_api_sync_task_id",
+        value= task.id
+    )
+    app_config.write_file()
 
     return redirect(request.GET.get('redirect_url', "/productdb/settings/"))
 

@@ -1,9 +1,10 @@
-from app.productdb.extapi.exception import *
-from app.productdb.models import CiscoApiAuthSettings
 import requests
 import json
 import datetime
 import logging
+from django.core.cache import cache
+from app.config import AppSettings
+from app.productdb.extapi.exception import *
 
 logger = logging.getLogger(__name__)
 
@@ -16,6 +17,7 @@ class BaseCiscoApiConsole:
     the result in a local file along with the expire date.
 
     """
+    AUTH_TOKEN_CACHE_KEY = "cisco_api_auth_token"
     AUTHENTICATION_URL = "https://cloudsso.cisco.com/as/token.oauth2"
 
     client_id = None
@@ -36,49 +38,57 @@ class BaseCiscoApiConsole:
         }
 
     def load_client_credentials(self):
-        logger.debug("load client credentials from database")
-        api_settings, created = CiscoApiAuthSettings.objects.get_or_create(id=1)
+        logger.debug("load client credentials from configuration")
+        app_settings = AppSettings()
+        app_settings.read_file()
 
         # load client credentials
-        self.client_id = api_settings.api_client_id
-        self.client_secret = api_settings.api_client_secret
+        self.client_id = app_settings.get_cisco_api_client_id()
+        self.client_secret = app_settings.get_cisco_api_client_secret()
 
     def save_client_credentials(self):
-        logger.debug("save new client credentials to database")
-        api_settings, created = CiscoApiAuthSettings.objects.get_or_create(id=1)
+        logger.warn("DEPRECATED METHOD CALL, use configuration engine instead")
+        logger.debug("save new client credentials from configuration")
 
-        api_settings.api_client_id = self.client_id
-        api_settings.api_client_secret = self.client_secret
-        api_settings.save()
+        app_settings = AppSettings()
+        app_settings.read_file()
 
-        # drop cached token, new credentials added
-        self.drop_cached_token()
+        app_settings.set_cisco_api_client_id(self.client_id)
+        app_settings.set_cisco_api_client_secret(self.client_secret)
+        self.drop_cached_token()                                        # drop cached token, new credentials added
+        app_settings.write_file()
+
         logger.info("Client credentials updated")
 
     def __save_cached_temp_token__(self):
-        logger.debug("save token to database")
+        logger.debug("save token to cache")
 
         temp_auth_token = dict()
         temp_auth_token['http_auth_header'] = self.http_auth_header
         temp_auth_token['expire_datetime'] = self.token_expire_datetime.strftime("%Y-%m-%d %H:%M:%S.%f")
-        api_settings, created = CiscoApiAuthSettings.objects.get_or_create(id=1)
 
-        api_settings.cached_http_auth_header = json.dumps(temp_auth_token)
-        api_settings.save()
+        cache.set(
+            self.AUTH_TOKEN_CACHE_KEY,
+            json.dumps(temp_auth_token),
+            timeout=self.token_expire_datetime.timestamp()
+        )
+
         logger.info("temporary token saved")
 
     def __load_cached_temp_token__(self):
-        logger.debug("load cached temp token from database")
-        api_settings, created = CiscoApiAuthSettings.objects.get_or_create(id=1)
+        logger.debug("load cached temp token")
 
         try:
-            if len(api_settings.cached_http_auth_header) == 0:
+            cached_auth_token = cache.get(self.AUTH_TOKEN_CACHE_KEY)
+            if not cached_auth_token:
                 return False
-            temp_auth_token = json.loads(api_settings.cached_http_auth_header)
+            temp_auth_token = json.loads(cached_auth_token)
 
             self.http_auth_header = temp_auth_token['http_auth_header']
-            self.token_expire_datetime = datetime.datetime.strptime(temp_auth_token['expire_datetime'],
-                                                                    "%Y-%m-%d %H:%M:%S.%f")
+            self.token_expire_datetime = datetime.datetime.strptime(
+                temp_auth_token['expire_datetime'],
+                "%Y-%m-%d %H:%M:%S.%f"
+            )
             return True
 
         except:
@@ -126,6 +136,7 @@ class BaseCiscoApiConsole:
             if result.text.find("Not Authorized") != -1:
                 logger.error("cannot claim access token, authorization failed")
                 raise AuthorizationFailedException("Not Authorized")
+
             else:
                 self.current_access_token = json.loads(result.text)
                 self.__new_token_created__ = True
@@ -145,10 +156,7 @@ class BaseCiscoApiConsole:
         self.__save_cached_temp_token__()
 
     def drop_cached_token(self):
-        api_settings, created = CiscoApiAuthSettings.objects.get_or_create(id=1)
-
-        api_settings.cached_http_auth_header = ""
-        api_settings.save()
+        cache.delete(self.AUTH_TOKEN_CACHE_KEY)
         self.current_access_token = None
         self.http_auth_header = None
 
@@ -157,6 +165,7 @@ class BaseCiscoApiConsole:
             logger.debug("check cached token state: %s <= %s" % (datetime.datetime.now(),
                                                                  self.token_expire_datetime))
             return datetime.datetime.now() <= self.token_expire_datetime
+
         return False
 
     def is_ready_for_use(self):
@@ -200,6 +209,7 @@ class CiscoHelloApi(BaseCiscoApiConsole):
             except Exception as ex:
                 logger.error("cannot contact API endpoint at %s" % self.HELLO_API_URL, exc_info=True)
                 raise ConnectionFailedException("cannot contact API endpoint at %s" % self.HELLO_API_URL) from ex
+
             return result.json()
         raise CiscoApiCallFailed("Client not ready (credentials or token missing)")
 
@@ -252,18 +262,22 @@ class CiscoEoxApi(BaseCiscoApiConsole):
     def amount_of_pages(self):
         if self.last_json_result is None:
             return 0
+
         return int(self.last_json_result['PaginationResponseRecord']['LastIndex'])
 
     def amount_of_total_records(self):
         if self.last_json_result is None:
             return 0
+
         if int(self.last_json_result['PaginationResponseRecord']['TotalRecords']) == 1:
             return self.get_valid_record_count()
+
         return int(self.last_json_result['PaginationResponseRecord']['TotalRecords'])
 
     def get_current_page(self):
         if self.last_json_result is None:
             return 0
+
         return int(self.last_json_result['PaginationResponseRecord']['PageIndex'])
 
     def get_valid_record_count(self):
@@ -272,8 +286,10 @@ class CiscoEoxApi(BaseCiscoApiConsole):
         if len(self.last_json_result['EOXRecord']) == 1:
             if "EOXError" in self.last_json_result['EOXRecord'][0].keys():
                 return 0
+
             else:
                 return 1
+
         else:
             return self.amount_of_total_records()
 
@@ -284,6 +300,7 @@ class CiscoEoxApi(BaseCiscoApiConsole):
         """
         if "EOXError" in self.last_json_result.keys():
             return True
+
         return False
 
     def get_api_error_message(self):
@@ -295,12 +312,14 @@ class CiscoEoxApi(BaseCiscoApiConsole):
             msg = "%s (%s)" % (self.last_json_result['EOXError']['ErrorDescription'],
                                self.last_json_result['EOXError']['ErrorID'])
             return msg
+
         return "no error"
 
     @staticmethod
     def has_error(record):
         if "EOXError" in record.keys():
             return True
+
         else:
             return False
 
@@ -308,6 +327,7 @@ class CiscoEoxApi(BaseCiscoApiConsole):
     def get_error_description(record):
         if "EOXError" in record.keys():
             return record['EOXError']['ErrorDescription']
+
         else:
             return ""
 
@@ -315,61 +335,12 @@ class CiscoEoxApi(BaseCiscoApiConsole):
         """
         returns a list with all records from the current page.
         The record format for API version 4 is the following:
-
-        {
-            "EndOfSvcAttachDate": {
-                "dateFormat": "YYYY-MM-DD",
-                "value": "2015-10-31"
-            },
-            "EndOfSaleDate": {
-                "dateFormat": "YYYY-MM-DD",
-                "value": "2014-10-31"
-            },
-            "EOXInputValue": "WS-C2960* ",
-            "LastDateOfSupport": {
-                "dateFormat": "YYYY-MM-DD",
-                "value": "2019-10-31"
-            },
-            "LinkToProductBulletinURL": "http://www.cisco.com/en/US/...",
-            "EOXMigrationDetails": {
-                "MigrationProductName": " ",
-                "MigrationStrategy": " ",
-                "PIDActiveFlag": "Y  ",
-                "MigrationOption": "Enter PID(s)",
-                "MigrationProductInfoURL": "http://www.cisco.com/en/US/products/ps13024/index.html",
-                "MigrationProductId": "WS-C2960+24TC-S",
-                "MigrationInformation": "Catalyst 2960 Plus 24 10/100 + 2 T/SFP   LAN Lite"
-            },
-            "EOXExternalAnnouncementDate": {
-                "dateFormat": "YYYY-MM-DD",
-                "value": "2013-10-31"
-            },
-            "ProductBulletinNumber": "EOL9449",
-            "UpdatedTimeStamp": {
-                "dateFormat": "YYYY-MM-DD",
-                "value": "2015-08-23"
-            },
-            "ProductIDDescription": "Catalyst 2960 24 10/100   LAN Lite Image",
-            "EndOfServiceContractRenewal": {
-                "dateFormat": "YYYY-MM-DD",
-                "value": "2019-01-29"
-            },
-            "EOLProductID": "WS-C2960-24-S",
-            "EOXInputType": "ShowEOXByPids",
-            "EndOfRoutineFailureAnalysisDate": {
-                "dateFormat": "YYYY-MM-DD",
-                "value": "2015-10-31"
-            },
-            "EndOfSWMaintenanceReleases": {
-                "dateFormat": "YYYY-MM-DD",
-                "value": "2015-10-31"
-            }
-        }
-
         :return:
         """
         if self.last_json_result is None:
             return []
+
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug("results from Cisco EoX database: %s" % json.dumps(self.last_json_result, indent=4))
+
         return self.last_json_result['EOXRecord']

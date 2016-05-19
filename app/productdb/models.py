@@ -1,8 +1,5 @@
 from django.core.validators import MinValueValidator
 from django.db import models
-from annoying.fields import JSONField
-
-from app.productdb.validators import validate_json
 
 # choices for the currency
 CURRENCY_CHOICES = (
@@ -26,7 +23,7 @@ class Vendor(models.Model):
     def __unicode__(self):
         return self.name
 
-    def delete(self, using=None):
+    def delete(self, using=None, **kwargs):
         # prevent the deletion of the "unassigned" value from model
         if self.id == 0:
             raise Exception("Operation not allowed")
@@ -147,106 +144,3 @@ class Product(models.Model):
 
     class Meta:
         ordering = ('product_id',)
-
-
-class Settings(models.Model):
-    cisco_api_enabled = models.BooleanField(
-        default=False,
-        help_text="Indicates the availability of the Cisco API access"
-    )
-
-    cisco_eox_api_auto_sync_enabled = models.BooleanField(
-        default=False,
-        help_text="Enable the automatic synchronization of the Cisco EoX API using the configured settings"
-    )
-
-    cisco_eox_api_auto_sync_auto_create_elements = models.BooleanField(
-        default=False,
-        help_text="When set to true, received product IDs which are not included in the blacklist are automatically "
-                  "created"
-    )
-
-    cisco_eox_api_auto_sync_queries = models.TextField(
-        default="",
-        null=False,
-        blank=True,
-        help_text="queries that should be executed against the EoX API"
-    )
-
-    eox_api_blacklist = models.TextField(
-        default="",
-        null=False,
-        blank=True,
-        help_text="comma separated list of elements which should not be created during the API import. It is only "
-                  "relevant if elements are created automatically."
-    )
-
-    # Tasks which should only run once
-    eox_api_sync_task_id = models.TextField(
-        default="",
-        null=True,
-        blank=True,
-    )
-
-    # Messages for the API credential state
-    cisco_api_credentials_successful_tested = models.BooleanField(
-        default=False,
-        help_text="If credentials are changed in the settings page, it will verify it and write the result to DB"
-    )
-
-    cisco_api_credentials_last_message = models.TextField(
-        default="not tested",
-        help_text="Last (error) message of the Hello API test"
-    )
-
-    # Messages for the auto synchronization state
-    cisco_eox_api_auto_sync_last_execution_time = models.DateTimeField(
-        blank=True,
-        null=True,
-        help_text="last timestamp when the automatic EoX synchronization was executed"
-    )
-
-    cisco_eox_api_auto_sync_last_execution_result = models.TextField(
-        default="not executed",
-        help_text="Last results of the automatic Cisco EoX synchronization"
-    )
-
-    # If set to true, no external requests are sent (just for testing purpose)
-    demo_mode = models.BooleanField(
-        default=False,
-        help_text="If set to true, the application runs in demo mode. Demo mode is used with Testing and will disable "
-                  "all periodic tasks"
-    )
-
-    def __str__(self):
-        return str(self.id)
-
-    def __unicode__(self):
-        return str(self.id)
-
-
-class CiscoApiAuthSettings(models.Model):
-
-    api_client_id = models.TextField(
-        default="PlsChgMe",
-        null=False,
-        blank=True,
-        help_text="Client ID for the Cisco API authentication"
-    )
-
-    api_client_secret = models.TextField(
-        default="PlsChgMe",
-        null=False,
-        blank=True,
-        help_text="Client Secret for the Cisco API authentication"
-    )
-
-    cached_http_auth_header = models.TextField(
-        default="",
-        null=False,
-        blank=True,
-        help_text="cached authentication header with expire date in JSON format"
-    )
-
-# import custom signals for models
-import app.productdb.signals

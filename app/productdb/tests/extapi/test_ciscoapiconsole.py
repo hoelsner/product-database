@@ -1,7 +1,7 @@
 """
 Unit tests for the Cisco API console
 """
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from app.productdb.extapi import ciscoapiconsole as ciscoapi
 from app.productdb.extapi.exception import *
 import json
@@ -31,12 +31,12 @@ class TestInvalidUseOfCiscoApi(TestCase):
             self.assertIn('cannot contact authentication server', str(ex))
 
 
+@override_settings(APP_CONFIG_FILE="conf/product_database.cisco_api_test.config")
 class TestBasicCiscoApiModule(TestCase):
     """
     verify overall function of the Basic Cisco API class
     """
-    fixtures = ['default_vendors.yaml', 'cisco_api_test_credentials.yaml']
-    file_with_test_credentials = "ciscoapi.client_credentials.json.bak"
+    fixtures = ['default_vendors.yaml']
 
     def test_api_access_using_hello_endpoint(self):
         expected_result = '"response": "Hello World"'

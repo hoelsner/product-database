@@ -1,7 +1,6 @@
 import tempfile
 import logging
 from django import forms
-from app.productdb.models import Settings
 from app.productdb.excel_import import ImportProductsExcelFile, InvalidImportFormatException, InvalidExcelFileFormat
 
 logger = logging.getLogger("app.productdb.forms")
@@ -14,7 +13,7 @@ class CommonSettingsForm(forms.Form):
     )
 
 
-class CiscoApiSettingsForm(forms.ModelForm):
+class CiscoApiSettingsForm(forms.Form):
     cisco_api_client_id = forms.CharField(
         widget=forms.TextInput(attrs={'class': "form-control"})
     )
@@ -42,15 +41,6 @@ class CiscoApiSettingsForm(forms.ModelForm):
         widget=forms.Textarea(attrs={'class': "form-control"}),
         required=False
     )
-
-    class Meta:
-        model = Settings
-        fields = [
-            'cisco_eox_api_auto_sync_auto_create_elements',
-            'cisco_eox_api_auto_sync_enabled',
-            'cisco_eox_api_auto_sync_queries',
-            'eox_api_blacklist',
-        ]
 
 
 class ImportProductsFileUploadForm(forms.Form):

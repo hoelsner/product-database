@@ -1,23 +1,17 @@
+import configparser
 import time
-
 from selenium.webdriver.common.keys import Keys
-
 from tests.base.django_test_cases import DestructiveProductDbFunctionalTest
-import json
-
 
 """
-This test case requires valid Cisco API client credentials with Hello API and EoX API permissions in a file named
-"ciscoapi.client_credentials.json.bak" in the project root.
-
-To work correctly, an internet connection is required.
-
-This test case does not utilize the celery execution engine
+This test case requires valid Cisco API client credentials with Hello API and EoX API permissions in a configuration
+file with the name `product_database.cisco_api_test.config` within the `conf` directory.
 """
 
 
 class SyncLocalDatabaseWithCiscoApi(DestructiveProductDbFunctionalTest):
     fixtures = ['default_vendors.yaml', ]
+    cisco_ios_credentials_config = "conf/product_database.cisco_api_test.config"
 
     def test_configure_periodic_cisco_api_eox_sync_and_perform_initial_synchronization_using_testing_tool(self):
         # a user hits the global settings page
@@ -56,10 +50,14 @@ class SyncLocalDatabaseWithCiscoApi(DestructiveProductDbFunctionalTest):
         initial_error_message = "Verification of the API access failed"
         self.assertIn(initial_error_message, page_text)
 
-        # enter the credentials from the file "ciscoapi.client_credentials.json.bak" and
+        # enter the credentials from the file "conf/product_database.cisco_api_test.config" and
         # save the settings
-        f = open("ciscoapi.client_credentials.json.bak")
-        credentials = json.loads(f.read())
+        config = configparser.ConfigParser()
+        config.read(self.cisco_ios_credentials_config)
+        credentials = {
+            "client_id": config.get(section="cisco_api", option="client_id"),
+            "client_secret": config.get(section="cisco_api", option="client_secret")
+        }
 
         api_client_id = self.browser.find_element_by_id("id_cisco_api_client_id")
         api_client_id.clear()

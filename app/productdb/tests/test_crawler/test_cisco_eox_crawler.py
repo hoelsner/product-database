@@ -1,20 +1,34 @@
 from django.test import TestCase
+
+from app.config import AppSettings
+from django.test import override_settings
 from app.productdb.crawler import cisco_eox_api_crawler
-from app.productdb.models import Settings, Product
+from app.productdb.models import Product
 import json
 import os
 
 
+@override_settings(APP_CONFIG_FILE="conf/test.TestCiscoEoxCrawler.config")
 class TestCiscoEoxCrawler(TestCase):
     """
     test the Cisco EoX API classes
     """
     fixtures = ['default_vendors.yaml']
 
+    def tearDown(self):
+        super(TestCiscoEoxCrawler, self).tearDown()
+        # cleanup
+        if os.path.exists("test.TestCiscoEoxCrawler.config"):
+            os.remove("test.TestCiscoEoxCrawler.config")
+
     def test_eox_update_call_with_sample_data(self):
-        s, create = Settings.objects.get_or_create(id=1)
-        s.cisco_api_enabled = True
-        s.cisco_eox_api_auto_sync_enabled = True
+        app_config = AppSettings()
+        app_config.read_file()
+
+        app_config.set_cisco_api_enabled(True)
+        app_config.set_periodic_sync_enabled(True)
+        app_config.write_file()
+
         eox_sample_response = os.path.join("app",
                                            "productdb",
                                            "tests",
@@ -30,9 +44,13 @@ class TestCiscoEoxCrawler(TestCase):
         test, that no issue exists when the '%' sign is present in the ProductID
         :return:
         """
-        s, create = Settings.objects.get_or_create(id=1)
-        s.cisco_api_enabled = True
-        s.cisco_eox_api_auto_sync_enabled = True
+        app_config = AppSettings()
+        app_config.read_file()
+
+        app_config.set_cisco_api_enabled(True)
+        app_config.set_periodic_sync_enabled(True)
+        app_config.write_file()
+
         eox_db_record = """{
             "EndOfServiceContractRenewal": {
                 "value": " ",

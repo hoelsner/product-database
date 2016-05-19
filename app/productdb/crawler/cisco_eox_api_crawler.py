@@ -1,4 +1,6 @@
-from app.productdb.models import Settings, CiscoApiAuthSettings, Product, Vendor
+from app.config import AppSettings
+from app.config.utils import test_cisco_hello_api_access
+from app.productdb.models import Product, Vendor
 from app.productdb.extapi.ciscoapiconsole import CiscoEoxApi
 from app.productdb.extapi.exception import CredentialsNotFoundException, ConnectionFailedException, CiscoApiCallFailed
 import logging
@@ -10,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 def convert_time_format(date_format):
     """
-    little helping function to convert the data format which comes back from the Cisco EoX API
+    helper function to convert the data format that is used by the Cisco EoX API
     :param date_format:
     :return:
     """
@@ -21,10 +23,10 @@ def convert_time_format(date_format):
 
 def update_local_db_based_on_record(eox_record, create_missing=False):
     """
-    Update a database record based on the result of an Cisco EoX API call
+    Update a database record based on a Cisco EoX API call
 
-    :param eox_record: resulting JSON record from the EoX database
-    :param create_missing: True, if the part should be created when it doesn't exist in the local database
+    :param eox_record: JSON data from the Cisco EoX API
+    :param create_missing: set to True, if the product should be created if it doesn't exist in the local database
     :return:
     """
     pid = eox_record['EOLProductID']
@@ -37,7 +39,7 @@ def update_local_db_based_on_record(eox_record, create_missing=False):
             logger.info("Product '%s' was not in database and is created" % pid)
             product.product_id = pid
             product.description = eox_record['ProductIDDescription']
-            # it is a Cisco API and the vendors should not be modified within the system
+            # it is a Cisco API and the vendors are read-only within the database
             product.vendor = Vendor.objects.get(name="Cisco Systems")
             created = True
     else:
@@ -49,7 +51,7 @@ def update_local_db_based_on_record(eox_record, create_missing=False):
             result_msg = "%s: product not found in local database" % pid.ljust(20)
             return result_msg
 
-    # update with lifecycle information
+    # update the lifecycle information
     try:
         update = True
         if product.eox_update_time_stamp is None:
@@ -216,39 +218,47 @@ def query_cisco_eox_api(query_string, blacklist, create_missing=False):
     return results
 
 
-def update_cisco_eox_database(api_queries=None):
+def update_cisco_eox_database(api_query=None):
     """
     Synchronizes the local EoX data from the Cisco EoX API using the specified queries or the queries specified in the
     configuration when api_query is set to None
 
-    :param api_queries: query to execute against the Cisco EoX API, if None than the settings parameters are executed
+    :param api_query: query to execute against the Cisco EoX API, if None than the settings parameters are executed
     :return:
     """
     # load application settings and check, that the API is enabled
-    settings, created = Settings.objects.get_or_create(id=1)
+    app_settings = AppSettings()
+    app_settings.read_file()
 
-    if (not settings.cisco_api_enabled) or (not settings.cisco_api_credentials_successful_tested):
-        msg = "Cisco API not configured/enabled"
+    if not app_settings.is_cisco_api_enabled():
+        msg = "Cisco API access not enabled"
         logger.warn(msg)
         raise CiscoApiCallFailed(msg)
 
-    cisco_api_auth_settings, created = CiscoApiAuthSettings.objects.get_or_create(id=1)
-    if created:
-        msg = "Cisco API not configured correctly, credentials not found"
+    # test API access
+    success = test_cisco_hello_api_access(
+        app_settings.get_cisco_api_client_id(),
+        app_settings.get_cisco_api_client_secret(),
+        False
+    )
+
+    if not success:
+        msg = "Cisco API not configured correctly, credentials not valid"
         logger.error(msg)
         raise CredentialsNotFoundException(msg)
 
     # create a list with all queries that should be executed
-    if api_queries is None:
-        queries = settings.cisco_eox_api_auto_sync_queries.splitlines()
-    else:
-        queries = [api_queries]
+    if api_query is None:
+        queries = app_settings.get_cisco_eox_api_queries().splitlines()
 
-    blacklist = settings.eox_api_blacklist.split(";")
-    create_missing = settings.cisco_eox_api_auto_sync_auto_create_elements
+    else:
+        queries = [api_query]
+
+    blacklist = app_settings.get_product_blacklist_regex().split(";")
+    create_missing = app_settings.is_auto_create_new_products()
     query_results = []
 
-    # start with queries
+    # start with Cisco EoX API queries
     for query in queries:
         logger.info("Query EoX database: %s" % query)
         res = query_cisco_eox_api(query, blacklist, create_missing)
@@ -259,30 +269,41 @@ def update_cisco_eox_database(api_queries=None):
     for q in query_results:
         if q != "":
             final_query_results.append(q)
+
     if len(final_query_results) == 0:
         final_query_results.append("No product update required")
 
     return final_query_results
 
 
-def synchronize_with_cisco_eox_api(api_queries=None):
+def synchronize_with_cisco_eox_api(api_query=None):
     """
     execute the Cisco EoX state synchronization if configured and enabled
 
-    :param api_queries: query to execute against the Cisco EoX API, if None than the settings parameters are executed
+    :param api_query: query to execute against the Cisco EoX API, if None than the settings parameters are executed
     :return:
     """
-    settings = Settings.objects.get(id=1)
+    app_settings = AppSettings()
+    app_settings.read_file()
+
     # update based on the configured query settings
-    if settings.cisco_eox_api_auto_sync_enabled and (settings.cisco_eox_api_auto_sync_queries is not ""):
-        result = update_cisco_eox_database(api_queries=api_queries)
+    if app_settings.is_cisco_api_enabled():
+        # create a list with all queries that should be executed
+        if api_query:
+            result = update_cisco_eox_database(api_query=api_query)
+
+        else:
+            result = update_cisco_eox_database()
+
         # write execution results and set timestamp
-        settings.cisco_eox_api_auto_sync_last_execution_time = datetime.now()
         result_msg = ""
         for r in result:
             result_msg += r + "\n"
-        settings.cisco_eox_api_auto_sync_last_execution_result = result_msg
-        settings.save()
+
+        app_settings.set_cisco_eox_api_auto_sync_last_execution_time(datetime.now())
+        app_settings.set_cisco_eox_api_auto_sync_last_execution_result(result_msg)
+        app_settings.write_file()
+
         return result
 
     else:

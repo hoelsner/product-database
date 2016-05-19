@@ -5,7 +5,7 @@
 .AppleDouble
 .LSOverride
 # Thumbnails
-._*
+/_*
 .DocumentRevisions-V100
 .fseventsd
 .Spotlight-V100
@@ -35,3 +35,8 @@ db.sqlite3
 *.pid
 static/lib
 node_modules
+conf/product_database.config
+conf/product_database.test.config
+conf/product_database.cisco_api_test.config
+conf/test.TestCiscoEoxCrawler.config
+!conf/product_database.sample.config

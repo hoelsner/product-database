@@ -28,7 +28,6 @@ class VendorViewSet(viewsets.ReadOnlyModelViewSet):
               required: true
               type: string
         """
-        result = ""
         if "application/json" in request.META['CONTENT_TYPE']:
             request_json = json.loads(request.body.decode("utf-8"))
         else:

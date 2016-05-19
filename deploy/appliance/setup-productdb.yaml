@@ -372,6 +372,17 @@
       PDB_DATABASE_PORT: "{{ db_port }}"
     args:
       chdir: "/var/www/productdb/source/"
+  - name: create database cache table
+    command: "/var/www/productdb/virtualenv/bin/python3 manage.py createcachetable"
+    environment:
+      DJANGO_SECRET_KEY: "{{ SECRET_KEY.stdout }}"
+      PDB_DATABASE_NAME: "{{ db_name }}"
+      PDB_DATABASE_USER: "{{ db_user }}"
+      PDB_DATABASE_PASSWORD: "{{ POSTGRES_KEY.stdout }}"
+      PDB_DATABASE_HOST: "{{ db_host }}"
+      PDB_DATABASE_PORT: "{{ db_port }}"
+    args:
+      chdir: "/var/www/productdb/source/"
 
   - name: apply database fixtures for default values (on initial provisioning)
     command: "/var/www/productdb/virtualenv/bin/python3 manage.py loaddata {{ item }}"

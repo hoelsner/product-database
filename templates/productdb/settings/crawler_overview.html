@@ -20,36 +20,38 @@ Settings - Crawler overview
             This pages provides an overview over the available crawler functions within the Product Database.
         </p>
 
-        {% if settings.cisco_api_enabled %}
+        {% if settings.global.cisco_api_enabled == "True" %}
         <h2>Cisco API</h2>
-        {% if settings.cisco_api_credentials_successful_tested %}
+        {% if settings.cisco_api.cisco_api_credentials_successful_tested == "True" %}
         <div class="alert alert-success" role="alert">
             <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
             <span class="sr-only">Cisco API credentials working:</span>
-            The Cisco Hello API is accessible using the credentials below{% if settings.cisco_api_credentials_last_message != "" %} ({{ settings.cisco_api_credentials_last_message }}){% endif %}.
+            The Cisco Hello API is accessible using the credentials below{% if settings.cisco_api.cisco_api_credentials_last_message != "" %} ({{ settings.cisco_api.cisco_api_credentials_last_message }}){% endif %}.
         </div>
         {% else %}
         <div class="alert alert-danger" role="alert">
             <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
             <span class="sr-only">Cisco API credentials not working:</span>
-            Verification of the API access failed ({{ settings.cisco_api_credentials_last_message }}).
+            Verification of the API access failed ({{ settings.cisco_api.cisco_api_credentials_last_message }}).
         </div>
         {% endif %}
 
-        {% if settings.cisco_eox_api_auto_sync_enabled %}
+        {% if settings.cisco_eox_api_crawler.periodic_sync_enabled == "True" %}
         <div class="panel panel-default">
             <div class="panel-heading">
                 <h3 class="panel-title">Periodic synchronization of the Cisco EoX states</h3>
             </div>
             <div class="panel-body">
                 <p>With this panel, you can see the last execution state of the automatic Cisco EoX synchronization task.</p>
-                <p><strong>Last execution time: </strong>{{ settings.cisco_eox_api_auto_sync_last_execution_time }}</p>
+                <p>
+                    <strong>Last execution time: </strong>{{ settings.cisco_eox_api_crawler.eox_api_auto_sync_last_execution_time }}
+                </p>
                 <p><strong>Last execution results:</strong> <input class="btn btn-default btn-xs" type="button" onclick="return toggleMe('periodic_query_result_log')" value="show output"><br></p>
                 <div id="periodic_query_result_log" style="display:none">
-                    <pre style="font-family: monospace">{{ settings.cisco_eox_api_auto_sync_last_execution_result }}</pre>
+                    <pre style="font-family: monospace">{{ settings.cisco_eox_api_crawler.eox_api_auto_sync_last_execution_result }}</pre>
                     <input class="btn btn-default btn-xs" type="button" onclick="return toggleMe('periodic_query_result_log')" value="hide output">
                 </div>
-                {% if settings.eox_api_sync_task_id %}
+                {% if settings.cisco_eox_api_crawler.eox_api_sync_task_id != "" %}
                 <form>
                     <fieldset disabled>
                         <button type="submit" class="btn btn-default btn-block">perform synchronization... (page will refresh automatically)</button>

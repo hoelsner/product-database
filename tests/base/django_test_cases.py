@@ -1,4 +1,5 @@
 from selenium import webdriver
+from django.test import override_settings
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 from tests.api import create_real_test_data
 from tests.api import drop_all_products
@@ -57,11 +58,18 @@ class FunctionalTest(StaticLiveServerTestCase):
         self.browser.quit()
 
 
+@override_settings(APP_CONFIG_FILE="conf/product_database.ft.config")
 class DestructiveProductDbFunctionalTest(FunctionalTest):
     API_USERNAME = "api"
     API_PASSWORD = "api"
     ADMIN_USERNAME = "admin"
     ADMIN_PASSWORD = "admin"
+    TEST_CONFIG_FILE = "conf/product_database.ft.config"
+
+    def clean_config_file(self):
+        # cleanup
+        if os.path.exists(self.TEST_CONFIG_FILE):
+            os.remove(self.TEST_CONFIG_FILE)
 
     def clean_db(self):
         """
@@ -86,6 +94,7 @@ class DestructiveProductDbFunctionalTest(FunctionalTest):
 
     def setUp(self):
         super().setUp()
+        self.clean_config_file()
 
         # create superuser
         u = User(username='admin')
@@ -108,3 +117,4 @@ class DestructiveProductDbFunctionalTest(FunctionalTest):
 
     def tearDown(self):
         super().tearDown()
+        self.clean_config_file()

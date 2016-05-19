@@ -1,8 +1,10 @@
 from tests.base.django_test_cases import DestructiveProductDbFunctionalTest
+from django.test import override_settings
 
 
+@override_settings(DEMO_MODE=True)
 class SettingsPermissionTest(DestructiveProductDbFunctionalTest):
-    fixtures = ['default_vendors.yaml', 'demo_mode.yaml']
+    fixtures = ['default_vendors.yaml']
 
     def handle_login_dialog(self, username, password, expected_content):
         # perform user login with the given credentials

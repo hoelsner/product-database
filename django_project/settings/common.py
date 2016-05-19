@@ -29,6 +29,13 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.security.SecurityMiddleware',
 )
 
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+        'LOCATION': 'product_database_cache_table',
+    }
+}
+
 ROOT_URLCONF = 'django_project.urls'
 
 TEMPLATES = [
@@ -67,5 +74,11 @@ STATICFILES_DIRS = (
     os.path.join(BASE_DIR, "../node_modules"),
 )
 
+# demo mode only for testing
+DEMO_MODE = False
+
 # enable session timeout
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+
+# name of the configuration file that should be used
+APP_CONFIG_FILE = os.path.join("conf", os.getenv("PDB_CONFIG_FILE", "product_database.config"))

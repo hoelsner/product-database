@@ -1,6 +1,7 @@
 from django.core.urlresolvers import reverse
-from django.test import TestCase
-from app.productdb.models import Settings
+from django.test import TestCase, override_settings
+
+from app.config import AppSettings
 
 
 class TestCeleryTaskCreation(TestCase):
@@ -9,16 +10,18 @@ class TestCeleryTaskCreation(TestCase):
     """
     fixtures = ['default_vendors.yaml', 'default_users.yaml']
 
+    @override_settings(BROKER_URL='memory://')
     def test_trigger_manual_cisco_eox_synchronization(self):
         """
-        Test if the manual Cisco EoX synchronization can be scheduled manually
+        Test if a Cisco EoX synchronization task is scheduled after
         :return:
         """
-        print("--> remember to start a redis server when executing this test")
-        s, created = Settings.objects.get_or_create(id=1)
-        s.cisco_api_enabled = True
-        s.cisco_eox_api_auto_sync_enabled = True
-        s.save()
+        app_config = AppSettings()
+        app_config.read_file()
+
+        app_config.set_cisco_api_enabled(True)
+        app_config.set_periodic_sync_enabled(True)
+        app_config.write_file()
 
         # schedule Cisco EoX API update
         url = reverse('productdb:schedule_cisco_eox_api_sync_now')
@@ -27,6 +30,10 @@ class TestCeleryTaskCreation(TestCase):
         self.assertEqual(resp.status_code, 302)
 
         # verify that task ID is saved in settings (set by the schedule call)
-        s = Settings.objects.get(id=1)
-        self.assertNotEqual(s.eox_api_sync_task_id, "")
+        app_config.read_file()
+        task_id = app_config.get_string(
+            section=AppSettings.CISCO_EOX_CRAWLER_SECTION,
+            key="eox_api_sync_task_id"
+        )
+        self.assertNotEqual(task_id, "")
 

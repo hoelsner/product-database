@@ -1,13 +1,16 @@
-from selenium.webdriver.common.keys import Keys
+import configparser
 
+from selenium.webdriver.common.keys import Keys
+from django.test import override_settings
 from tests.base.django_test_cases import DestructiveProductDbFunctionalTest
-import json
 import time
 
 
+@override_settings(DEMO_MODE=True)
 class CiscoApiSettingsTest(DestructiveProductDbFunctionalTest):
     # with Demo Mode, the application does not require a connection to the Cisco API console (calls are bypassed)
-    fixtures = ['default_vendors.yaml', 'demo_mode.yaml']
+    fixtures = ['default_vendors.yaml']
+    cisco_ios_credentials_config = "conf/product_database.cisco_api_test.config"
 
     def test_enable_cisco_api_settings(self):
         # a user hits the global settings page
@@ -48,8 +51,12 @@ class CiscoApiSettingsTest(DestructiveProductDbFunctionalTest):
 
         # enter the credentials from the file "ciscoapi.client_credentials.json.bak" and
         # save the settings
-        f = open("ciscoapi.client_credentials.json.bak")
-        credentials = json.loads(f.read())
+        config = configparser.ConfigParser()
+        config.read(self.cisco_ios_credentials_config)
+        credentials = {
+            "client_id": config.get(section="cisco_api", option="client_id"),
+            "client_secret": config.get(section="cisco_api", option="client_secret")
+        }
 
         api_client_id = self.browser.find_element_by_id("id_cisco_api_client_id")
         api_client_id.clear()

@@ -1,16 +1,16 @@
 """
 Unit tests for the Cisco EoX API
 """
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from app.productdb.extapi import ciscoapiconsole as ciscoapi
 
 
+@override_settings(APP_CONFIG_FILE="conf/product_database.cisco_api_test.config")
 class TestCiscoEoxApiClass(TestCase):
     """
     test the Cisco EoX API classes
     """
-    fixtures = ['default_vendors.yaml', 'cisco_api_test_credentials.yaml']
-    file_with_test_credentials = "ciscoapi.client_credentials.json.bak"
+    fixtures = ['default_vendors.yaml']
 
     def test_valid_eox_call_with_single_product_number(self):
         test_product = "WS-C2960-24-S"

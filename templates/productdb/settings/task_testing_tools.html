@@ -20,19 +20,19 @@ Settings - Task overview and status
             This page provides testing tools for various crawlers.
         </p>
 
-        {% if settings.cisco_api_enabled %}
+        {% if settings.global.cisco_api_enabled == "True" %}
         {# Print state of the credentials for the Cisco API access #}
-        {% if settings.cisco_api_credentials_successful_tested %}
+        {% if settings.cisco_api.cisco_api_credentials_successful_tested %}
         <div class="alert alert-success" role="alert">
             <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
             <span class="sr-only">Cisco API credentials working:</span>
-            The Cisco Hello API is accessible using the credentials below{% if settings.cisco_api_credentials_last_message != "" %} ({{ settings.cisco_api_credentials_last_message }}){% endif %}.
+            The Cisco Hello API is accessible using the credentials below{% if settings.cisco_api.cisco_api_credentials_last_message != "" %} ({{ settings.cisco_api.cisco_api_credentials_last_message }}){% endif %}.
         </div>
         {% else %}
         <div class="alert alert-danger" role="alert">
             <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
             <span class="sr-only">Cisco API credentials not working:</span>
-            Verification of the API access failed ({{ settings.cisco_api_credentials_last_message }}).
+            Verification of the API access failed ({{ settings.cisco_api.cisco_api_credentials_last_message }}).
         </div>
         {% endif %}
 
