@@ -1,11 +1,10 @@
-from django.test import TestCase
-
-from app.config import AppSettings
-from django.test import override_settings
-from app.productdb.crawler import cisco_eox_api_crawler
-from app.productdb.models import Product
 import json
 import os
+from django.test import TestCase
+from django.test import override_settings
+from app.ciscoeox import api_crawler
+from app.config import AppSettings
+from app.productdb.models import Product
 
 
 @override_settings(APP_CONFIG_FILE="conf/test.TestCiscoEoxCrawler.config")
@@ -30,14 +29,13 @@ class TestCiscoEoxCrawler(TestCase):
         app_config.write_file()
 
         eox_sample_response = os.path.join("app",
-                                           "productdb",
+                                           "ciscoeox",
                                            "tests",
-                                           "test_crawler",
                                            "cisco_eox_sample_response.json")
         eox_db_json = json.loads(open(eox_sample_response).read())
 
         for record in eox_db_json['EOXRecord']:
-            cisco_eox_api_crawler.update_local_db_based_on_record(record, True)
+            api_crawler.update_local_db_based_on_record(record, True)
 
     def test_eox_update_call_with_special_character(self):
         """
@@ -101,7 +99,7 @@ class TestCiscoEoxCrawler(TestCase):
             }
         }"""
         eox_db_json = json.loads(eox_db_record)
-        cisco_eox_api_crawler.update_local_db_based_on_record(eox_db_json, True)
+        api_crawler.update_local_db_based_on_record(eox_db_json, True)
 
         p = Product.objects.get(product_id="SPARE%")
 
@@ -159,7 +157,7 @@ class TestCiscoEoxCrawler(TestCase):
         }"""
 
         eox_db_json = json.loads(sample_record)
-        cisco_eox_api_crawler.update_local_db_based_on_record(eox_db_json, True)
+        api_crawler.update_local_db_based_on_record(eox_db_json, True)
 
         p = Product.objects.get(product_id=test_product)
 

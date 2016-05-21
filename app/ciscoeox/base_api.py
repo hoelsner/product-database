@@ -1,10 +1,10 @@
-import requests
-import json
 import datetime
+import json
 import logging
+import requests
 from django.core.cache import cache
+from app.ciscoeox.exception import *
 from app.config import AppSettings
-from app.productdb.extapi.exception import *
 
 logger = logging.getLogger(__name__)
 
@@ -138,6 +138,7 @@ class BaseCiscoApiConsole:
                 raise AuthorizationFailedException("Not Authorized")
 
             else:
+                cache.delete(self.AUTH_TOKEN_CACHE_KEY)
                 self.current_access_token = json.loads(result.text)
                 self.__new_token_created__ = True
 
@@ -192,7 +193,7 @@ class BaseCiscoApiConsole:
 
 class CiscoHelloApi(BaseCiscoApiConsole):
     """
-    Implementation of the Hello API endpoint for testing
+    Implementation of the Hello API endpoint (only for testing)
 
     """
     HELLO_API_URL = "https://api.cisco.com/hello"
@@ -201,14 +202,16 @@ class CiscoHelloApi(BaseCiscoApiConsole):
         logger.debug("call to Hello API endpoint")
         if self.is_ready_for_use():
             try:
+                print(self.http_auth_header)
                 result = requests.get(self.HELLO_API_URL, headers=self.http_auth_header)
-                if result.text.find("Not Authorized") != -1:
-                    logger.debug("call not authorized: %s" % result.text)
-                    raise AuthorizationFailedException("Not Authorized")
 
             except Exception as ex:
                 logger.error("cannot contact API endpoint at %s" % self.HELLO_API_URL, exc_info=True)
                 raise ConnectionFailedException("cannot contact API endpoint at %s" % self.HELLO_API_URL) from ex
+
+            if result.text.find("Not Authorized") != -1:
+                logger.debug("call not authorized: %s" % result.text)
+                raise AuthorizationFailedException("Not Authorized")
 
             return result.json()
         raise CiscoApiCallFailed("Client not ready (credentials or token missing)")

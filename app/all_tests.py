@@ -1,3 +1,2 @@
-from app.productdb.tests.offline_tests import *
-from app.productdb.tests.online_tests import *
-from app.config.tests import *
+from app.online_tests import *
+from app.offline_tests import *

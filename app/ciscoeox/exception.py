@@ -1,47 +1,47 @@
 class ConnectionFailedException(BaseException):
     """
-    Exception raised if connection issues to external servers occur
+    exception if no connection to the server can be established
     """
     pass
 
 
 class AuthorizationFailedException(BaseException):
     """
-    Exception raised if the authorization with an external service failed
+    exception if the authorization failed
     """
     pass
 
 
 class ClaimTokenFailedException(BaseException):
     """
-    Exception raised if the renew of a token failed (wrong credentials)
+    exception if the renew of the token failed (wrong credentials)
     """
     pass
 
 
 class CredentialsNotFoundException(BaseException):
     """
-    Signals that there are no Client credentials defined
+    signals that there are no client credentials defined
     """
     pass
 
 
 class InvalidClientCredentialsException(BaseException):
     """
-    Wrong client credentials, API access is not authorized
+    wrong client credentials, API access is not authorized
     """
     pass
 
 
 class CannotSaveFileException(BaseException):
     """
-    Exception raised if a file operation fails
+    exception raised if a file operation fails
     """
     pass
 
 
 class CiscoApiCallFailed(BaseException):
     """
-    Exception raised if an API call failed
+    exception raised if an API call failed
     """
     pass

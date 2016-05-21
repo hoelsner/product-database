@@ -1,11 +1,11 @@
-from app.config import AppSettings
-from app.config.utils import test_cisco_hello_api_access
-from app.productdb.models import Product, Vendor
-from app.productdb.extapi.ciscoapiconsole import CiscoEoxApi
-from app.productdb.extapi.exception import CredentialsNotFoundException, ConnectionFailedException, CiscoApiCallFailed
-import logging
 import json
+import logging
 from datetime import datetime
+from app.ciscoeox.exception import CredentialsNotFoundException, ConnectionFailedException, CiscoApiCallFailed
+from app.ciscoeox.base_api import CiscoEoxApi
+from app.config import AppSettings
+from app.config.utils import test_cisco_hello_api_access, test_cisco_eox_api_access
+from app.productdb.models import Product, Vendor
 
 logger = logging.getLogger(__name__)
 
@@ -155,11 +155,11 @@ def update_local_db_based_on_record(eox_record, create_missing=False):
 
 def query_cisco_eox_api(query_string, blacklist, create_missing=False):
     """
-    Execute a query against the Cisco API and updates the database if the product
+    execute a query against the Cisco API and updates the database if the product
     is not defined in the blacklist string.
 
-    :param query_string:
-    :param blacklist:
+    :param query_string: string that should be used against the Cisco EoX API
+    :param blacklist: list of strings that shouldn't be imported to the database
     :param create_missing:
     :return:
     """
@@ -236,7 +236,7 @@ def update_cisco_eox_database(api_query=None):
         raise CiscoApiCallFailed(msg)
 
     # test API access
-    success = test_cisco_hello_api_access(
+    success = test_cisco_eox_api_access(
         app_settings.get_cisco_api_client_id(),
         app_settings.get_cisco_api_client_secret(),
         False

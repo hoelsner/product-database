@@ -1,31 +1,33 @@
-import tempfile
 import logging
+import tempfile
 
+from app.ciscoeox.base_api import CiscoHelloApi, BaseCiscoApiConsole
+from app.ciscoeox.exception import CiscoApiCallFailed
+from app.ciscoeox.exception import ConnectionFailedException
+from app.ciscoeox.exception import InvalidClientCredentialsException
 from django.conf import settings
-from django.shortcuts import render_to_response
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import permission_required
 from django.shortcuts import redirect
+from django.shortcuts import render_to_response
 from django.shortcuts import resolve_url
 from django.template import RequestContext
-from django.contrib.auth.decorators import permission_required
-from django.contrib.auth.decorators import login_required
 from django.utils.safestring import mark_safe
 from djcelery.models import WorkerState
 
-import app.productdb.tasks as tasks
+import app.ciscoeox.tasks as tasks
+from app.ciscoeox import base_api
+from app.ciscoeox.api_crawler import update_cisco_eox_database
 from app.config import AppSettings
-from app.config.utils import update_periodic_cisco_eox_api_crawler_task, test_cisco_hello_api_access
-from app.productdb import util as app_util
-from app.productdb.models import Vendor
-from app.productdb.models import Product
+from app.config.utils import update_periodic_cisco_eox_api_crawler_task, test_cisco_hello_api_access, \
+    test_cisco_eox_api_access
+from app.productdb import utils as app_util
+from app.productdb.excel_import import ImportProductsExcelFile
 from app.productdb.forms import CiscoApiSettingsForm
 from app.productdb.forms import CommonSettingsForm
 from app.productdb.forms import ImportProductsFileUploadForm
-from app.productdb.extapi import ciscoapiconsole
-from app.productdb.extapi.exception import InvalidClientCredentialsException
-from app.productdb.extapi.exception import CiscoApiCallFailed
-from app.productdb.extapi.exception import ConnectionFailedException
-from app.productdb.crawler.cisco_eox_api_crawler import update_cisco_eox_database
-from app.productdb.excel_import import ImportProductsExcelFile
+from app.productdb.models import Product
+from app.productdb.models import Vendor
 
 logger = logging.getLogger(__name__)
 
@@ -203,7 +205,7 @@ def settings_view(request):
 
             if not app_config.is_cisco_api_enabled():
                 # reset values from API configuration
-                base_api = ciscoapiconsole.BaseCiscoApiConsole()
+                base_api = BaseCiscoApiConsole()
                 base_api.client_id = "PlsChgMe"
                 base_api.client_secret = "PlsChgMe"
                 base_api.save_client_credentials()
@@ -274,7 +276,7 @@ def cisco_api_settings(request):
 
                 else:
                     try:
-                        test_cisco_hello_api_access(
+                        test_cisco_eox_api_access(
                             form.cleaned_data['cisco_api_client_id'],
                             form.cleaned_data['cisco_api_client_secret']
                         )
@@ -309,7 +311,7 @@ def cisco_api_settings(request):
 
         if app_config.is_cisco_api_enabled():
             try:
-                base_api = ciscoapiconsole.CiscoHelloApi()
+                base_api = CiscoHelloApi()
                 base_api.load_client_credentials()
                 # load the client credentials if exist
                 cisco_api_credentials = base_api.get_client_credentials()

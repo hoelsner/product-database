@@ -1,8 +1,8 @@
-from app.config import AppSettings
-from django_project.celery import app as app
-import app.productdb.crawler.cisco_eox_api_crawler as cisco_eox_api_crawler
 import logging
 
+import app.ciscoeox.api_crawler as cisco_eox_api_crawler
+from app.config import AppSettings
+from django_project.celery import app as app
 
 logger = logging.getLogger(__name__)
 
