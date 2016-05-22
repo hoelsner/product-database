@@ -16,11 +16,9 @@ from django.utils.safestring import mark_safe
 from djcelery.models import WorkerState
 
 import app.ciscoeox.tasks as tasks
-from app.ciscoeox import base_api
 from app.ciscoeox.api_crawler import update_cisco_eox_database
 from app.config import AppSettings
-from app.config.utils import update_periodic_cisco_eox_api_crawler_task, test_cisco_hello_api_access, \
-    test_cisco_eox_api_access
+from app.config.utils import test_cisco_eox_api_access
 from app.productdb import utils as app_util
 from app.productdb.excel_import import ImportProductsExcelFile
 from app.productdb.forms import CiscoApiSettingsForm
@@ -156,7 +154,6 @@ def bulk_eol_check(request):
                     # add queries without result to the stats and the counter
                     q_res_str = "Not found in database"
                     if query not in result_stats.keys():
-                        print("Q " + query)
                         result_stats[query] = dict()
                         result_stats[query]['state'] = "Not found"
                         result_stats[query]['product'] = dict()
@@ -217,7 +214,6 @@ def settings_view(request):
                 app_config.set_cisco_eox_api_auto_sync_last_execution_result(False)
                 app_config.set_cisco_api_credentials_successful_tested(False)
                 app_config.set_periodic_sync_enabled(False)
-                update_periodic_cisco_eox_api_crawler_task(False)       # disable periodic sync
 
                 app_config.set(
                     value="not tested",
@@ -276,12 +272,16 @@ def cisco_api_settings(request):
 
                 else:
                     try:
-                        test_cisco_eox_api_access(
+                        test_state = test_cisco_eox_api_access(
                             form.cleaned_data['cisco_api_client_id'],
                             form.cleaned_data['cisco_api_client_secret']
                         )
-                        app_config.set_cisco_api_credentials_last_message("successful connected")
-                        app_config.set_cisco_api_credentials_successful_tested(True)
+                        app_config.set_cisco_api_credentials_successful_tested(test_state)
+                        if test_state:
+                            app_config.set_cisco_api_credentials_last_message("successful connected")
+
+                        else:
+                            app_config.set_cisco_api_credentials_last_message("invalid credentials")
 
                     except InvalidClientCredentialsException as ex:
                         logger.warn("verification of client credentials failed", exc_info=True)
@@ -290,7 +290,6 @@ def cisco_api_settings(request):
 
             # process the data in form.cleaned_data as required
             app_config.set_periodic_sync_enabled(form.cleaned_data['eox_api_auto_sync_enabled'])
-            update_periodic_cisco_eox_api_crawler_task(form.cleaned_data['eox_api_auto_sync_enabled'])
 
             app_config.set_cisco_eox_api_queries(form.cleaned_data['eox_api_queries'])
             app_config.set_product_blacklist_regex(form.cleaned_data['eox_api_blacklist'])
@@ -330,7 +329,6 @@ def cisco_api_settings(request):
         "settings_form": form,
         "settings": app_config.to_dictionary()
     }
-    print(app_config.to_dictionary())
 
     return render_to_response("productdb/settings/cisco_api_settings.html",
                               context=context,

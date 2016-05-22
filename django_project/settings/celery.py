@@ -1,3 +1,5 @@
+from celery.schedules import crontab
+
 from django_project.settings.common import *
 
 #
@@ -17,5 +19,12 @@ CELERYBEAT_SCHEDULE_FILENAME = "../celerybeat-schedule.db"
 CELERYBEAT_PIDFILE = "../celerybeat.pid"
 CELERYBEAT_SCHEDULER = 'djcelery.schedulers.DatabaseScheduler'
 CELERY_TIMEZONE = TIME_ZONE
+CELERYBEAT_SCHEDULE = {
+    'periodic-sync-with-cisco-eox-api': {
+        'task': 'ciscoeox.synchronize_with_cisco_eox_api',
+        'schedule': crontab(hour=3, minute=0, day_of_week=5)
+    },
+}
+
 
 djcelery.setup_loader()

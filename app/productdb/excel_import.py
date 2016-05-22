@@ -7,14 +7,14 @@ from app.productdb.models import Vendor
 logger = logging.getLogger(__name__)
 
 
-class InvalidExcelFileFormat(BaseException):
+class InvalidExcelFileFormat(Exception):
     """
     Exception thrown if there is an issue with the low level file format
     """
     pass
 
 
-class InvalidImportFormatException(BaseException):
+class InvalidImportFormatException(Exception):
     """
     Exception thrown if the format of the Excel file for the import is invalid
     """

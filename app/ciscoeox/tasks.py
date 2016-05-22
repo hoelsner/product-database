@@ -7,7 +7,10 @@ from django_project.celery import app as app
 logger = logging.getLogger(__name__)
 
 
-@app.task(serializer='json', name="synchronize_with_cisco_eox_api")
+@app.task(
+    serializer='json',
+    name="ciscoeox.synchronize_with_cisco_eox_api"
+)
 def execute_task_to_synchronize_cisco_eox_states():
     """
     This task synchronize the local database with the Cisco EoX API. It executes all configured queries and stores the
@@ -19,15 +22,26 @@ def execute_task_to_synchronize_cisco_eox_states():
 
     :return:
     """
-    logger.info("start sync with Cisco EoX API...")
-
-    # update the local database based on the Cisco API
-    result = cisco_eox_api_crawler.synchronize_with_cisco_eox_api()
-    logger.info("result: %s" % str(result))
-
-    # clean task from configuration
     app_config = AppSettings()
     app_config.read_file()
-    app_config.set(value="", key="eox_api_sync_task_id", section=AppSettings.CISCO_EOX_CRAWLER_SECTION)
+
+    if app_config.is_periodic_sync_enabled():
+        logger.info("start sync with Cisco EoX API...")
+
+        # update the local database based on the Cisco API
+        try:
+            result = cisco_eox_api_crawler.synchronize_with_cisco_eox_api()
+            logger.info("result: %s" % str(result))
+
+        except Exception as ex:
+            msg = "Synchronization with Cisco EoX API falied: %s" % str(ex)
+            logger.error(msg, exc_info=True)
+            result = {"error": msg}
+
+        # clean task from configuration
+        app_config.set(value="", key="eox_api_sync_task_id", section=AppSettings.CISCO_EOX_CRAWLER_SECTION)
+
+    else:
+        result = {"message": "task not enabled"}
 
     return result

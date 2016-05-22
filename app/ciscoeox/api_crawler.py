@@ -4,7 +4,7 @@ from datetime import datetime
 from app.ciscoeox.exception import CredentialsNotFoundException, ConnectionFailedException, CiscoApiCallFailed
 from app.ciscoeox.base_api import CiscoEoxApi
 from app.config import AppSettings
-from app.config.utils import test_cisco_hello_api_access, test_cisco_eox_api_access
+from app.config.utils import test_cisco_eox_api_access
 from app.productdb.models import Product, Vendor
 
 logger = logging.getLogger(__name__)
@@ -18,6 +18,7 @@ def convert_time_format(date_format):
     """
     if date_format == "YYYY-MM-DD":
         return "%Y-%m-%d"
+
     return "%Y-%m-%d"
 
 
@@ -80,6 +81,7 @@ def update_local_db_based_on_record(eox_record, create_missing=False):
                                                  eox_record['UpdatedTimeStamp']['dateFormat']
                                              )).date()
                     product.eox_update_time_stamp = euts
+
             if "EndOfSaleDate" in eox_record.keys():
                 value = eox_record['EndOfSaleDate']['value']
                 if value != " ":
@@ -88,6 +90,7 @@ def update_local_db_based_on_record(eox_record, create_missing=False):
                                                  eox_record['EndOfSaleDate']['dateFormat']
                                              )).date()
                     product.end_of_sale_date = eosd
+
             if "LastDateOfSupport" in eox_record.keys():
                 value = eox_record['LastDateOfSupport']['value']
                 if value != " ":
@@ -98,6 +101,7 @@ def update_local_db_based_on_record(eox_record, create_missing=False):
                                               )).date()
                     print("After: %s" % eosud)
                     product.end_of_support_date = eosud
+
             if "EOXExternalAnnouncementDate" in eox_record.keys():
                 value = eox_record['EOXExternalAnnouncementDate']['value']
                 if value != " ":
@@ -106,6 +110,7 @@ def update_local_db_based_on_record(eox_record, create_missing=False):
                                                  eox_record['EOXExternalAnnouncementDate']['dateFormat']
                                              )).date()
                     product.eol_ext_announcement_date = eead
+
             if "EndOfSWMaintenanceReleases" in eox_record.keys():
                 value = eox_record['EndOfSWMaintenanceReleases']['value']
                 if value != " ":
@@ -114,6 +119,7 @@ def update_local_db_based_on_record(eox_record, create_missing=False):
                                                   eox_record['EndOfSWMaintenanceReleases']['dateFormat']
                                               )).date()
                     product.end_of_sw_maintenance_date = eosmd
+
             if "EndOfRoutineFailureAnalysisDate" in eox_record.keys():
                 value = eox_record['EndOfRoutineFailureAnalysisDate']['value']
                 if value != " ":
@@ -122,6 +128,7 @@ def update_local_db_based_on_record(eox_record, create_missing=False):
                                                        eox_record['EndOfRoutineFailureAnalysisDate']['dateFormat']
                                                    )).date()
                     product.end_of_routine_failure_analysis = eorfa_date
+
             if "EndOfServiceContractRenewal" in eox_record.keys():
                 value = eox_record['EndOfServiceContractRenewal']['value']
                 if value != " ":
@@ -130,6 +137,7 @@ def update_local_db_based_on_record(eox_record, create_missing=False):
                                                   eox_record['EndOfServiceContractRenewal']['dateFormat']
                                               )).date()
                     product.end_of_service_contract_renewal = eoscr
+
             if "EndOfSvcAttachDate" in eox_record.keys():
                 value = eox_record['EndOfSvcAttachDate']['value']
                 if value != " ":
@@ -138,10 +146,22 @@ def update_local_db_based_on_record(eox_record, create_missing=False):
                                                   eox_record['EndOfSvcAttachDate']['dateFormat']
                                               )).date()
                     product.end_of_new_service_attachment_date = eonsa
+
+            if "EndOfSecurityVulSupportDate" in eox_record.keys():
+                value = eox_record['EndOfSecurityVulSupportDate']['value']
+                if value != " ":
+                    eovsd = datetime.strptime(value,
+                                              convert_time_format(
+                                                  eox_record['EndOfSecurityVulSupportDate']['dateFormat']
+                                              )).date()
+                    product.end_of_sec_vuln_supp_date = eovsd
+
             if "ProductBulletinNumber" in eox_record.keys():
                 product.eol_reference_number = eox_record['ProductBulletinNumber']
+
             if "LinkToProductBulletinURL" in eox_record.keys():
                 product.eol_reference_url = eox_record['LinkToProductBulletinURL']
+
             product.save()
 
     except Exception as ex:
@@ -168,7 +188,7 @@ def query_cisco_eox_api(query_string, blacklist, create_missing=False):
     results = []
 
     try:
-        max_pages = 99
+        max_pages = 999
         current_page = 1
         result_pages = 0
 
@@ -178,6 +198,7 @@ def query_cisco_eox_api(query_string, blacklist, create_missing=False):
             if current_page == 1:
                 result_pages = eoxapi.amount_of_pages()
                 logger.info("Initial query returns %d page(s)" % result_pages)
+
             records = eoxapi.get_eox_records()
 
             # check for errors
@@ -204,6 +225,7 @@ def query_cisco_eox_api(query_string, blacklist, create_missing=False):
 
             if current_page == result_pages:
                 break
+
             else:
                 current_page += 1
 

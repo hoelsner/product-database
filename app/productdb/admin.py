@@ -3,15 +3,6 @@ from app.productdb.models import Product, Vendor
 
 
 class ProductAdmin(admin.ModelAdmin):
-    fields = (
-        'product_id',
-        'description',
-        'list_price',
-        'currency',
-        'tags',
-        'vendor',
-    )
-
     list_display = (
         'product_id',
         'description',
@@ -23,7 +14,7 @@ class ProductAdmin(admin.ModelAdmin):
         'product_id',
         'description',
         'tags',
-        'vendor',
+        'vendor__name',
     )
 
 admin.site.register(Product, ProductAdmin)

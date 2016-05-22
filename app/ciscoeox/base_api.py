@@ -157,7 +157,13 @@ class BaseCiscoApiConsole:
         self.__save_cached_temp_token__()
 
     def drop_cached_token(self):
-        cache.delete(self.AUTH_TOKEN_CACHE_KEY)
+        try:
+            cache.delete(self.AUTH_TOKEN_CACHE_KEY)
+
+        except Exception as ex:
+            logger.error("cannot delete cache value: %s" % str(ex), exc_info=True)
+            pass
+
         self.current_access_token = None
         self.http_auth_header = None
 
@@ -219,10 +225,9 @@ class CiscoHelloApi(BaseCiscoApiConsole):
 
 class CiscoEoxApi(BaseCiscoApiConsole):
     """
-    Implementation of the EoX API Version 4 endpoint
-
+    Implementation of the EoX API Version 5 endpoint
     """
-    EOX_API_URL = "https://api.cisco.com/supporttools/eox/rest/4/EOXByProductID/%d/%s"
+    EOX_API_URL = "https://api.cisco.com/supporttools/eox/rest/5/EOXByProductID/%d/%s"
 
     last_json_result = None
     last_page_call = 0
