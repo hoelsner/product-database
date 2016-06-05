@@ -23,7 +23,7 @@ else:
 if not os.path.exists(secret_key_file):
     chars = "abcdefghijklmnopqrstuvwxyz" \
             "ABCDEFGHIJKLMNOPQRSTUVWXYZ" \
-            "0123456789_-+#*?=()"
+            "0123456789_-+#*?="
     key = ''.join(random.SystemRandom().choice(chars) for _ in range(length))
     f = open(secret_key_file, "w")
     f.write(key)
