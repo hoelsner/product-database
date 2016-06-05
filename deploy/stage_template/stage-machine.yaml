@@ -9,7 +9,7 @@
     # by default, git is used as source (clone of the product-database GitHub repository)
     system_source: "git"
     site_source_branch: "master"
--
+
     # when using vagrant, use the 'file' system_source (should be used with vagrant)
     #   system_source: "file"
     #   site_source: "/vagrant"
@@ -19,6 +19,16 @@
     db_user: "productdb"            # the database password is generated during the staging of the server
     db_host: "127.0.0.1"            # remote Postgres-SQL server are not tested
     db_port: "5432"
+
+    enable_ldap: false
+
+    # only required if enable_ldap is set to true
+    ldap_server_url: ""
+    ldap_bind_dn: ""
+    ldap_bind_password: ""
+    ldap_user_search: ""
+    ldap_group_search: ""
+    ldap_require_group: ""
 
   tasks:
    - include: ../appliance/setup-productdb.yaml

@@ -20,3 +20,6 @@ redis==2.10.5
 requests==2.10.0
 six==1.10.0
 xlrd==0.9.4
+pyldap==2.4.25.1
+django-auth-ldap==1.2.8
+django-bootstrap3==7.0.1

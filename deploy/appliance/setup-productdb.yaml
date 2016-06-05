@@ -34,6 +34,8 @@
          - python-psycopg2
          - npm
          - nodejs-legacy
+         - libsasl2-dev
+         - libldap2-dev
 
   - name: create .bash_profile for user
     command: touch /home/{{ site_user }}/.bash_profile
@@ -113,6 +115,7 @@
     pip:
       requirements=/var/www/productdb/source/requirements.txt
       virtualenv=/var/www/productdb/virtualenv
+      executable=pip3
 
   #
   # create key file for Django
@@ -186,11 +189,20 @@
 
   #
   # configure GUNICORN
-  - name: create gunicorn service
+  - name: create gunicorn service (with LDAP)
+    become: true
+    copy:
+      src=appliance/templates/gunicorn.ldap.template.service
+      dest=/etc/systemd/system/productdb-gunicorn.service
+    when: enable_ldap == true
+
+  - name: create gunicorn service (without LDAP)
     become: true
     copy:
       src=appliance/templates/gunicorn.template.service
       dest=/etc/systemd/system/productdb-gunicorn.service
+    when: enable_ldap != true
+
   - name: set secret key on gunicorn environment configuration
     become: true
     replace:
@@ -242,11 +254,20 @@
 
   #
   # configure CELERY WORKER service
-  - name: create celery_worker service
+  - name: create celery_worker service (with LDAP)
+    become: true
+    copy:
+      src=appliance/templates/celery_worker.ldap.template.service
+      dest=/etc/systemd/system/productdb-celeryworker.service
+    when: enable_ldap == true
+
+  - name: create celery_worker service (without LDAP)
     become: true
     copy:
       src=appliance/templates/celery_worker.template.service
       dest=/etc/systemd/system/productdb-celeryworker.service
+    when: enable_ldap != true
+
   - name: set secret key on celery_worker environment configuration
     become: true
     replace:
@@ -298,11 +319,20 @@
 
   #
   # configure CELERYCAM service
-  - name: create celery_camera service
+  - name: create celery_camera service (with LDAP)
+    become: true
+    copy:
+      src=appliance/templates/celery_camera.ldap.template.service
+      dest=/etc/systemd/system/productdb-celerycamera.service
+    when: enable_ldap == true
+
+  - name: create celery_camera service (without LDAP)
     become: true
     copy:
       src=appliance/templates/celery_camera.template.service
       dest=/etc/systemd/system/productdb-celerycamera.service
+    when: enable_ldap != true
+
   - name: set secret key on celery_camera environment configuration
     become: true
     replace:
@@ -351,6 +381,50 @@
       dest=/etc/systemd/system/productdb-celerycamera.service
       regexp='__PDB_DATABASE_PORT__'
       replace={{ db_port }}
+
+  #
+  # add configuration parameters to bash profile of the app user
+  - name: set secret key in bash profile
+    lineinfile:
+      dest: /home/{{ site_user }}/.bash_profile
+      regexp: ^export DJANGO_SECRET_KEY=
+      line: export DJANGO_SECRET_KEY="{{ SECRET_KEY.stdout }}"
+  - name: set database name in bash profile
+    lineinfile:
+      dest: /home/{{ site_user }}/.bash_profile
+      regexp: ^export PDB_DATABASE_NAME={{ db_name }}
+      line: export PDB_DATABASE_NAME={{ db_name }}
+  - name: set database user in bash profile
+    lineinfile:
+      dest: /home/{{ site_user }}/.bash_profile
+      regexp: ^export PDB_DATABASE_NAME={{ db_user }}
+      line: export PDB_DATABASE_USER={{ db_user }}
+  - name: set database password in bash profile
+    lineinfile:
+      dest: /home/{{ site_user }}/.bash_profile
+      regexp: ^export PDB_DATABASE_PASSWORD={{ POSTGRES_KEY.stdout }}
+      line: export PDB_DATABASE_PASSWORD={{ POSTGRES_KEY.stdout }}
+  - name: set database host in bash profile
+    lineinfile:
+      dest: /home/{{ site_user }}/.bash_profile
+      regexp: ^export PDB_DATABASE_HOST={{ db_host }}
+      line: export PDB_DATABASE_HOST={{ db_host }}
+  - name: set database port in bash profile
+    lineinfile:
+      dest: /home/{{ site_user }}/.bash_profile
+      regexp: ^export PDB_DATABASE_PORT={{ db_port }}
+      line: export PDB_DATABASE_PORT={{ db_port }}
+  - name: add config file in bash profile
+    lineinfile:
+      dest: /home/{{ site_user }}/.bash_profile
+      regexp: ^export PDB_CONFIG_FILE=product_database.server.config
+      line: export PDB_CONFIG_FILE==product_database.server.config
+
+  #
+  # add LDAP configuration if required
+  - name: include the LDAP configuration if required
+    include: add-ldap-configuration.yaml
+    when: enable_ldap == true
 
   #
   # collect static files

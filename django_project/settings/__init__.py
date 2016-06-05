@@ -52,4 +52,5 @@ LOGGING = configure_logging(DJANGO_LOG_LEVEL, log_file, "product_db.log")
 logging.getLogger().warn("DJANGO CONFIG: Start logging on level: %s" % DJANGO_LOG_LEVEL)
 
 from django_project.settings.rest_framework import *
+from django_project.settings.ldap import *
 from django_project.settings.swagger_api import *

@@ -1,5 +1,5 @@
 ---
-- hosts: productdb
+- hosts: productdb_ldap
   gather_facts: true
   vars:
     site_user: "{{ ansible_user_id }}"
@@ -14,7 +14,9 @@
     db_host: "127.0.0.1"
     db_port: "5432"
 
-    enable_ldap: false
+    enable_ldap: true
 
   tasks:
+   - debug: msg="Before running this script, please create a ldap-parameters.yaml file in the deploy directory that contains your LDAP configuration parameters."
+   - include_vars: ldap-parameters.yaml
    - include: appliance/setup-productdb.yaml

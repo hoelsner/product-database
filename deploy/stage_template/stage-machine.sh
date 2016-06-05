@@ -7,6 +7,6 @@ echo "Please Note: The ansible playbook is only tested with Ubuntu 16.04 and use
 echo ""
 echo "-- execute ansible playbook"
 export ANSIBLE_HOST_KEY_CHECKING=False
-ansible-playbook stage-machine.yaml --inventory-file=ansible-inventory --ask-pass  --ask-sudo-pass
+ansible-playbook stage-machine.yaml --inventory-file=ansible-inventory --ask-pass --ask-sudo-pass
 echo ""
 echo "-- DONE"
