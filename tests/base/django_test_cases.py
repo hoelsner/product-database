@@ -62,8 +62,8 @@ class FunctionalTest(StaticLiveServerTestCase):
 class DestructiveProductDbFunctionalTest(FunctionalTest):
     API_USERNAME = "api"
     API_PASSWORD = "api"
-    ADMIN_USERNAME = "admin"
-    ADMIN_PASSWORD = "admin"
+    ADMIN_USERNAME = "pdb_admin"
+    ADMIN_PASSWORD = "pdb_admin"
     TEST_CONFIG_FILE = "conf/product_database.ft.config"
 
     def clean_config_file(self):
@@ -79,6 +79,20 @@ class DestructiveProductDbFunctionalTest(FunctionalTest):
         drop_all_products(server=self.server_url,
                           username=self.API_USERNAME,
                           password=self.API_PASSWORD)
+
+    def handle_login_dialog(self, username, password, expected_content):
+        # perform user login with the given credentials
+        page_text = self.browser.find_element_by_tag_name('body').text
+        self.assertIn("Login", page_text)
+
+        self.browser.find_element_by_id("username").send_keys(username)
+        self.browser.find_element_by_id("password").send_keys(password)
+        self.browser.find_element_by_id("login_button").click()
+        self.browser.implicitly_wait(3)
+
+        # check that the user sees the expected title
+        page_text = self.browser.find_element_by_tag_name('body').text
+        self.assertIn(expected_content, page_text, "login failed")
 
     def create_test_data(self):
         base_path = os.path.join("tests", "data")
@@ -97,8 +111,8 @@ class DestructiveProductDbFunctionalTest(FunctionalTest):
         self.clean_config_file()
 
         # create superuser
-        u = User(username='admin')
-        u.set_password('admin')
+        u = User(username='pdb_admin')
+        u.set_password('pdb_admin')
         u.is_superuser = True
         u.is_staff = True
         u.save()

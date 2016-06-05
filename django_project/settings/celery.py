@@ -13,7 +13,8 @@ CELERY_RESULT_BACKEND = 'redis://localhost:6379'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
-# task results expire after 4 weeks
+CELERY_TRACK_STARTED = True
+CELERY_RESULT_PERSISTENT = True
 CELERY_TASK_RESULT_EXPIRES = 2419200
 CELERYBEAT_SCHEDULE_FILENAME = "../celerybeat-schedule.db"
 CELERYBEAT_PIDFILE = "../celerybeat.pid"
@@ -25,6 +26,5 @@ CELERYBEAT_SCHEDULE = {
         'schedule': crontab(hour=3, minute=0, day_of_week=5)
     },
 }
-
 
 djcelery.setup_loader()

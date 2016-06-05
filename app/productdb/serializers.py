@@ -39,6 +39,7 @@ class ProductLifecycleSerializer(HyperlinkedModelSerializer):
             'end_of_routine_failure_analysis',
             'end_of_service_contract_renewal',
             'end_of_new_service_attachment_date',
+            'end_of_sec_vuln_supp_date',
             'eol_reference_number',
             'eol_reference_url',
         )
@@ -105,6 +106,7 @@ class ProductSerializer(HyperlinkedModelSerializer):
             'end_of_routine_failure_analysis',
             'end_of_service_contract_renewal',
             'end_of_new_service_attachment_date',
+            'end_of_sec_vuln_supp_date',
             'eol_reference_number',
             'eol_reference_url',
         )

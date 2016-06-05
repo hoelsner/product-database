@@ -119,7 +119,7 @@ class ConfigFileSettingsTest(TestCase):
 
         # get values
         value = settings.get_cisco_api_client_id()
-        self.assertEqual(value, "")
+        self.assertEqual(value, "PlsChgMe")
 
         # set values
         value = "test_id"
@@ -143,7 +143,7 @@ class ConfigFileSettingsTest(TestCase):
 
         # get values
         value = settings.get_cisco_api_client_secret()
-        self.assertEqual(value, "")
+        self.assertEqual(value, "PlsChgMe")
 
         # set values
         value = "test_secret"
@@ -190,7 +190,7 @@ class ConfigFileSettingsTest(TestCase):
         self.assertFalse(settings.get_boolean("cisco_api_enabled"))
 
         # get a configuration value (with an explicit option)
-        self.assertEqual("", settings.get_string("client_id", section=AppSettings.CISCO_API_SECTION))
+        self.assertEqual("PlsChgMe", settings.get_string("client_id", section=AppSettings.CISCO_API_SECTION))
 
         # get the default Cisco API enabled value
         self.assertFalse(settings.is_cisco_api_enabled())

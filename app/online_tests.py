@@ -1,2 +1,0 @@
-from app.ciscoeox.tests.test_base_api import TestBasicCiscoApiModule
-from app.ciscoeox.tests.test_base_api import TestInvalidUseOfCiscoApi

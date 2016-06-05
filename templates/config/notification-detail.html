@@ -1,0 +1,37 @@
+{% extends '_base/page-with_nav-single_row.html' %}
+
+{% block title %}
+    Message {{ message.title }} - Product Database
+{% endblock %}
+
+{% block page_content %}
+    <div class="col-md-6 col-md-offset-3">
+        <div class="page-header">
+            {% if message.type == "SUCC" %}
+                <h1 class="text-success">
+            {% elif message.type == "ERR" %}
+                <h1 class="text-danger">
+            {% elif message.type == "WARN" %}
+                <h1 class="text-warning">
+            {% else %}
+                <h1 class="text-info">
+            {% endif %}
+                {% if message.type == "SUCC" %}
+                    <i class="fa fa-comment-o media-object text-success"></i>
+                {% elif message.type == "ERR" %}
+                    <i class="fa fa-comment-o media-object text-danger"></i>
+                {% elif message.type == "WARN" %}
+                    <i class="fa fa-comment-o media-object text-warning"></i>
+                {% else %}
+                    <i class="fa fa-comment-o media-object text-info"></i>
+                {% endif %}
+                {{ message.title }} <small>{{ message.created|date:"Y-m-d" }}</small>
+            </h1>
+        </div>
+        {% autoescape off %}
+        {{ message.summary_message }}
+        <hr>
+        {{ message.detailed_message }}
+        {% endautoescape %}
+    </div>
+{% endblock %}

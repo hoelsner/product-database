@@ -2,19 +2,22 @@
 {% load staticfiles %}
 
 {% block bootstrap_theme %}
-    <link href="{% static 'lib/bootstrap/dist/css/bootstrap.min.css' %}" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'lib/bootstrap/dist/css/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="{% static 'lib/font-awesome/css/font-awesome.min.css' %}">
 {% endblock %}
 
 {% block branding %}
-            <a class='navbar-brand' href="{% url 'productdb:home' %}" rel="nofollow">
-                Product Database <span class="version">{% include 'short_version.html' %}</span>
-            </a>
+    <a class="navbar-brand" href="{% url 'productdb:home' %}">Product Database (REST API)</a>
 {% endblock %}
 
 {% block title %}
-    Product DB - API Webfrontend
+    Product Database (REST API)
 {% endblock %}
 
 {% block userlinks %}
-{% include 'navigation_links.html' %}
+    <li role="presentation">
+        <a href="{% url 'productdb:home' %}">
+            Back to Homepage
+        </a>
+    </li>
 {% endblock %}

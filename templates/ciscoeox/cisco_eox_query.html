@@ -1,0 +1,57 @@
+{% extends '_base/page-with_nav-single_row.html' %}
+{% load staticfiles %}
+
+{% block title %}
+    Cisco EoX query - Product Database
+{% endblock %}
+
+{% block page_content %}
+    <div class="page-header">
+        <h1>Manual Cisco EoX API query</h1>
+    </div>
+
+    <p>Please note: This tool is primary for testing and debugging purpose.</p>
+
+    {% if is_cisco_api_enabled %}
+        <form method="post" class="form-horizontal">
+            {% csrf_token %}
+            <div class="panel panel-default">
+                <div class="panel-body">
+                    <p>With this tool, you can directly send a query to the Cisco EoX API and save the results in
+                        the local database.</p>
+                    <div class="alert alert-warning" role="alert">
+                        <strong>Please note:</strong> This function is within the request on the server (no asynchronous
+                        task)! Please keep you query small to avoid timeout issues.
+                    </div>
+                    <div class="input-group">
+                        <span class="input-group-addon" id="api-query">EoX API query</span>
+                        <input id="sync_cisco_eox_states_query" name="sync_cisco_eox_states_query"
+                               type="text" class="form-control" placeholder="Product ID or query" aria-describedby="api-query">
+                    </div>
+                    <div class="checkbox">
+                        <label>
+                            <input id="sync_cisco_eox_states_now" name="sync_cisco_eox_states_now"
+                                   type="checkbox" value="sync_cisco_eox_states_now" />
+                            execute it now
+                        </label>
+                    </div>
+                </div>
+                {% if eox_api_update_records %}
+                <div class="panel-body">
+                    <pre id="direct_query_result_log">
+Query: {{ query_executed }}
+{{ eox_api_update_records }}
+                    </pre>
+                </div>
+                {% endif %}
+            </div>
+            <input type="submit" class="btn btn-primary btn-block" id="submit" value="execute selected tasks" />
+        </form>
+    {% else %}
+        <div class="alert alert-danger" role="alert">
+            <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
+            <span class="sr-only">Cisco API disabled:</span>
+            Please activate the Cisco API access within the <a href="{% url 'productdb_config:change_settings' %}">global configuration</a> page.
+        </div>
+    {% endif %}
+{% endblock %}

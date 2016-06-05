@@ -6,9 +6,9 @@
     is_staff: true
     is_superuser: true
     last_name: ''
-    password: pbkdf2_sha256$20000$udSkPUGibOP9$uf4X7x2UmFIVuGCbtIa2+fJZ8GhF6jL+EswGC9G0gds=
+    password: pbkdf2_sha256$24000$BiSRUrc9wvBr$QXLxpxX0GMXNw7krJSvZP+AmdKeo0z+1NedbrPBg5Do=
     user_permissions: []
-    username: admin
+    username: pdb_admin
   model: auth.user
   pk: 1
 - fields:

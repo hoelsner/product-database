@@ -1,0 +1,90 @@
+{% load staticfiles %}
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Product Database</title>
+    <link rel="icon" href="{% static 'favicon.ico' %}">
+    <link rel="stylesheet" href="{% static 'lib/bootstrap/dist/css/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="{% static 'lib/font-awesome/css/font-awesome.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css/base_page.css' %}">
+    <style type="text/css">
+        /* specific style modifications for the login page */
+        .modal.in {
+            display:block;
+        }
+
+        html,
+        body {
+            height: 100%;
+            background-color: #ccc;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container-fluid">
+        <div id="login_modal" class="modal fade in" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false">
+            <div class="modal-dialog modal-sm">
+                {% if next %}
+                    <form action="{% url "login" %}?next={{ next }}" id="login_form" class="form form-horizontal" method="POST">
+                {%else%}
+                    <form action="{% url "login" %}" id="login_form" class="form form-horizontal" method="POST">
+                {% endif %}
+                    {% csrf_token %}
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <div class="media">
+                                <div class="media-body">
+                                    <h2>Product Database</h2>
+                                </div><div class="media-left media-middle">
+                                    <i class="fa fa-database fa-3x"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-body">
+                            <p>Please enter your credentials below.</p>
+
+                            {% if message %}
+                                <div class="alert alert-danger" role="alert">
+                                    <i class="fa fa-times-circle"></i> {{ message }}
+                                </div>
+                            {% endif %}
+
+                            <div class="form-group" >
+                                <div class=" col-md-12">
+                                    <input type="text" id="username" class="form-control" name="username" placeholder="Username" required autofocus>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div class=" col-md-12">
+                                    <input type="password" id="password" name="password" class="form-control" placeholder="Password" required>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div style="text-align: center;">
+                                    <button id="login_button" class="btn btn-primary" style="width: 200px;">
+                                        <i class="fa fa-sign-in"></i> Login
+                                    </button>
+                                </div>
+                            </div>
+                            {% if not login_only_mode %}
+                                <div style="text-align: center;">
+                                    <a href="{% url 'productdb:home' %}" class="btn btn-default" style="width: 200px;">
+                                        continue without login
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="{% static 'lib/jquery/dist/jquery.min.js' %}"></script>
+    <script src="{% static 'lib/bootstrap/dist/js/bootstrap.min.js' %}"></script>
+</body>
+</html>

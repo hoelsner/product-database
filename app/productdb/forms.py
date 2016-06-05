@@ -6,43 +6,6 @@ from app.productdb.excel_import import ImportProductsExcelFile, InvalidImportFor
 logger = logging.getLogger("app.productdb.forms")
 
 
-class CommonSettingsForm(forms.Form):
-    cisco_api_enabled = forms.BooleanField(
-        initial=False,
-        required=False
-    )
-
-
-class CiscoApiSettingsForm(forms.Form):
-    cisco_api_client_id = forms.CharField(
-        widget=forms.TextInput(attrs={'class': "form-control"})
-    )
-
-    cisco_api_client_secret = forms.CharField(
-        widget=forms.TextInput(attrs={'class': "form-control"})
-    )
-
-    eox_auto_sync_auto_create_elements = forms.BooleanField(
-        initial=False,
-        required=False
-    )
-
-    eox_api_auto_sync_enabled = forms.BooleanField(
-        initial=False,
-        required=False
-    )
-
-    eox_api_queries = forms.CharField(
-        widget=forms.Textarea(attrs={'class': "form-control"}),
-        required=False
-    )
-
-    eox_api_blacklist = forms.CharField(
-        widget=forms.Textarea(attrs={'class': "form-control"}),
-        required=False
-    )
-
-
 class ImportProductsFileUploadForm(forms.Form):
     FILE_EXT_WHITELIST = [
         "xlsx",

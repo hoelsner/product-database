@@ -4,7 +4,7 @@ common Django settings for project
 import os
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-#print("Django BASE_DIR: %s" % BASE_DIR)
+# print("Django BASE_DIR: %s" % BASE_DIR)
 
 INSTALLED_APPS = (
     'django.contrib.admin',
@@ -15,7 +15,10 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework_swagger',
+    'bootstrap3',
     'app.productdb',
+    'app.config',
+    'app.ciscoeox',
 )
 
 MIDDLEWARE_CLASSES = (
@@ -50,6 +53,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'django_project.context_processors.is_ldap_authenticated_user',
             ],
         },
     },
@@ -63,8 +67,8 @@ USE_I18N = True
 USE_L10N = True
 USE_TZ = True
 
-LOGIN_URL = "/productdb/api/login/"
-LOGOUT_URL = "/productdb/api/logout/"
+LOGIN_URL = "/productdb/login/"
+LOGOUT_URL = "/productdb/logout/"
 LOGIN_REDIRECT_URL = "/productdb/"
 
 STATIC_URL = '/productdb/static/'
@@ -78,7 +82,26 @@ STATICFILES_DIRS = (
 DEMO_MODE = False
 
 # enable session timeout
-SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+SESSION_COOKIE_AGE = 60 * 15
+SESSION_SAVE_EVERY_REQUEST = True
 
 # name of the configuration file that should be used
 APP_CONFIG_FILE = os.path.join("conf", os.getenv("PDB_CONFIG_FILE", "product_database.config"))
+
+BOOTSTRAP3 = {
+    'jquery_url': 'lib/jquery/dist/jquery.min.js',
+    'base_url': 'lib/bootstrap/dist',
+    'css_url': None,
+    'theme_url': None,
+    'javascript_url': None,
+    'javascript_in_head': False,
+    'include_jquery': False,
+    'horizontal_label_class': 'col-md-3',
+    'horizontal_field_class': 'col-md-9',
+    'set_required': True,
+    'set_disabled': False,
+    'set_placeholder': False,
+    'required_css_class': '',
+    'error_css_class': 'has-error',
+    'success_css_class': 'has-success',
+}

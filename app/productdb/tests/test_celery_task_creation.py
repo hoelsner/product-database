@@ -1,4 +1,5 @@
 from django.core.urlresolvers import reverse
+from django.core.cache import cache
 from django.test import TestCase, override_settings
 
 from app.config import AppSettings
@@ -24,16 +25,12 @@ class TestCeleryTaskCreation(TestCase):
         app_config.write_file()
 
         # schedule Cisco EoX API update
-        url = reverse('productdb:schedule_cisco_eox_api_sync_now')
-        self.client.login(username="admin", password="admin")
+        url = reverse('cisco_api:start_cisco_eox_api_sync_now')
+        self.client.login(username="pdb_admin", password="pdb_admin")
         resp = self.client.get(url)
         self.assertEqual(resp.status_code, 302)
 
-        # verify that task ID is saved in settings (set by the schedule call)
-        app_config.read_file()
-        task_id = app_config.get_string(
-            section=AppSettings.CISCO_EOX_CRAWLER_SECTION,
-            key="eox_api_sync_task_id"
-        )
+        # verify that task ID is saved in the cache (set by the schedule call)
+        task_id = cache.get("CISCO_EOX_API_SYN_IN_PROGRESS", "")
         self.assertNotEqual(task_id, "")
 

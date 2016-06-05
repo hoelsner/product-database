@@ -23,22 +23,18 @@ class AppSettings:
     # static defined defaults for the application
     CONFIG_DEFAULTS = {
         GLOBAL_SECTION: {
-            "cisco_api_enabled": "false"
+            "cisco_api_enabled": "false",
+            "login_only_mode": "false"
         },
         CISCO_API_SECTION: {
-            "client_id": "",
-            "client_secret": "",
-            "cisco_api_credentials_successful_tested": "false",
-            "cisco_api_credentials_last_message": "not tested"
+            "client_id": "PlsChgMe",
+            "client_secret": "PlsChgMe",
         },
         CISCO_EOX_CRAWLER_SECTION: {
-            "periodic_sync_enabled": "false",
+            "eox_api_auto_sync_enabled": "false",
             "auto_create_new_products": "false",
             "eox_api_queries": "",
             "product_blacklist_regex": "",
-            "eox_api_sync_task_id": "",
-            "eox_api_auto_sync_last_execution_time": "",
-            "eox_api_auto_sync_last_execution_result": ""
         }
     }
     # instance of the ConfigParser
@@ -128,6 +124,21 @@ class AppSettings:
 
     ####################################################################################################################
     # predefined configuration options
+
+    def is_login_only_mode(self):
+        """
+        True if the login only mode is enabled in the configuration, otherwise False
+        """
+        return self.get_boolean("login_only_mode", default=False)
+
+    def set_login_only_mode(self, value):
+        """
+        enable/disable the login only mode
+        """
+        if type(value) is not bool:
+            raise ValueError("Value for the Cisco API enable must be boolean")
+
+        self._parser.set(option="login_only_mode", section=self.GLOBAL_SECTION, value=str(value))
 
     def is_cisco_api_enabled(self):
         """
@@ -262,11 +273,11 @@ class AppSettings:
             value=value
         )
 
-    def get_cisco_eox_api_auto_sync_enabled(self):
+    def is_cisco_eox_api_auto_sync_enabled(self):
         """
-        get the Cisco EoX API auto sync enabled state
+        is the Cisco EoX API auto sync enabled state
         """
-        return self.get_string(
+        return self.get_boolean(
             key="eox_api_auto_sync_enabled",
             section=self.CISCO_EOX_CRAWLER_SECTION,
             default=""
@@ -279,45 +290,5 @@ class AppSettings:
         self.set(
             key="eox_api_auto_sync_enabled",
             section=self.CISCO_EOX_CRAWLER_SECTION,
-            value=value
-        )
-
-    def get_cisco_api_credentials_last_message(self):
-        """
-        get the last message of the Cisco API access test
-        """
-        return self.get_string(
-            key="cisco_api_credentials_last_message",
-            section=self.CISCO_API_SECTION,
-            default=""
-        )
-
-    def set_cisco_api_credentials_last_message(self, value):
-        """
-        set the last message of the Cisco API access test
-        """
-        self.set(
-            key="cisco_api_credentials_last_message",
-            section=self.CISCO_API_SECTION,
-            value=value
-        )
-
-    def get_cisco_api_credentials_successful_tested(self):
-        """
-        get the last test state of the Cisco API access
-        """
-        return self.get_boolean(
-            key="cisco_api_credentials_successful_tested",
-            section=self.CISCO_API_SECTION,
-            default=""
-        )
-
-    def set_cisco_api_credentials_successful_tested(self, value):
-        """
-        set the last test state of the Cisco API access
-        """
-        self.set(
-            key="cisco_api_credentials_successful_tested",
-            section=self.CISCO_API_SECTION,
             value=value
         )

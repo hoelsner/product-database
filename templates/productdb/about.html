@@ -1,42 +1,28 @@
-{% extends 'base.html' %}
-{% load staticfiles %}
+{% extends '_base/page-with_nav.html' %}
 
 {% block title %}
-about
+    About the Product Database
 {% endblock %}
 
-{% block content %}
-        <div class="container">
-            <h1>About the Product Database <small>version {% include 'version.html' %}</small></h1>
-            <hr>
-            <h2>List of third party components</h2>
-            <p>The following libaries, frameworks and applications are used within this Project:</p>
-            <ul>
-                <li><a href="http://getbootstrap.com/" target="_blank">Bootstrap</a></li>
-                <li><a href="http://datatables.net/" target="_blank">Datatables.net</a> with <a href="https://datatables.net/extensions/buttons/" target="_blank">Datatables buttons extension</a></li>
-                <li><a href="https://www.djangoproject.com/" target="_blank">Django Web Framework</a></li>
-                <li><a href="http://www.celeryproject.org/" target="_blank">Celery</a></li>
-                <li><a href="http://www.django-rest-framework.org/" target="_blank">Django REST framework</a></li>
-                <li>Django REST swagger</li>
-                <li>django-celery</li>
-                <li>django-datatables-view</li>
-                <li>django-annoying</li>
-                <li>gunicorn</li>
-                <li>xlrd</li>
-                <li>pandas</li>
-                <li>requests</li>
-                <li>selenium</li>
-                <li>redis</li>
-                <li><a href="https://stuk.github.io/jszip/" target="_blank">JSZip</a> Version 2.5 (required for buttons extension)</li>
-                <li><a href="http://pdfmake.org" target="_blank">PDFMake</a> Version 0.1.18 (required for buttons extension)</li>
-            </ul>
-            <hr>
+{% block main_content %}
+    <div class="row">
+        <div class="col-md-offset-3 col-md-6">
+            <div class="page-header">
+                <h1>About the Product Database</h1>
+            </div>
+            <p>
+                You can find additional information about the Product Database on the
+                <a href="https://github.com/hoelsner/product-database" style="white-space: nowrap" target="_blank">
+                    GitHub project page
+                </a>.
+            </p>
+
             <h2>License</h2>
             <div class="container pull-left" style="width: 700px;">
                 <pre>
 The MIT License (MIT)
 
-Copyright (c) 2015 Henry Ölsner
+Copyright (c) 2016 Henry Ölsner
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -57,5 +43,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
                 </pre>
             </div>
+
         </div>
-{% endblock %}
+    </div>
+{% endblock%}

@@ -1,0 +1,233 @@
+{% extends '_base/page-with_nav-single_row.html' %}
+{% load staticfiles %}
+
+{% block title %}
+    All Products - Product Database
+{% endblock %}
+
+{% block page_content %}
+    <div class="page-header">
+        <h1>All Products</h1>
+    </div>
+
+    <div class="col-md-12">
+        <table id="product_table" class="table table-striped table-hover table-responsive" cellspacing="0" width="100%">
+            <thead>
+                <tr>
+                    <th>Vendor</th>
+                    <th>Product ID</th>
+                    <th>Description</th>
+                    <th>List Price</th>
+                    <th>Tags</th>
+                    <th>Lifecycle State</th>
+                    <th><abbr title="End-of-Life Announcement Date">EoL anno</abbr></th>
+                    <th><abbr title="End-of-Sale Date">EoS</abbr></th>
+                    <th><abbr title="End of New Service Attachment Date">EoNewSA</abbr></th>
+                    <th><abbr title="End of SW Maintenance Releases Date">EoSWM</abbr></th>
+                    <th><abbr title="End of Routine Failure Analysis Date">EoRFA</abbr></th>
+                    <th><abbr title="End of Service Contract Renewal Date">EoSCR</abbr></th>
+                    <th><abbr title="End of Vulnerability/Security Support date">EoVulnServ</abbr></th>
+                    <th>Last Date of Support</th>
+                    <th>Vendor Bulletin</th>
+                </tr>
+            </thead>
+        </table>
+    </div>
+{% endblock %}
+
+{% block additional_head_css %}
+    <link href="{% static 'lib/datatables.net-bs/css/dataTables.bootstrap.min.css' %}" rel="stylesheet" type="text/css">
+    <link href="{% static 'lib/datatables.net-buttons-bs/css/buttons.bootstrap.min.css' %}" rel="stylesheet" type="text/css">
+    <script src="{% static 'lib/jszip/dist/jszip.min.js' %}"></script>
+    <script src="{% static 'lib/pdfmake/build/pdfmake.min.js' %}"></script>
+    <script src="{% static 'lib/pdfmake/build/vfs_fonts.js' %}"></script>
+{% endblock %}
+
+{% block additional_page_js %}
+    <script src="{% static 'lib/datatables.net/js/jquery.dataTables.min.js' %}"></script>
+    <script src="{% static 'lib/datatables.net-bs/js/dataTables.bootstrap.min.js' %}"></script>
+
+    <script src="{% static 'lib/datatables.net-buttons/js/dataTables.buttons.min.js' %}"></script>
+    <script src="{% static 'lib/datatables.net-buttons-bs/js/buttons.bootstrap.min.js' %}"></script>
+
+    <script src="{% static 'lib/datatables.net-buttons/js/buttons.html5.min.js' %}"></script>
+    <script src="{% static 'lib/datatables.net-buttons/js/buttons.colVis.min.js' %}"></script>
+
+    <script type="application/javascript">
+        $(document).ready(function() {
+            var table = $('#product_table').DataTable( {
+                "dom": "<'row'<'col-sm-4'l><'col-sm-4'<'text-center'B>><'col-sm-4'f>>" +
+                     "<'row'<'col-sm-12'tr>>" +
+                     "<'row'<'col-sm-5'i><'col-sm-7'p>>",
+                "processing": true,
+                "serverSide": true,
+                "stateSave": true,
+                "columnDefs": [
+                    {
+                        "targets": 0,
+                        "data": "vendor",
+                        "visible": true,
+                        "searchable": true
+                    },
+                    {
+                        "targets": 1,
+                        "data": "product_id",
+                        "visible": true,
+                        "searchable": true
+                    },
+                    {
+                        "targets": 2,
+                        "data": "description",
+                        "visible": true,
+                        "searchable": true
+                    },
+                    {
+                        "targets": 3,
+                        "data": "list_price",
+                        "visible": true,
+                        "searchable": false,
+                        "render": function ( data, type, row ) {
+                            if (data != null) {
+                                return data + ' ' + row['currency'] + '';
+                            }
+                            else {
+                                return "(not set)"
+                            }
+                        }
+                    },
+                    {
+                        "targets": 4,
+                        "data": "tags",
+                        "visible": false,
+                        "searchable": false
+                    },
+                    {
+                        "targets": 5,
+                        "data": "lifecycle_state",
+                        "visible": true,
+                        "searchable": false,
+                        "render": function ( data, type, row ) {
+                            if (row["eox_update_time_stamp"] != null) {
+                                return "<small>" + row['lifecycle_state'].join("<br>") + "</small>";
+                            }
+                            else {
+                                return ""
+                            }
+                        },
+                        "sortable": false
+                    },
+                    {
+                        "targets": 6,
+                        "data": "eol_ext_announcement_date",
+                        "visible": false,
+                        "searchable": false,
+                        "sortable": false
+                    },
+                    {
+                        "targets": 7,
+                        "data": "end_of_sale_date",
+                        "visible": false,
+                        "searchable": false,
+                        "sortable": false
+                    },
+                    {
+                        "targets": 8,
+                        "data": "end_of_new_service_attachment_date",
+                        "visible": false,
+                        "searchable": false,
+                        "sortable": false
+                    },
+                    {
+                        "targets": 9,
+                        "data": "end_of_sw_maintenance_date",
+                        "visible": false,
+                        "searchable": false,
+                        "sortable": false
+                    },
+                    {
+                        "targets": 10,
+                        "data": "end_of_routine_failure_analysis",
+                        "visible": false,
+                        "searchable": false,
+                        "sortable": false
+                    },
+                    {
+                        "targets": 11,
+                        "data": "end_of_service_contract_renewal",
+                        "visible": false,
+                        "searchable": false,
+                        "sortable": false
+                    },
+                    {
+                        "targets": 12,
+                        "data": "end_of_sec_vuln_supp_date",
+                        "visible": false,
+                        "searchable": false,
+                        "sortable": false
+                    },
+                    {
+                        "targets": 13,
+                        "data": "end_of_support_date",
+                        "visible": false,
+                        "searchable": false,
+                        "sortable": false
+                    },
+                    {
+                        "targets": 14,
+                        "render": function (data, type, row) {
+                            if (row['eol_reference_url'] != null) {
+                                if(row['eol_reference_number'] != null) {
+                                    link_str = row['eol_reference_number']
+                                }
+                                else {
+                                    link_str = "Link"
+                                }
+
+                                return "<a href=\"" + row['eol_reference_url'] +
+                                        "\" target=\"_blank\">" + link_str + "</a>";
+                            }
+                            else {
+                                return ""
+                            }
+                        },
+                        "visible": false,
+                        "searchable": false,
+                        "sortable": false
+                    }
+                ],
+                buttons: [
+                    {
+                        extend: 'copyHtml5',
+                        exportOptions: {
+                            columns: ':visible'
+                        }
+                    },
+                    {
+                        extend: 'csvHtml5',
+                        title: "export products",
+                        fieldSeparator: ';',
+                        fieldBoundary: "",
+                        exportOptions: {
+                            columns: ':visible'
+                        },
+                        extension: '.csv'
+                    },
+                    {
+                        extend: 'pdfHtml5',
+                        title: "export products",
+                        orientation: 'landscape',
+                        pageSize: 'A4',
+                        exportOptions: {
+                            columns: ':visible'
+                        }
+                    },
+                    {
+                        extend: 'colvis',
+                        text: 'show additional columns <i class="fa fa-angle-down"></i>'
+                    }
+                ],
+                "ajax": "{% url 'productdb:datatables_list_products_view' %}"
+            });
+        });
+    </script>
+{% endblock %}

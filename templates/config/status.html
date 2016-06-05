@@ -1,0 +1,60 @@
+{% extends '_base/page-with_nav-single_row.html' %}
+
+{% block title %}
+    Status - Product Database
+{% endblock %}
+
+{% block page_content %}
+    <div class="col-lg-12 col-md-12">
+        <div class="page-header">
+            <h1>Product Database <small>Status </small></h1>
+        </div>
+
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">Cisco API status</h3>
+            </div>
+            <div class="panel-body">
+                {% if is_cisco_api_enabled %}
+                    <div class="col-md-8">
+                        {% if cisco_eox_api_available %}
+                            <div class="alert alert-success" role="alert">
+                                <span class="fa fa-info-circle"></span>
+                                {{ cisco_eox_api_message }}
+                            </div>
+                        {% else %}
+                            <div class="alert alert-danger" role="alert">
+                                <span class="fa fa-exclamation-circle"></span>
+                                {{ cisco_eox_api_message }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-4">
+                        <strong>Actions</strong>
+                        <a id="trigger_sync_with_cisco_eox_api" href="{% url 'cisco_api:start_cisco_eox_api_sync_now' %}" class="btn btn-default btn-sm btn-block">
+                            Start synchronization with Cisco EoX API now
+                        </a>
+                        <a href="{% url 'cisco_api:eox_query' %}" class="btn btn-default btn-sm btn-block">
+                            Manual Query to Cisco EoX database
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info" role="alert">
+                        <span class="fa fa-info-circle" aria-hidden="true"></span>
+                        The Cisco API is not enabled and configured.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">Worker thread status</h3>
+            </div>
+            <div class="panel-body">
+                <p>The automatic synchronization requires at least one running Worker thread.</p>
+                {{ worker_status }}
+            </div>
+        </div>
+    </div>
+{% endblock %}

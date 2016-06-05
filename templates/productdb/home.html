@@ -1,32 +1,59 @@
-{% extends 'base.html' %}
-{% load staticfiles %}
+{% extends '_base/page-with_nav.html' %}
 
 {% block title %}
-Homepage
+    Product Database
 {% endblock %}
 
-{% block content %}
-    <div class="jumbotron">
-        <div class="container">
-            <h1>Product Database</h1>
-            <p>This service provides a central point of management for product information about network equipment.
-            It also provides import, synchronization and crawling functions for certain information from vendors.</p>
+{% block main_content %}
+    <div class="row">
+        <div class="col-lg-12 col-md-12">
+            <div class="jumbotron">
+                <h1>
+                    <i class="fa fa-database"></i>&nbsp;
+                    Product Database
+                </h1>
+                <hr>
+                <p class="hidden-xs">
+                    This database contains information about network equipment like routers and switches from multiple
+                    vendors.
+                </p>
+                <div class="btn-group" role="group">
+                    <a class="btn btn-default" role="button" href="{% url 'productdb:all_products' %}">
+                        <i class="fa fa-search"></i>&nbsp;&nbsp;
+                        All Products
+                    </a>
+                    <a class="btn btn-default" role="button" href="{% url 'productdb:bulk_eol_check' %}">
+                        <i class="fa fa-cogs"></i>&nbsp;&nbsp;
+                        Bulk EoL check
+                    </a>
+                </div>
 
-            <p>This version includes the following tools:</p>
-            <p><a class="btn btn-primary btn-lg" href="{% url 'productdb:browse_product_lifecycle_information' %}" role="button">View lifecycle information by vendor &raquo;</a></p>
-            <p><a class="btn btn-primary btn-lg" href="{% url 'productdb:bulk_eol_check' %}" role="button">Bulk EoL check &raquo;</a></p>
-
-            <div class="container">
-                <h2>Browse local database</h2>
-                <p><a class="btn btn-default btn" href="{% url 'productdb:browse_vendor_products' %}" role="button">Browse products by vendor &raquo;</a></p>
-            </div>
-
-            <div class="container">
-                <h2>REST API access</h2>
-                <p>This service provides API access to the local database.</p>
-                <p><a class="btn btn-default btn" href="{% url 'productdb:api_redirect' %}" role="button">API Webfrontend &raquo;</a></p>
-                <p><a class="btn btn-default btn" href="{% url 'productdb:apidocs:django.swagger.base.view' %}" role="button">Access API documentation &raquo;</a></p>
+                <p class="hidden-xs hidden-sm text-muted">
+                    <small>
+                        The lifecycle information can be updated periodically using the Cisco EoX API that is available&nbsp;
+                        at&nbsp;<a href="https://apiconsole.cisco.com/" style="white-space: nowrap">
+                        <i class="fa fa-external-link"></i>&nbsp;https://apiconsole.cisco.com/ (Cisco Partners only)</a>.
+                    </small>
+                </p>
+                <p class="text-muted">
+                    <small>
+                        More information about the Product Database are available on the
+                        <a href="https://github.com/hoelsner/product-database" style="white-space: nowrap">
+                            GitHub project page
+                        </a>.
+                    </small>
+                </p>
             </div>
         </div>
+        {% if recent_events|length != 0 %}
+            <div class="col-lg-11 col-md-11 col-md-offset-1">
+                <h1>recent events</h1>
+                <ul class="media-list">
+                    {% for event in recent_events %}
+                        {% include '_base/notification_record.html' %}
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
     </div>
 {% endblock %}

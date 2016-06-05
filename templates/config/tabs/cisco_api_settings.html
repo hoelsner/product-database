@@ -1,0 +1,79 @@
+<div class="panel panel-default">
+    <div class="panel-heading">
+        <h3 class="panel-title">Cisco API authentication settings</h3>
+    </div>
+    <div class="panel-body">
+        <div class="col-lg-12">
+            <div class="form-group">
+                {{ form.cisco_api_client_id.errors }}
+                <label class="col-sm-3 control-label" for="{{ form.cisco_api_client_id.id_for_label }}">Client ID:</label>
+                <div class="col-sm-9">
+                    {{ form.cisco_api_client_id }}
+                </div>
+            </div>
+
+            <div class="form-group">
+                {{ form.cisco_api_client_secret.errors }}
+                <label class="col-sm-3 control-label" for="{{ form.cisco_api_client_secret.id_for_label }}">Client Secret:</label>
+                <div class="col-sm-9">
+                    {{ form.cisco_api_client_secret }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="panel panel-default">
+    <div class="panel-heading">
+        <h3 class="panel-title">Cisco EoX API synchronization</h3>
+    </div>
+    <div class="panel-body">
+        <div class="form-group">
+            {{ form.eox_api_auto_sync_enabled.errors }}
+            <label class="col-sm-3 control-label" for="{{ form.eox_api_auto_sync_enabled.id_for_label }}">Periodic synchronization of the Cisco EoX states:</label>
+            <div class="col-sm-9">
+
+                {{ form.eox_api_auto_sync_enabled }}
+
+                <span id="helpBlock" class="help-block">
+                    This synchronization tasks utilizes the Cisco EoX API and will automatically update the lifecycle state of the products from the configured queries.
+                    It is executed by default <strong>on every Friday at 3:00 a.m.</strong>.
+                </span>
+            </div>
+        </div>
+
+        <div class="form-group">
+            {{ form.eox_auto_sync_auto_create_elements.errors }}
+            <label class="col-sm-3 control-label" for="{{ form.eox_auto_sync_auto_create_elements.id_for_label }}">auto-create new products:</label>
+            <div class="col-sm-9">
+                {{ form.eox_auto_sync_auto_create_elements }}
+                <span id="helpBlock" class="help-block">
+                    If enabled, a new products will be create (if not already existing) if an EoL message is found. Otherwise, these entries are ignored.
+                </span>
+            </div>
+        </div>
+
+        <div class="form-group">
+            {{ form.eox_api_queries.errors }}
+            <label class="col-sm-3 control-label" for="{{ form.eox_api_queries.id_for_label }}">Cisco EoX API Queries:</label>
+            <div class="col-sm-9">
+                {{ form.eox_api_queries }}
+                <span id="helpBlock" class="help-block">
+                    EoX queries which are executed line by line. Please note, that every query must contain at least three characters.
+                    Wildcard (*) are also allowed.
+                </span>
+            </div>
+        </div>
+
+        <div class="form-group">
+            {{ form.eox_api_blacklist.errors }}
+            <label class="col-sm-3 control-label" for="{{ form.eox_api_blacklist.id_for_label }}">blacklist for products:</label>
+            <div class="col-sm-9">
+                {{ form.eox_api_blacklist }}
+                <span id="helpBlock" class="help-block">
+                    Product numbers separated by semicolon (;). If a PID is part of this list, it isn't added to the local database.
+                    This option is only in use if the "auto-create new products" option is enabled.
+                </span>
+            </div>
+        </div>
+    </div>
+</div>

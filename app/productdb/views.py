@@ -1,31 +1,20 @@
 import logging
 import tempfile
 
-from app.ciscoeox.base_api import CiscoHelloApi, BaseCiscoApiConsole
-from app.ciscoeox.exception import CiscoApiCallFailed
-from app.ciscoeox.exception import ConnectionFailedException
-from app.ciscoeox.exception import InvalidClientCredentialsException
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.decorators import permission_required
-from django.shortcuts import redirect
-from django.shortcuts import render_to_response
-from django.shortcuts import resolve_url
-from django.template import RequestContext
-from django.utils.safestring import mark_safe
-from djcelery.models import WorkerState
+from django.shortcuts import redirect, render
+from django.utils.timezone import timedelta, datetime, get_current_timezone
 
-import app.ciscoeox.tasks as tasks
-from app.ciscoeox.api_crawler import update_cisco_eox_database
-from app.config import AppSettings
-from app.config.utils import test_cisco_eox_api_access
+from app.config.models import NotificationMessage
 from app.productdb import utils as app_util
 from app.productdb.excel_import import ImportProductsExcelFile
-from app.productdb.forms import CiscoApiSettingsForm
-from app.productdb.forms import CommonSettingsForm
 from app.productdb.forms import ImportProductsFileUploadForm
 from app.productdb.models import Product
 from app.productdb.models import Vendor
+
+from django_project.utils import login_required_if_login_only_mode
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +25,16 @@ def home(request):
     :param request:
     :return:
     """
-    return render_to_response("productdb/home.html", context={}, context_instance=RequestContext(request))
+    if login_required_if_login_only_mode(request):
+        return redirect('%s?next=%s' % (settings.LOGIN_URL, request.path))
+
+    context = {
+        "recent_events": NotificationMessage.objects.filter(
+            created__gte=datetime.now(get_current_timezone()) - timedelta(days=14)
+        ).order_by('-created')[:5]
+    }
+
+    return render(request, "productdb/home.html", context=context)
 
 
 def about_view(request):
@@ -45,15 +43,21 @@ def about_view(request):
     :param request:
     :return:
     """
-    return render_to_response("productdb/about.html", context={}, context_instance=RequestContext(request))
+    if login_required_if_login_only_mode(request):
+        return redirect('%s?next=%s' % (settings.LOGIN_URL, request.path))
+
+    return render(request, "productdb/about.html", context={})
 
 
 def browse_vendor_products(request):
-    """View to browse the product by vendor
+    """Browse vendor specific products in the database
 
     :param request:
     :return:
     """
+    if login_required_if_login_only_mode(request):
+        return redirect('%s?next=%s' % (settings.LOGIN_URL, request.path))
+
     context = {
         "vendors": Vendor.objects.all()
     }
@@ -70,30 +74,19 @@ def browse_vendor_products(request):
 
     context['vendor_selection'] = selected_vendor
 
-    return render_to_response("productdb/browse/vendor_products.html",
-                              context=context,
-                              context_instance=RequestContext(request))
+    return render(request, "productdb/browse/view_products_by_vendor.html", context=context)
 
 
-def browse_product_lifecycle_information(request):
-    """View to browse the lifecycle information for products by vendor
+def browse_all_products(request):
+    """Browse all products in the database
 
     :param request:
     :return:
     """
-    context = {
-        "vendors": Vendor.objects.all()
-    }
-    selected_vendor = ""
+    if login_required_if_login_only_mode(request):
+        return redirect('%s?next=%s' % (settings.LOGIN_URL, request.path))
 
-    if request.method == "POST":
-        selected_vendor = request.POST['vendor_selection']
-
-    context['vendor_selection'] = selected_vendor
-
-    return render_to_response("productdb/lifecycle/lifecycle_information_by_vendor_products.html",
-                              context=context,
-                              context_instance=RequestContext(request))
+    return render(request, "productdb/browse/view_products.html", context={})
 
 
 def bulk_eol_check(request):
@@ -102,6 +95,9 @@ def bulk_eol_check(request):
     :param request:
     :return:
     """
+    if login_required_if_login_only_mode(request):
+        return redirect('%s?next=%s' % (settings.LOGIN_URL, request.path))
+
     context = {}
 
     if request.method == "POST":
@@ -125,6 +121,7 @@ def bulk_eol_check(request):
             found_but_no_eol_announcement = False
             db_result = Product.objects.filter(product_id=query.strip())
 
+            # go through the database results
             for element in db_result:
                 q_result_counter += 1
 
@@ -138,24 +135,25 @@ def bulk_eol_check(request):
                     result_stats[element.product_id] = dict()
                     result_stats[element.product_id]['count'] = 1
                     result_stats[element.product_id]['product'] = element
-                    if element.eol_ext_announcement_date:
-                        result_stats[element.product_id]['state'] = "EoS/EoL"
-                    else:
-                        result_stats[element.product_id]['state'] = "Not EoL"
+                    result_stats[element.product_id]['state'] = element.current_lifecycle_states
 
                 # increment statistics
                 else:
                     result_stats[element.product_id]['count'] += 1
 
+            # classify the query results
             if (q_result_counter == 0) or found_but_no_eol_announcement:
+                if (q_result_counter == 0) and not found_but_no_eol_announcement:
+                    q_res_str = "Not found in database"
+
                 if found_but_no_eol_announcement:
                     q_res_str = "no EoL announcement found"
+
                 else:
                     # add queries without result to the stats and the counter
-                    q_res_str = "Not found in database"
                     if query not in result_stats.keys():
                         result_stats[query] = dict()
-                        result_stats[query]['state'] = "Not found"
+                        result_stats[query]['state'] = ["Not found in database"]
                         result_stats[query]['product'] = dict()
                         result_stats[query]['product']['product_id'] = query
                         result_stats[query]['count'] = 1
@@ -177,323 +175,7 @@ def bulk_eol_check(request):
         if len(query_result) == 0:
             context['query_no_result'] = True
 
-    return render_to_response("productdb/lifecycle/bulk_eol_check.html",
-                              context=context,
-                              context_instance=RequestContext(request))
-
-
-@login_required()
-@permission_required('is_superuser')
-def settings_view(request):
-    """View for common Product Database settings
-
-    :param request:
-    :return:
-    """
-    app_config = AppSettings()
-    app_config.read_file()
-
-    if request.method == 'POST':
-        # create a form instance and populate it with data from the request:
-        form = CommonSettingsForm(request.POST)
-        if form.is_valid():
-            # process the data in form.cleaned_data as required
-            app_config.set_cisco_api_enabled(form.cleaned_data['cisco_api_enabled'])
-
-            if not app_config.is_cisco_api_enabled():
-                # reset values from API configuration
-                base_api = BaseCiscoApiConsole()
-                base_api.client_id = "PlsChgMe"
-                base_api.client_secret = "PlsChgMe"
-                base_api.save_client_credentials()
-
-                app_config.set_cisco_api_client_id("")
-                app_config.set_cisco_api_client_secret("")
-                app_config.set_product_blacklist_regex("")
-                app_config.set_cisco_eox_api_queries("")
-                app_config.set_cisco_eox_api_auto_sync_last_execution_result(False)
-                app_config.set_cisco_api_credentials_successful_tested(False)
-                app_config.set_periodic_sync_enabled(False)
-
-                app_config.set(
-                    value="not tested",
-                    key="cisco_api_credentials_last_message",
-                    section=AppSettings.CISCO_API_SECTION
-                )
-                app_config.set(
-                    value=False,
-                    key="cisco_api_credentials_successful_tested",
-                    section=AppSettings.CISCO_API_SECTION
-                )
-
-            app_config.write_file()
-
-            return redirect(resolve_url("productdb:settings"))
-
-    else:
-        form = CommonSettingsForm()
-        form.fields['cisco_api_enabled'].initial = app_config.is_cisco_api_enabled()
-
-    context = {
-        "form": form,
-        "cisco_api_enabled": app_config.is_cisco_api_enabled()
-    }
-
-    return render_to_response("productdb/settings/settings.html",
-                              context=context,
-                              context_instance=RequestContext(request))
-
-
-@login_required()
-@permission_required('is_superuser')
-def cisco_api_settings(request):
-    """View for the settings of the Cisco API console
-
-    :param request:
-    :return: :raise:
-    """
-    app_config = AppSettings()
-    app_config.read_file()
-
-    if request.method == "POST":
-        # create a form instance and populate it with data from the request:
-        form = CiscoApiSettingsForm(request.POST)
-        if form.is_valid():
-            old_credentials = app_config.get_cisco_api_client_id() + app_config.get_cisco_api_client_secret()
-            new_credentials = form.cleaned_data['cisco_api_client_id'] + form.cleaned_data['cisco_api_client_secret']
-
-            if not new_credentials == old_credentials:
-                # test credentials (if not in demo mode)
-                if settings.DEMO_MODE:
-                    logger.warn("skipped verification of the Hello API call to test the credentials, "
-                                "DEMO MODE enabled")
-                    app_config.set_cisco_api_credentials_last_message("Demo Mode")
-                    app_config.set_cisco_api_credentials_successful_tested(True)
-
-                else:
-                    try:
-                        test_state = test_cisco_eox_api_access(
-                            form.cleaned_data['cisco_api_client_id'],
-                            form.cleaned_data['cisco_api_client_secret']
-                        )
-                        app_config.set_cisco_api_credentials_successful_tested(test_state)
-                        if test_state:
-                            app_config.set_cisco_api_credentials_last_message("successful connected")
-
-                        else:
-                            app_config.set_cisco_api_credentials_last_message("invalid credentials")
-
-                    except InvalidClientCredentialsException as ex:
-                        logger.warn("verification of client credentials failed", exc_info=True)
-                        app_config.set_cisco_api_credentials_last_message(str(ex))
-                        app_config.set_cisco_api_credentials_successful_tested(False)
-
-            # process the data in form.cleaned_data as required
-            app_config.set_periodic_sync_enabled(form.cleaned_data['eox_api_auto_sync_enabled'])
-
-            app_config.set_cisco_eox_api_queries(form.cleaned_data['eox_api_queries'])
-            app_config.set_product_blacklist_regex(form.cleaned_data['eox_api_blacklist'])
-            app_config.set_auto_create_new_products(form.cleaned_data['eox_auto_sync_auto_create_elements'])
-
-            app_config.set_cisco_api_client_id(form.cleaned_data['cisco_api_client_id'])
-            app_config.set_cisco_api_client_secret(form.cleaned_data['cisco_api_client_secret'])
-
-            app_config.write_file()
-            return redirect(resolve_url("productdb:cisco_api_settings"))
-
-    else:
-        form = CiscoApiSettingsForm()
-        form.fields['eox_auto_sync_auto_create_elements'].initial = app_config.is_auto_create_new_products()
-        form.fields['eox_api_auto_sync_enabled'].initial = app_config.is_periodic_sync_enabled()
-        form.fields['eox_api_queries'].initial = app_config.get_cisco_eox_api_queries()
-        form.fields['eox_api_blacklist'].initial = app_config.get_product_blacklist_regex()
-
-        if app_config.is_cisco_api_enabled():
-            try:
-                base_api = CiscoHelloApi()
-                base_api.load_client_credentials()
-                # load the client credentials if exist
-                cisco_api_credentials = base_api.get_client_credentials()
-
-                form.fields['cisco_api_client_id'].initial = cisco_api_credentials['client_id']
-                form.fields['cisco_api_client_secret'].initial = cisco_api_credentials['client_secret']
-
-            except Exception:
-                logger.fatal("unexpected exception occurred", exc_info=True)
-                raise
-        else:
-            form.cisco_api_client_id = False
-            form.fields['cisco_api_client_secret'].required = False
-
-    context = {
-        "settings_form": form,
-        "settings": app_config.to_dictionary()
-    }
-
-    return render_to_response("productdb/settings/cisco_api_settings.html",
-                              context=context,
-                              context_instance=RequestContext(request))
-
-
-@login_required()
-@permission_required('is_superuser')
-def crawler_overview(request):
-    """Overview of the tasks
-
-    :param request:
-    :return:
-    """
-    app_config = AppSettings()
-    app_config.read_file()
-
-    context = {
-        "settings": app_config.to_dictionary()
-    }
-
-    # determine worker status
-    ws = WorkerState.objects.all()
-    if ws.count() == 0:
-        worker_status = """
-        <div class="alert alert-danger" role="alert">
-            <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
-            <span class="sr-only">Error:</span>
-            No worker found, periodic and scheduled tasks will not run
-        </div>"""
-    else:
-        alive_worker = False
-        for w in ws:
-            if w.is_alive():
-                alive_worker = True
-                break
-        if alive_worker:
-            worker_status = """
-            <div class="alert alert-success" role="alert">
-                <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
-                <span class="sr-only">Error:</span>
-                Online Worker found, task backend running.
-            </div>"""
-
-        else:
-            worker_status = """
-            <div class="alert alert-warning" role="alert">
-                <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
-                <span class="sr-only">Error:</span>
-                Only offline Worker found, task backend not running. Please verify the state in the
-                <a href="/admin">Django Admin</a> frontend.
-            </div>"""
-
-    context['worker_status'] = mark_safe(worker_status)
-
-    return render_to_response("productdb/settings/crawler_overview.html",
-                              context=context,
-                              context_instance=RequestContext(request))
-
-
-@login_required()
-@permission_required('is_superuser')
-def test_tools(request):
-    """test tools for the application (mainly about the crawler functions)
-
-    :param request:
-    :return:
-    """
-    app_config = AppSettings()
-    app_config.read_file()
-
-    context = {
-        "settings": app_config.to_dictionary()
-    }
-
-    if request.method == "POST":
-        # create a form instance and populate it with data from the request:
-        if "sync_cisco_eox_states_now" in request.POST.keys():
-            if "sync_cisco_eox_states_query" in request.POST.keys():
-                query = request.POST['sync_cisco_eox_states_query']
-
-                if query != "":
-                    if len(query.split(" ")) == 1:
-                        context['query_executed'] = query
-                        try:
-                            eox_api_update_records = update_cisco_eox_database(api_query=query)
-
-                        except ConnectionFailedException as ex:
-                            eox_api_update_records = ["Cannot contact Cisco API, error message:\n%s" % ex]
-
-                        except CiscoApiCallFailed as ex:
-                            eox_api_update_records = [ex]
-
-                        except Exception as ex:
-                            logger.debug("execution failed due to unexpected exception", exc_info=True)
-                            eox_api_update_records = ["execution failed: %s" % ex]
-
-                        context['eox_api_update_records'] = eox_api_update_records
-
-                    else:
-                        context['eox_api_update_records'] = ["Invalid query '%s': not executed" %
-                                                             request.POST['sync_cisco_eox_states_query']]
-                else:
-                    context['eox_api_update_records'] = ["Please specify a valid query"]
-
-    # determine worker status
-    ws = WorkerState.objects.all()
-    if ws.count() == 0:
-        worker_status = """
-        <div class="alert alert-danger" role="alert">
-            <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
-            <span class="sr-only">Error:</span>
-            No worker found, periodic and scheduled tasks will not run
-        </div>"""
-    else:
-        alive_worker = False
-        for w in ws:
-            if w.is_alive():
-                alive_worker = True
-                break
-        if alive_worker:
-            worker_status = """
-            <div class="alert alert-success" role="alert">
-                <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
-                <span class="sr-only">Error:</span>
-                Online Worker found, task backend running.
-            </div>"""
-
-        else:
-            worker_status = """
-            <div class="alert alert-warning" role="alert">
-                <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
-                <span class="sr-only">Error:</span>
-                Only offline Worker found, task backend not running. Please verify the state in the
-                <a href="/admin">Django Admin</a> frontend.
-            </div>"""
-
-    context['worker_status'] = mark_safe(worker_status)
-
-    return render_to_response("productdb/settings/task_testing_tools.html",
-                              context=context,
-                              context_instance=RequestContext(request))
-
-
-@login_required()
-@permission_required('is_superuser')
-def schedule_cisco_eox_api_sync_now(request):
-    """View which manually schedules an Cisco EoX synchronization and redirects to the given URL
-    or the main settings page.
-
-    :param request:
-    :return:
-    """
-    app_config = AppSettings()
-    app_config.read_file()
-
-    task = tasks.execute_task_to_synchronize_cisco_eox_states.delay()
-    app_config.set(
-        section=AppSettings.CISCO_EOX_CRAWLER_SECTION,
-        key="eox_api_sync_task_id",
-        value= task.id
-    )
-    app_config.write_file()
-
-    return redirect(request.GET.get('redirect_url', "/productdb/settings/"))
+    return render(request, "productdb/do/bulk_eol_check.html", context=context)
 
 
 @login_required()
@@ -540,6 +222,4 @@ def import_products(request):
 
     context['form'] = form
 
-    return render_to_response("productdb/settings/import_products.html",
-                              context=context,
-                              context_instance=RequestContext(request))
+    return render(request, "productdb/import/import_products.html", context=context)

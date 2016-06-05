@@ -1,9 +1,8 @@
 import datetime
 import json
 from django.test import TestCase, override_settings
-from app.ciscoeox.exception import *
 from app.ciscoeox import base_api as ciscoapi
-from app.config.utils import test_cisco_eox_api_access
+from app.ciscoeox.exception import ConnectionFailedException, AuthorizationFailedException
 
 
 class TestInvalidUseOfCiscoApi(TestCase):
@@ -13,6 +12,9 @@ class TestInvalidUseOfCiscoApi(TestCase):
         super().setUp()
 
     def test_server_unreachable(self):
+        """
+        test the behavior if the Server for the Cisco API is not reachable
+        """
         try:
             helloapi = ciscoapi.CiscoHelloApi()
 
@@ -32,24 +34,23 @@ class TestInvalidUseOfCiscoApi(TestCase):
 @override_settings(APP_CONFIG_FILE="conf/product_database.cisco_api_test.config")
 class TestBasicCiscoApiModule(TestCase):
     """
-    verify overall function of the Basic Cisco API class
+    verify function of the Basic Cisco API class
     """
     fixtures = ['default_vendors.yaml']
 
     def test_api_access_using_hello_endpoint(self):
+        """
+        Test the Hello API endpoint
+        """
         expected_result = '"response": "Hello World"'
-
         helloapi = ciscoapi.CiscoHelloApi()
 
         # you need to manually load the client credentials before working with the API
         helloapi.load_client_credentials()
-
         helloapi_result = helloapi.hello_api_call()
 
+        # check the result and that that cached token is valid
         self.assertIn(expected_result, json.dumps(helloapi_result))
-        print(" - API access working")
-
-        # check that cached token is valid
         self.assertTrue(helloapi.__is_cached_token_valid__(), "cached token should be valid, because if was just "
                                                               "created")
 
@@ -63,9 +64,11 @@ class TestBasicCiscoApiModule(TestCase):
         self.assertFalse(helloapi2.__new_token_created__, "At this point, no new token must be created")
 
     def test_valid_ready_for_use(self):
+        """
+        test the ready for use method
+        """
         helloapi = ciscoapi.CiscoHelloApi()
-        # drop cached token
-        helloapi.drop_cached_token()
+        helloapi.drop_cached_token()  # drop cached token
 
         # you need to manually load the client credentials before working with the API
         helloapi.load_client_credentials()
@@ -76,6 +79,9 @@ class TestBasicCiscoApiModule(TestCase):
         self.assertTrue(helloapi.is_ready_for_use(), "class should be ready to use after this call")
 
     def test_api_access_with_expired_temp_token(self):
+        """
+        test access with an expired authentication token (should be automatically renewed)
+        """
         expected_result = '"ErrorDescription": "EOX information does not exist for the following product ID(s): ' \
                           'WS-C2960-24T-S"'
 
@@ -91,30 +97,7 @@ class TestBasicCiscoApiModule(TestCase):
         json.dumps(call_result)
         self.assertIn(expected_result, json.dumps(call_result))
         self.assertTrue(eox_api.__new_token_created__, "Token was programmatic changed to an expired state, "
-                                                        "this should not happen")
-
-    def test_save_new_client_credentials(self):
-        helloapi = ciscoapi.CiscoHelloApi()
-        helloapi.load_client_credentials()
-
-        old_id = helloapi.client_id
-        old_secret = helloapi.client_secret
-        test_id = "MyTestId"
-        test_secret = "MyTestSecret"
-
-        helloapi.client_id = test_id
-        helloapi.client_secret = test_secret
-        helloapi.save_client_credentials()
-
-        helloapi2 = ciscoapi.CiscoHelloApi()
-        helloapi2.load_client_credentials()
-
-        self.assertEquals(helloapi2.client_id, test_id)
-        self.assertEquals(helloapi2.client_secret, test_secret)
-
-        helloapi.client_id = old_id
-        helloapi.client_secret = old_secret
-        helloapi.save_client_credentials()
+                                                       "this should not happen")
 
     def test_invalid_access_token_authentication(self):
         eox_api = ciscoapi.CiscoEoxApi()
@@ -152,7 +135,7 @@ class TestCiscoEoxApiClass(TestCase):
         eox_call.query_product(product_id=test_product)
         records = eox_call.get_eox_records()
 
-        # verfiy, that no error occured
+        # verify, that no error occurred
         self.assertFalse(eox_call.has_error(records[0]))
 
         # verify result
@@ -171,7 +154,7 @@ class TestCiscoEoxApiClass(TestCase):
         eox_call.query_product(product_id=test_product)
         records = eox_call.get_eox_records()
 
-        # verfiy, that no error occured
+        # verify, that no error occurred
         self.assertFalse(eox_call.has_error(records[0]))
 
         # verify result
@@ -238,15 +221,13 @@ class TestCiscoEoxApiClass(TestCase):
     def test_invalid_eox_call(self):
         test_product = "AAAABBBB"
         error_message = "EOX information does not exist for the following product ID(s):"
-
         eox_call = ciscoapi.CiscoEoxApi()
         eox_call.load_client_credentials()
 
         eox_call.query_product(product_id=test_product)
-
         records = eox_call.get_eox_records()
 
-        # verfiy, that error occured
+        # verify, that error occurred
         self.assertTrue(eox_call.has_error(records[0]))
         self.assertIn(error_message, eox_call.get_error_description(records[0]))
         self.assertEquals(eox_call.amount_of_total_records(), 0)

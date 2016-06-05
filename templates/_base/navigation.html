@@ -1,0 +1,159 @@
+<nav class="navbar navbar-inverse navbar-fixed-top">
+    <div class="container-fluid">
+        <div class="navbar-header">
+            <a class="navbar-brand navbar-link" href="{% url 'productdb:home' %}" id="navbar_home">
+                <i class="fa fa-database"></i>&nbsp;
+                Product Database
+            </a>
+            <button class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navcol-1">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+        </div>
+        <div class="collapse navbar-collapse" id="navcol-1">
+            <ul class="nav navbar-nav">
+                <li class="dropdown">
+                    <a class="dropdown-toggle" data-toggle="dropdown" aria-expanded="false" href="#">
+                        <i class="fa fa-search"></i> <span class="hidden-sm">&nbsp;
+                        Browse</span>&nbsp;<span class="caret"></span>
+                    </a>
+                    <ul class="dropdown-menu" role="menu">
+                        <li role="presentation">
+                            <a href="{% url 'productdb:all_products' %}">
+                                <i class="fa fa-search"></i>&nbsp;&nbsp;
+                                All Products
+                            </a>
+                        </li>
+                        <li role="presentation">
+                            <a href="{% url 'productdb:browse_vendor_products' %}">
+                                <i class="fa fa-search"></i>&nbsp;&nbsp;
+                                By Vendor
+                            </a>
+                        </li>
+                        <li class="divider"></li>
+                        <li>
+                            <a href="{% url 'productdb_config:notification-list' %}">
+                                <i class="fa fa-comments" aria-hidden="true"></i>&nbsp;&nbsp;
+                                Notification Messages
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                <li class="dropdown">
+                    <a class="dropdown-toggle" data-toggle="dropdown" aria-expanded="false" href="#">
+                        <i class="fa fa-cogs"></i>
+                        <span class="hidden-sm">&nbsp;Actions</span>&nbsp;<span class="caret"></span>
+                    </a>
+                    <ul class="dropdown-menu" role="menu">
+                        <li role="presentation">
+                            <a href="{% url 'productdb:bulk_eol_check' %}">
+                                <i class="fa fa-cogs"></i>&nbsp;&nbsp;
+                                Bulk EoL Check
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+            <ul class="nav navbar-nav navbar-right">
+                {% if user.is_authenticated %}
+                    <li class="dropdown">
+                        <a class="dropdown-toggle" data-toggle="dropdown" aria-expanded="false" href="#">
+                            API&nbsp;<span class="caret"></span>
+                        </a>
+                        <ul class="dropdown-menu" role="menu">
+                            <li role="presentation">
+                                <a href="{% url 'productdb:api_redirect' %}" target="_blank">
+                                    <i class="fa fa-external-link"></i>&nbsp;&nbsp;
+                                    Browse API
+                                </a>
+                            </li>
+                            <li role="presentation">
+                                <a href="{% url 'productdb:apidocs:django.swagger.base.view' %}" target="_blank">
+                                    <i class="fa fa-external-link"></i>&nbsp;&nbsp;
+                                    API documentation
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    {% if user.is_superuser %}
+                        <li class="dropdown">
+                            <a class="dropdown-toggle" data-toggle="dropdown" aria-expanded="false" href="#" id="navbar_admin">
+                                <i class="fa fa-wrench" aria-hidden="true"></i>&nbsp;
+                                Admin&nbsp;<span class="caret"></span>
+                            </a>
+                            <ul class="dropdown-menu" role="menu">
+                                <li role="presentation">
+                                    <a href="{% url 'productdb:import_products' %}">
+                                        <i class="fa fa-file-excel-o"></i>&nbsp;&nbsp;
+                                        Import Products
+                                    </a>
+                                </li>
+                                <li role="presentation">
+                                    <a href="{% url 'productdb_config:notification-add' %}" id="navbar_admin_notification_message">
+                                        <i class="fa fa-comments" aria-hidden="true"></i>&nbsp;&nbsp;
+                                        Add Notification Message
+                                    </a>
+                                </li>
+                                <li role="presentation" class="divider"></li>
+                                <li role="presentation">
+                                    <a href="{% url 'productdb_config:status' %}" id="navbar_admin_status">
+                                        <i class="fa fa-wrench"></i>&nbsp;&nbsp;
+                                        Status
+                                    </a>
+                                </li>
+                                <li role="presentation">
+                                    <a href="{% url 'productdb_config:change_settings' %}" id="navbar_admin_settings">
+                                        <i class="fa fa-wrench"></i>&nbsp;&nbsp;
+                                        Settings
+                                    </a>
+                                </li>
+                                <li role="presentation" class="divider"></li>
+                                <li role="presentation">
+                                    <a href="/productdb/admin" target="_blank">
+                                        <i class="fa fa-external-link"></i>&nbsp;&nbsp;
+                                        Django admin
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                    {% endif %}
+                    <li class="dropdown">
+                        <a class="dropdown-toggle" data-toggle="dropdown" aria-expanded="false" href="#" id="navbar_loggedin">
+                            <span class="hidden-sm">&nbsp;&nbsp;Logged in as </span><i class="fa fa-user"></i><strong>&nbsp;{{ user.username }}</strong>&nbsp;<span class="caret"></span>
+                        </a>
+                        <ul class="dropdown-menu" role="menu">
+                            {% if not IS_LDAP_ACCOUNT %}
+                                <li role="presentation">
+                                    <a href="{% url 'change_password' %}" id="navbar_loggedin_change_password">
+                                        <i class="fa fa-key"></i>&nbsp;&nbsp;
+                                        Change Password
+                                    </a>
+                                </li>
+                            {% endif %}
+                            <li role="presentation">
+                                <a href="{% url 'logout' %}" id="navbar_loggedin_logout">
+                                    <i class="fa fa-sign-out"></i>&nbsp;&nbsp;
+                                    Logout
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                {% else %}
+                    <li role="presentation">
+                        <a href="{% url 'login' %}" id="navbar_login">
+                            <i class="fa fa-sign-in"></i>
+                            <span class="hidden-sm">&nbsp;&nbsp;Login</span>
+                        </a>
+                    </li>
+                {% endif %}
+                <li role="presentation" data-toggle="tooltip" data-placement="bottom" title="About the Product Database">
+                    <a href="{% url 'productdb:about' %}">
+                        <i class="fa fa-info-circle fa-lg"></i><span class="visible-xs"> About</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>

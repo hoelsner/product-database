@@ -10,7 +10,9 @@ module.exports = function(grunt) {
         '!static/lib/*/js',
         'static/lib/bootstrap/js',
         '!static/lib/*/css',
-        '!static/lib/pdfmake/build'
+        '!static/lib/pdfmake/build',
+        '!static/lib/font-awesome/css',
+        '!static/lib/font-awesome/fonts'
       ]
     }
   });

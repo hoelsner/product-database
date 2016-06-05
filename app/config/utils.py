@@ -5,7 +5,7 @@ CISCO_EOX_API_TASK_NAME = "Cisco EoX API crawler"
 
 def test_cisco_hello_api_access(client_id, client_secret, drop_credentials=True):
     """
-    test the Cisco API access using the Hello API
+    test the Cisco Hello API access
     """
     try:
         base_api = CiscoHelloApi()
@@ -27,7 +27,7 @@ def test_cisco_hello_api_access(client_id, client_secret, drop_credentials=True)
 
 def test_cisco_eox_api_access(client_id, client_secret, drop_credentials=True):
     """
-    test the Cisco EoX API access
+    test the Cisco EoX V5 API access
     """
     try:
         base_api = CiscoEoxApi()
@@ -41,7 +41,8 @@ def test_cisco_eox_api_access(client_id, client_secret, drop_credentials=True):
 
         base_api.query_product("WS-C2960-24T")
 
-        return True
+        return True, ""
 
-    except:
-        return False
+    except Exception as ex:
+        return False, str(ex)
+

@@ -1,0 +1,189 @@
+{% extends '_base/page-with_nav-single_row.html' %}
+
+{% block title %}
+    Please wait...
+{% endblock %}
+
+{% block additional_head_css %}
+    <style type="text/css">
+        /* specific style modifications for the task in progress page */
+        .panel {
+            -webkit-box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        }
+        .centering {
+            float:none;
+            margin:0 auto;
+        }
+
+        html,
+        body {
+            height: 100%;
+            background-color: #ccc;
+        }
+    </style>
+{% endblock %}
+
+{% block page_content %}
+    <div class="col-lg-12 col-md-12">
+        <div class="hidden-xs">
+            <div class="panel panel-default centering" id="processing" style="width: 550px;">
+                <div class="panel-heading">
+                    <div class="media">
+                        <div class="media-body">
+                            <h2>{{ title }}</h2>
+                        </div><div class="media-left media-middle">
+                            <i class="fa fa-spinner fa-spin fa-5x" id="progress_sign"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <p style="text-align: center;" id="status_message"></p>
+                    <a href="{{ redirect_to }}" class="btn btn-success btn-block hidden" id="continue_button">continue</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="visible-xs">
+            <div class="panel panel-default centering" id="processing">
+                <div class="panel-heading">
+                    <div class="media">
+                        <div class="media-body">
+                            <h2>{{ title }}</h2>
+                        </div><div class="media-left media-middle">
+                            <i class="fa fa-spinner fa-spin fa-5x" id="progress_sign"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <p style="text-align: center;" id="status_message"></p>
+                    <a href="{{ redirect_to }}" class="btn btn-success btn-block hidden" id="continue_button">continue</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="does_not_start_dialog" role="dialog" data-backdrop="static" data-keyboard="false">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2 class="text-warning">
+                            <i class="fa fa-times-circle"></i> Cannot start task
+                        </h2>
+                    </div>
+                    <div class="modal-body">
+                        <p>
+                            Cannot start the task on the server. This could be a temporary resource issue and
+                            you can retry the operation using the button below. If the problem persist, please
+                            contact the administrator.
+                        </p>
+                    </div>
+                    <div class="modal-footer">
+                        <a href="javascript:location.reload()" class="btn btn-default btn-block">retry</a>
+                        <a href="{% url 'productdb:home' %}" class="btn btn-default btn-block">back to homepage</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="fail_dialog" role="dialog" data-backdrop="static" data-keyboard="false">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2 class="text-danger">
+                            <i class="fa fa-times-circle"></i> Task execution failed
+                        </h2>
+                    </div>
+                    <div class="modal-body">
+                        <p>
+                            The execution of the task was not successful:<br>
+                            <span id="fail_message" class="text-danger"></span>
+                        </p>
+                    </div>
+                    <div class="modal-footer">
+                        <a href="{{ redirect_to }}" class="btn btn-default btn-block">continue</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block additional_page_js %}
+    <script type="text/javascript">
+        $(document).ready(function() {
+            var redirect_url = "{{ redirect_to }}";
+            var status_url = "{% url "task_state" task_id=task_id %}";
+            update_progress(status_url, redirect_url, 0)
+        } );
+
+        function set_status_message(html_message) {
+            var status_object = $("#status_message");
+            if (html_message != "") {
+                status_object.html(html_message);
+            }
+        }
+
+        function fail_process(html_message) {
+            var progress_sign = $("#progress_sign");
+            progress_sign.removeClass("fa-spin");
+            progress_sign.addClass("text-danger");
+            $("#fail_message").text(html_message);
+            $("#fail_dialog").modal();
+        }
+
+        function update_progress(status_url, redirect_url, counter) {
+            // send GET request to status URL
+            $.getJSON(status_url, function(data) {
+                var progress_sign = $("#progress_sign");
+                console.log("poll");
+                // update UI
+                if (data['state'] == 'success') {
+                    if ('error_message' in data) {
+                        // show fail message and view a button to continue
+                        fail_process(data["error_message"]);
+                    }
+                    else {
+                        // redirect to redirection URL
+                        $('#continue_button').removeClass("hidden");
+                        set_status_message(data["status_message"]);
+                        progress_sign.removeClass("fa-spin");
+                        progress_sign.addClass("text-success");
+                        $('#status_message').addClass("text-success");
+                        if (data["auto_redirect"]) {
+                            window.setTimeout(window.location.replace(redirect_url), 3000);
+                        }
+                    }
+                }
+                else if (data['state'] == 'failed') {
+                    console.log("failed state detected");
+                    // show fail message and view a button to continue
+                    fail_process(data["error_message"]);
+                }
+                else {
+                    var poll_offset = 0;
+                    var terminate = false;
+                     if(counter > 8 && data['state'] == "pending") {
+                        // task doesn't start, something is weird, terminate process with contact admin message
+                        $('#processing').hide();
+                        $('#does_not_start_dialog').modal();
+                        terminate = true;
+                    }
+                    else {
+                        // update status message if any
+                        if (data['state'] != "pending") {
+                            $('#takes_longer_than_expected').addClass("hidden");
+                        }
+                        set_status_message(data["status_message"]);
+                    }
+                    if (!terminate) {
+                        // poll every second plus the poll_offset
+                        counter++;
+                        setTimeout(function() {
+                            update_progress(status_url, redirect_url, counter);
+                        }, (2000 + poll_offset));
+                    }
+                }
+            });
+        }
+    </script>
+{% endblock %}

@@ -1,5 +1,8 @@
+from datetime import timedelta
+
 from django.core.validators import MinValueValidator
 from django.db import models
+from django.utils.timezone import datetime
 
 # choices for the currency
 CURRENCY_CHOICES = (
@@ -147,6 +150,62 @@ class Product(models.Model):
         verbose_name="EoL reference URL",
         help_text="URL to the Product bulletin or EoL reference"
     )
+
+    @property
+    def current_lifecycle_states(self):
+        """
+        returns a list with all EoL states or None if no EoL announcement ist set
+        """
+        # compute only if an EoL announcement date is specified
+        if self.eol_ext_announcement_date:
+            # check the current state
+            result = []
+            today = datetime.now().date()
+
+            end_of_sale_date = self.end_of_sale_date \
+                if self.end_of_sale_date else (datetime.now() + timedelta(days=7)).date()
+            end_of_support_date = self.end_of_support_date \
+                if self.end_of_support_date else (datetime.now() + timedelta(days=7)).date()
+            end_of_new_service_attachment_date = self.end_of_new_service_attachment_date \
+                if self.end_of_new_service_attachment_date else (datetime.now() + timedelta(days=7)).date()
+            end_of_sw_maintenance_date = self.end_of_sw_maintenance_date \
+                if self.end_of_sw_maintenance_date else (datetime.now() + timedelta(days=7)).date()
+            end_of_routine_failure_analysis = self.end_of_routine_failure_analysis \
+                if self.end_of_routine_failure_analysis else (datetime.now() + timedelta(days=7)).date()
+            end_of_service_contract_renewal = self.end_of_service_contract_renewal \
+                if self.end_of_service_contract_renewal else (datetime.now() + timedelta(days=7)).date()
+            end_of_sec_vuln_supp_date = self.end_of_sec_vuln_supp_date \
+                if self.end_of_sec_vuln_supp_date else (datetime.now() + timedelta(days=7)).date()
+
+            if today > end_of_sale_date:
+                if today > end_of_support_date:
+                    result.append("End of Support")
+
+                else:
+                    result.append("End of Sale")
+                    if today > end_of_new_service_attachment_date:
+                        result.append("End of New Service Attachment Date")
+
+                    if today > end_of_sw_maintenance_date:
+                        result.append("End of SW Maintenance Releases Date")
+
+                    if today > end_of_routine_failure_analysis:
+                        result.append("End of Routine Failure Analysis Date")
+
+                    if today > end_of_service_contract_renewal:
+                        result.append("End of Service Contract Renewal Date")
+
+                    if today > end_of_sec_vuln_supp_date:
+                        result.append("End of Vulnerability/Security Support date")
+
+            else:
+                # product is eos announced
+                result.append("EoS announced")
+
+            return result
+
+        else:
+            return None
 
     def __str__(self):
         return self.product_id

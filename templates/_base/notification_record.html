@@ -1,0 +1,38 @@
+<li class="media">
+    <div class="media">
+        {% if event.type == "SUCC" %}
+            <div class="media-left media-top"><i class="fa fa-comment-o media-object fa-3x text-success"></i></div>
+        {% elif event.type == "ERR" %}
+            <div class="media-left media-top"><i class="fa fa-comment-o media-object fa-3x text-danger"></i></div>
+        {% elif event.type == "WARN" %}
+            <div class="media-left media-top"><i class="fa fa-comment-o media-object fa-3x text-warning"></i></div>
+        {% else %}
+            <div class="media-left media-top"><i class="fa fa-comment-o media-object fa-3x text-info"></i></div>
+        {% endif %}
+        <div class="media-body">
+            {% if event.type == "SUCC" %}
+                <h4 class="media-heading text-success">
+                    {{ event.title }} <small>{{ event.created|date:"Y-m-d" }}</small>
+                </h4>
+            {% elif event.type == "ERR" %}
+                <h4 class="media-heading text-danger">
+                    {{ event.title }} <small>{{ event.created|date:"Y-m-d" }}</small>
+                </h4>
+            {% elif event.type == "WARN" %}
+                <h4 class="media-heading text-warning">
+                    {{ event.title }} <small>{{ event.created|date:"Y-m-d" }}</small>
+                </h4>
+            {% else %}
+                <h4 class="media-heading text-info">
+                    {{ event.title }} <small>{{ event.created|date:"Y-m-d" }}</small>
+                </h4>
+            {% endif %}
+            <p>
+                {% autoescape off %}
+                {{ event.summary_message }}
+                <a href="{% url 'productdb_config:notification-detail' message_id=event.id %}">view details</a>
+                {% endautoescape %}
+            </p>
+        </div>
+    </div>
+</li>

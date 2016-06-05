@@ -1,0 +1,26 @@
+{% extends '_base/page-with_nav-single_row.html' %}
+{% load bootstrap3 %}
+
+{% block title %}
+    Add Notification Message - Product Database
+{% endblock %}
+
+{% block page_content %}
+    <div class="col-md-6 col-md-offset-3">
+        <div class="page-header">
+            <h1>Add Notification Message</h1>
+        </div>
+
+        <p>Please note: The last five notification messages are displayed by default on the homepage.</p>
+
+        <form method="post" class="form">
+            {% csrf_token %}
+            {% bootstrap_form form %}
+            {% buttons %}
+                <button type="submit" class="btn btn-block btn-primary" id="submit">
+                    add notification message
+                </button>
+            {% endbuttons %}
+        </form>
+    </div>
+{% endblock %}

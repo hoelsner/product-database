@@ -5,4 +5,4 @@ Test-Set for the entire application (including all Unit-Tests (Online and Offlin
 
 """
 from app.all_tests import *
-from tests.functional_tests.all_functional_tests import *
+from tests.functional.all_functional_tests import *

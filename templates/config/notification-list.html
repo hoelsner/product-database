@@ -1,0 +1,22 @@
+{% extends '_base/page-with_nav-single_row.html' %}
+
+{% block title %}
+    Notification Messages - Product Database
+{% endblock %}
+
+{% block page_content %}
+    <div class="col-md-6 col-md-offset-3">
+        <div class="page-header">
+            <h1>Notification Messages</h1>
+        </div>
+        {% if recent_events|length == 0 %}
+            <p>There are currently no notification messages on the server.</p>
+        {% else %}
+            <ul class="media-list">
+                {% for event in recent_events %}
+                    {% include '_base/notification_record.html' %}
+                {% endfor %}
+            </ul>
+        {% endif %}
+    </div>
+{% endblock %}
