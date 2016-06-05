@@ -1,5 +1,13 @@
 # changelog
 
+## Version 0.3 (under development)
+
+* complete redesign of the user interface
+* add the login only-mode setting (the site requires always a login, not only for the administrative tasks)
+* removed some (almost unused) features, including the custom product lists and the simple backup mechanism
+* Update of the target Cisco EoX API to Version 5 (includes the "End of Vulnerability/Security Support date")
+* optional LDAP authentication
+
 ## Version 0.2
 
 * import products using an Excel file (limited to 20000 entries per file)
