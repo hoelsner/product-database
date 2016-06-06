@@ -18,7 +18,7 @@ Vagrant.configure(2) do |config|
     productdb.vm.provision "shell", inline: "sudo apt-get install python -y -f"
 
     productdb.vm.provision "ansible" do |ansible|
-      ansible.playbook = "deploy/deploy-vagrant-file.yaml"
+      ansible.playbook = "deploy/stage_vagrant/deploy-vagrant-file.yaml"
     end
 
     productdb.vm.post_up_message = "access the product database at http://localhost:16000 (Ubuntu)"
@@ -42,7 +42,7 @@ Vagrant.configure(2) do |config|
     productdb_ldap.vm.provision "shell", inline: "sudo apt-get install python -y -f"
 
     productdb_ldap.vm.provision "ansible" do |ansible|
-      ansible.playbook = "deploy/deploy-vagrant_with_ldap-file.yaml"
+      ansible.playbook = "deploy/stage_vagrant/deploy-vagrant_with_ldap-file.yaml"
     end
 
     productdb_ldap.vm.post_up_message = "access the product database at http://localhost:17000 (Ubuntu with LDAP)"

@@ -91,18 +91,8 @@
   - name: delete source directory (if existing)
     file: path=/var/www/productdb/source state=absent
     when: (source_file_exists.stat.exists == True) and (system_source == "file")
-  - name: copy source directory from local directory
-    command: cp -rfu {{ site_source }} /var/www/productdb/source
-    when: system_source == "file"
 
-  - name: clone source directory from GitHub
-    git:
-      repo=https://github.com/hoelsner/product-database.git
-      dest=/var/www/productdb/source
-      version={{ site_source_branch }}
-    when: system_source != "file"
-
-  - name: clean permissions on source directory
+  - name: create source directory
     file: path=/var/www/productdb/source
       state=directory
       recurse=yes
@@ -110,6 +100,18 @@
       owner={{ site_user }}
       group={{ site_group }}
     become: true
+
+  - name: copy source directory from local directory
+    command: cp -rfu {{ site_source }}/. /var/www/productdb/source
+    when: system_source == "file"
+
+  - name: clone source directory from GitHub
+    git:
+      repo=https://github.com/hoelsner/product-database.git
+      dest=/var/www/productdb/source
+      version={{ site_source_branch }}
+      force=yes
+    when: system_source != "file"
 
   - name: update python requirements on the new virtualenv for the site
     pip:
@@ -164,9 +166,10 @@
   - name: copy nginx configuration
     become: true
     copy:
-      src=appliance/templates/nginx.template.conf
+      src=/var/www/productdb/source/deploy/appliance/templates/nginx.template.conf
       dest=/etc/nginx/sites-available/product_db
       force=yes
+      remote_src=True
   - name: enable site in nginx
     become: true
     file:
@@ -192,15 +195,17 @@
   - name: create gunicorn service (with LDAP)
     become: true
     copy:
-      src=appliance/templates/gunicorn.ldap.template.service
+      src=/var/www/productdb/source/deploy/appliance/templates/gunicorn.ldap.template.service
       dest=/etc/systemd/system/productdb-gunicorn.service
+      remote_src=True
     when: enable_ldap == true
 
   - name: create gunicorn service (without LDAP)
     become: true
     copy:
-      src=appliance/templates/gunicorn.template.service
+      src=/var/www/productdb/source/deploy/appliance/templates/gunicorn.template.service
       dest=/etc/systemd/system/productdb-gunicorn.service
+      remote_src=True
     when: enable_ldap != true
 
   - name: set secret key on gunicorn environment configuration
@@ -257,15 +262,17 @@
   - name: create celery_worker service (with LDAP)
     become: true
     copy:
-      src=appliance/templates/celery_worker.ldap.template.service
+      src=/var/www/productdb/source/deploy/appliance/templates/celery_worker.ldap.template.service
       dest=/etc/systemd/system/productdb-celeryworker.service
+      remote_src=True
     when: enable_ldap == true
 
   - name: create celery_worker service (without LDAP)
     become: true
     copy:
-      src=appliance/templates/celery_worker.template.service
+      src=/var/www/productdb/source/deploy/appliance/templates/celery_worker.template.service
       dest=/etc/systemd/system/productdb-celeryworker.service
+      remote_src=True
     when: enable_ldap != true
 
   - name: set secret key on celery_worker environment configuration
@@ -322,15 +329,17 @@
   - name: create celery_camera service (with LDAP)
     become: true
     copy:
-      src=appliance/templates/celery_camera.ldap.template.service
+      src=/var/www/productdb/source/deploy/appliance/templates/celery_camera.ldap.template.service
       dest=/etc/systemd/system/productdb-celerycamera.service
+      remote_src=True
     when: enable_ldap == true
 
   - name: create celery_camera service (without LDAP)
     become: true
     copy:
-      src=appliance/templates/celery_camera.template.service
+      src=/var/www/productdb/source/deploy/appliance/templates/celery_camera.template.service
       dest=/etc/systemd/system/productdb-celerycamera.service
+      remote_src=True
     when: enable_ldap != true
 
   - name: set secret key on celery_camera environment configuration
@@ -477,7 +486,7 @@
   - name: execute systemctl daemon-reload
     become: true
     shell: systemctl daemon-reload
-  - include: appliance/restart-service-tasks.yaml
+  - include: ../appliance/restart-service-tasks.yaml
 
   - name: create initial provisioning flag
     file: path=/var/www/productdb/initial_provisioned state=touch owner={{ site_user }} group={{ site_group }} mode=0644

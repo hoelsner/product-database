@@ -19,4 +19,4 @@
   tasks:
    - debug: msg="Before running this script, please create a ldap-parameters.yaml file in the deploy directory that contains your LDAP configuration parameters."
    - include_vars: ldap-parameters.yaml
-   - include: appliance/setup-productdb.yaml
+   - include: ../appliance/setup-productdb.yaml

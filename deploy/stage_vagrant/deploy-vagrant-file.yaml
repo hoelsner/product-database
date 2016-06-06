@@ -17,4 +17,4 @@
     enable_ldap: false
 
   tasks:
-   - include: appliance/setup-productdb.yaml
+   - include: ../appliance/setup-productdb.yaml
