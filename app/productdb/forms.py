@@ -11,7 +11,14 @@ class ImportProductsFileUploadForm(forms.Form):
         "xlsx",
     ]
 
-    excel_file = forms.FileField()
+    excel_file = forms.FileField(
+        label="Upload Excel File:"
+    )
+
+    suppress_notification = forms.BooleanField(
+        required=False,
+        label="Suppress Server Notification Message"
+    )
 
     def clean(self):
         # validation of the import products excel file
@@ -34,13 +41,6 @@ class ImportProductsFileUploadForm(forms.Form):
 
             import_product = ImportProductsExcelFile(tmp.name)
             import_product.verify_file()
-
-            # with this implementation, only 20000 items can be imported using a single excel file
-            if import_product.amount_of_products > 20000:
-                raise forms.ValidationError("Excel files with more than 20000 "
-                                            "entries are currently not supported "
-                                            "(found %s entries), please upload "
-                                            "multiple smaller files" % import_product.amount_of_products)
 
             tmp.close()
 

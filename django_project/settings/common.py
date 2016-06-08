@@ -4,7 +4,7 @@ common Django settings for project
 import os
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-# print("Django BASE_DIR: %s" % BASE_DIR)
+print("Django BASE_DIR: %s" % BASE_DIR)
 
 INSTALLED_APPS = (
     'django.contrib.admin',
@@ -105,3 +105,8 @@ BOOTSTRAP3 = {
     'error_css_class': 'has-error',
     'success_css_class': 'has-success',
 }
+
+DATA_DIRECTORY = os.path.join(BASE_DIR, "..", "data")
+
+if not os.path.exists(DATA_DIRECTORY):
+    os.makedirs(DATA_DIRECTORY, exist_ok=True)

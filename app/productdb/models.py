@@ -1,7 +1,9 @@
 from datetime import timedelta
-
+from django.conf import settings
 from django.core.validators import MinValueValidator
 from django.db import models
+from django.db.models.signals import pre_delete
+from django.dispatch import receiver
 from django.utils.timezone import datetime
 
 # choices for the currency
@@ -9,6 +11,21 @@ CURRENCY_CHOICES = (
     ('EUR', 'Euro'),
     ('USD', 'US-Dollar'),
 )
+
+
+class JobFile(models.Model):
+    """
+    Uploaded Files
+    """
+    file = models.FileField(upload_to=settings.DATA_DIRECTORY)
+
+
+@receiver(pre_delete, sender=JobFile)
+def delete_job_file(sender, instance, **kwargs):
+    """
+    remove the file from the harddisk if the Job File database object is deleted
+    """
+    instance.file.delete(False)
 
 
 class Vendor(models.Model):

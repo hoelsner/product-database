@@ -1,18 +1,19 @@
 import logging
-import tempfile
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.decorators import permission_required
+from django.core.urlresolvers import reverse
 from django.shortcuts import redirect, render
 from django.utils.timezone import timedelta, datetime, get_current_timezone
 
 from app.config.models import NotificationMessage
 from app.productdb import utils as app_util
-from app.productdb.excel_import import ImportProductsExcelFile
 from app.productdb.forms import ImportProductsFileUploadForm
-from app.productdb.models import Product
+from app.productdb.models import Product, JobFile
 from app.productdb.models import Vendor
+import app.productdb.tasks as tasks
+from django_project.celery import set_meta_data_for_task
 
 from django_project.utils import login_required_if_login_only_mode
 
@@ -181,8 +182,8 @@ def bulk_eol_check(request):
 @login_required()
 @permission_required('is_superuser')
 def import_products(request):
-    """view for the import of products using Excel
-
+    """
+    import of products using Excel
     :param request:
     :return:
     """
@@ -190,32 +191,22 @@ def import_products(request):
     if request.method == "POST":
         form = ImportProductsFileUploadForm(request.POST, request.FILES)
         if form.is_valid():
-            # file is valid, execute the import
-            uploaded_file = request.FILES['excel_file']
+            # file is valid, save and execute the import job
+            job_file = JobFile(file=request.FILES['excel_file'])
+            job_file.save()
 
-            tmp = tempfile.NamedTemporaryFile(suffix="." + uploaded_file.name.split(".")[-1])
+            task = tasks.import_price_list.delay(
+                job_file_id=job_file.id,
+                create_notification_on_server=not form.cleaned_data["suppress_notification"]
+            )
+            set_meta_data_for_task(
+                task_id=task.id,
+                title="Import products from Excel sheet",
+                auto_redirect=False,
+                redirect_to=reverse("productdb:import_products")
+            )
 
-            uploaded_file.open()
-            tmp.write(uploaded_file.read())
-
-            try:
-                import_products_excel = ImportProductsExcelFile(tmp.name)
-                import_products_excel.verify_file()
-                import_products_excel.import_products_to_database()
-
-                context['import_valid_imported_products'] = import_products_excel.valid_imported_products
-                context['import_invalid_products'] = import_products_excel.invalid_products
-                context['import_messages'] = import_products_excel.import_result_messages
-                context['import_result'] = "success"
-
-            except Exception as ex:
-                msg = "unexpected error occurred during import (%s)" % ex
-                logger.error(msg, ex)
-                context['import_messages'] = msg
-                context['import_result'] = "error"
-
-            finally:
-                tmp.close()
+            return redirect(reverse("task_in_progress", kwargs={"task_id": task.id}))
 
     else:
         form = ImportProductsFileUploadForm()

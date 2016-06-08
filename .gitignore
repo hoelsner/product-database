@@ -42,3 +42,4 @@ conf/product_database.cisco_api_test.config
 conf/test.TestCiscoEoxCrawler.config
 !conf/product_database.sample.config
 deploy/stage_vagrant/ldap-parameters.yaml
+/data
