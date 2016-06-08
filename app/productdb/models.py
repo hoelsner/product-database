@@ -103,7 +103,9 @@ class Product(models.Model):
     eox_update_time_stamp = models.DateField(
         null=True,
         blank=True,
-        verbose_name="EoX lifecycle data timestamp"
+        verbose_name="EoX lifecycle data timestamp",
+        help_text="Indicates that the product has lifecycle data and when they were last updated. If no "
+                  "EoL announcement date is set, the product is considered as not EoL/EoS."
     )
 
     eol_ext_announcement_date = models.DateField(
@@ -154,7 +156,8 @@ class Product(models.Model):
         verbose_name="End of Vulnerability/Security Support date"
     )
 
-    eol_reference_number = models.TextField(
+    eol_reference_number = models.CharField(
+        max_length=2048,
         null=True,
         blank=True,
         verbose_name="EoL reference number",
@@ -222,7 +225,10 @@ class Product(models.Model):
             return result
 
         else:
-            return None
+            if self.eox_update_time_stamp is not None:
+                return ["No EoL announcement"]
+            else:
+                return None
 
     def __str__(self):
         return self.product_id

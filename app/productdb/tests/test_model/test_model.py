@@ -55,6 +55,13 @@ class ProductDataModelTest(TestCase):
 
         self.assertIsNone(p.current_lifecycle_states)
 
+        # set an EoX Update timestamp, to indicate that there are valid data in the database
+        p.eox_update_time_stamp = datetime.now().date() - timedelta(days=1)
+
+        self.assertIsNotNone(p.current_lifecycle_states)
+        self.assertTrue(len(p.current_lifecycle_states) == 1)
+        self.assertEqual("No EoL announcement", p.current_lifecycle_states[0])
+
         # set an EoL announcement date of yesterday
         p.eol_ext_announcement_date = datetime.now().date() - timedelta(days=1)
 
