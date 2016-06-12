@@ -1,7 +1,7 @@
 
 # Product Database
 
-*Version 0.3 (under development) - see [Changelog](CHANGELOG.md) for details*
+*Version 0.3 (development) - see [Changelog](CHANGELOG.md) for details*
 
 This version is currently in development and contains multiple major changes to the underlying operating system and the
 application . **Please note that an update path from Version 0.2 is not maintained.**
@@ -14,22 +14,18 @@ The following new features are planned/implemented:
 * ~~new user interface~~
 * ~~central notification panel~~
 * ~~LDAP authentication backend~~
+* ~~implement process based import function (remove the 20000 entry limit)~~
 * save/provide Product Migration details from the Cisco EoX API
+* add lifecycle data to the import product function
 * add Slack integration for the notification panel
-* implement process based import function (remove the 20000 entry limit)
-* implement process based Bulk-EoL check function and make them persistent
-
-Further ideas:
-
-* add data from Cisco Product Information API (e.g. the )
-* add web scraping component for data from other vendors
+* implement process based Bulk-EoL check function and store them in the database
+* additional data from Cisco Product Information API (e.g. the Product Group, orderable status, link to the support page etc.)
+* add web scraping component
 
 ----
 
 This web service provides a central point of management for product information, which is targeted primarily
-for network products.
-
-It currently focuses on the following use cases:
+for network products. It currently focuses on the following use cases:
 
 * automatic check of lifecycle states for a list of products against the local database (bulk EoL check)
 * REST API access to a central database which holds information about products from network vendors
