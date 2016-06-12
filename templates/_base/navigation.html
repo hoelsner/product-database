@@ -77,45 +77,49 @@
                             </li>
                         </ul>
                     </li>
-                    {% if user.is_superuser %}
+                    {% if user.is_staff %}
                         <li class="dropdown">
                             <a class="dropdown-toggle" data-toggle="dropdown" aria-expanded="false" href="#" id="navbar_admin">
                                 <i class="fa fa-wrench" aria-hidden="true"></i>&nbsp;
                                 Admin&nbsp;<span class="caret"></span>
                             </a>
                             <ul class="dropdown-menu" role="menu">
-                                <li role="presentation">
-                                    <a href="{% url 'productdb:import_products' %}">
-                                        <i class="fa fa-file-excel-o"></i>&nbsp;&nbsp;
-                                        Import Products
-                                    </a>
-                                </li>
-                                <li role="presentation">
-                                    <a href="{% url 'productdb_config:notification-add' %}" id="navbar_admin_notification_message">
-                                        <i class="fa fa-comments" aria-hidden="true"></i>&nbsp;&nbsp;
-                                        Add Notification Message
-                                    </a>
-                                </li>
-                                <li role="presentation" class="divider"></li>
-                                <li role="presentation">
-                                    <a href="{% url 'productdb_config:status' %}" id="navbar_admin_status">
-                                        <i class="fa fa-wrench"></i>&nbsp;&nbsp;
-                                        Status
-                                    </a>
-                                </li>
-                                <li role="presentation">
-                                    <a href="{% url 'productdb_config:change_settings' %}" id="navbar_admin_settings">
-                                        <i class="fa fa-wrench"></i>&nbsp;&nbsp;
-                                        Settings
-                                    </a>
-                                </li>
-                                <li role="presentation" class="divider"></li>
-                                <li role="presentation">
-                                    <a href="/productdb/admin" target="_blank">
-                                        <i class="fa fa-external-link"></i>&nbsp;&nbsp;
-                                        Django admin
-                                    </a>
-                                </li>
+                                {% if user.is_superuser %}
+                                    <li role="presentation">
+                                        <a href="{% url 'productdb:import_products' %}">
+                                            <i class="fa fa-file-excel-o"></i>&nbsp;&nbsp;
+                                            Import Products
+                                        </a>
+                                    </li>
+                                    <li role="presentation">
+                                        <a href="{% url 'productdb_config:notification-add' %}" id="navbar_admin_notification_message">
+                                            <i class="fa fa-comments" aria-hidden="true"></i>&nbsp;&nbsp;
+                                            Add Notification Message
+                                        </a>
+                                    </li>
+                                    <li role="presentation" class="divider"></li>
+                                    <li role="presentation">
+                                        <a href="{% url 'productdb_config:status' %}" id="navbar_admin_status">
+                                            <i class="fa fa-wrench"></i>&nbsp;&nbsp;
+                                            Status
+                                        </a>
+                                    </li>
+                                    <li role="presentation">
+                                        <a href="{% url 'productdb_config:change_settings' %}" id="navbar_admin_settings">
+                                            <i class="fa fa-wrench"></i>&nbsp;&nbsp;
+                                            Settings
+                                        </a>
+                                    </li>
+                                    <li role="presentation" class="divider"></li>
+                                {% endif %}
+                                {% if user.is_staff %}
+                                    <li role="presentation">
+                                        <a href="/productdb/admin" target="_blank">
+                                            <i class="fa fa-external-link"></i>&nbsp;&nbsp;
+                                            Django admin
+                                        </a>
+                                    </li>
+                                {% endif %}
                             </ul>
                         </li>
                     {% endif %}

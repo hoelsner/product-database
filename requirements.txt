@@ -23,3 +23,5 @@ xlrd==0.9.4
 pyldap==2.4.25.1
 django-auth-ldap==1.2.8
 django-bootstrap3==7.0.1
+django-reversion==1.10.2
+django-reversion-compare==0.6.2

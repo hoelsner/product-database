@@ -197,7 +197,8 @@ def import_products(request):
 
             task = tasks.import_price_list.delay(
                 job_file_id=job_file.id,
-                create_notification_on_server=not form.cleaned_data["suppress_notification"]
+                create_notification_on_server=not form.cleaned_data["suppress_notification"],
+                user_for_revision=request.user.username
             )
             set_meta_data_for_task(
                 task_id=task.id,
@@ -209,7 +210,7 @@ def import_products(request):
             return redirect(reverse("task_in_progress", kwargs={"task_id": task.id}))
 
     else:
-        form = ImportProductsFileUploadForm()
+        form = ImportProductsFileUploadForm(initial={"suppress_notification": True})
 
     context['form'] = form
 

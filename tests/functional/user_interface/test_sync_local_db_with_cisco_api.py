@@ -126,6 +126,9 @@ class SyncLocalDatabaseWithCiscoApi(DestructiveProductDbFunctionalTest):
     @override_settings(CELERY_EAGER_PROPAGATES_EXCEPTIONS=True,
                        CELERY_ALWAYS_EAGER=True)
     def test_configure_periodic_cisco_api_eox_sync_and_trigger_the_execution_manually(self):
+        if not self.is_redis_running():
+            self.skipTest("local redis server not running, but required for the test case")
+
         # configure Cisco API access
         self.configure_cisco_api_for_test_case()
 

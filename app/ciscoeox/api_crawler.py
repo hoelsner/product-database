@@ -1,5 +1,7 @@
 import json
 import logging
+from reversion import revisions as reversion
+from django.db import transaction
 from django.utils.datetime_safe import datetime
 from app.ciscoeox.exception import ConnectionFailedException, CiscoApiCallFailed
 from app.ciscoeox.base_api import CiscoEoxApi
@@ -166,7 +168,9 @@ def update_local_db_based_on_record(eox_record, create_missing=False):
             if "LinkToProductBulletinURL" in eox_record.keys():
                 product.eol_reference_url = eox_record['LinkToProductBulletinURL']
 
-            product.save()
+            with transaction.atomic(), reversion.create_revision():
+                product.save()
+                reversion.set_comment("Updated by the Cisco EoX API crawler")
 
     except Exception as ex:
         logger.error("update of product '%s' failed." % pid, exc_info=True)

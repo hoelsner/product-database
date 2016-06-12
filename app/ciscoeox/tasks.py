@@ -139,7 +139,7 @@ def execute_task_to_synchronize_cisco_eox_states(self, ignore_periodic_sync_flag
                                         msg = qres["message"]
 
                                 if qres["created"]:
-                                    detailed_html += "<li>create the Product <strong>%s</strong> in the database" % (
+                                    detailed_html += "<li>create the Product <code>%s</code> in the database" % (
                                         qres["PID"]
                                     )
                                     if msg != "":
@@ -148,7 +148,7 @@ def execute_task_to_synchronize_cisco_eox_states(self, ignore_periodic_sync_flag
                                         detailed_html += "</li>"
 
                                 elif qres["updated"]:
-                                    detailed_html += "<li>update the Product data for <strong>%s</strong></li>" % (
+                                    detailed_html += "<li>update the Product data for <code>%s</code></li>" % (
                                         qres["PID"]
                                     )
                                     if msg != "":
@@ -157,7 +157,7 @@ def execute_task_to_synchronize_cisco_eox_states(self, ignore_periodic_sync_flag
                                         detailed_html += "</li>"
 
                                 elif qres["blacklist"]:
-                                    detailed_html += "<li>The Product data for <strong>%s</strong> are ignored</li>" % (
+                                    detailed_html += "<li>Product data for <code>%s</code> ignored</li>" % (
                                         qres["PID"]
                                     )
                                     if msg != "":

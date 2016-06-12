@@ -1,5 +1,7 @@
 import logging
 
+from django.contrib.auth.models import User
+
 from app.config.models import NotificationMessage
 from app.productdb.excel_import import ImportProductsExcelFile, InvalidImportFormatException
 from app.productdb.models import JobFile
@@ -9,13 +11,17 @@ logger = logging.getLogger(__name__)
 
 
 @app.task(serializer='json', name="productdb.import_price_list", bind=True)
-def import_price_list(self, job_file_id, create_notification_on_server=True):
+def import_price_list(self, job_file_id, create_notification_on_server=True, user_for_revision=None):
     """
     import products from the given price list
     """
-    self.update_state(state=TaskState.PROCESSING, meta={
-        "status_message": "Try to import uploaded product list..."
-    })
+    def update_task_state(status_message):
+        """Update the status message of the task, which is displayed in the watch view"""
+        self.update_state(state=TaskState.PROCESSING, meta={
+            "status_message": status_message
+        })
+
+    update_task_state("Try to import uploaded file...")
 
     try:
         import_excel_file = JobFile.objects.get(id=job_file_id)
@@ -30,20 +36,24 @@ def import_price_list(self, job_file_id, create_notification_on_server=True):
 
     # verify that file exists
     try:
-        import_products_excel = ImportProductsExcelFile(path_to_excel_file=import_excel_file.file)
+        import_products_excel = ImportProductsExcelFile(
+            path_to_excel_file=import_excel_file.file,
+            user_for_revision=User.objects.get(username=user_for_revision)
+        )
         import_products_excel.verify_file()
+        update_task_state("File valid, start updating the database...")
 
-        self.update_state(state=TaskState.PROCESSING, meta={
-            "status_message": "File valid, start import/update of the database..."
-        })
-        import_products_excel.import_products_to_database()
+        import_products_excel.import_products_to_database(status_callback=update_task_state)
+        update_task_state("Database import finished, processing results...")
 
-        summary_msg = "Product list imported, %s Products changed." % import_products_excel.valid_imported_products
+        summary_msg = "User <strong>%s</strong> imported a Product list, %s Products " \
+                      "changed." % (user_for_revision, import_products_excel.valid_imported_products)
         detail_msg = "<div style=\"text-align:left;\">%s " \
-                     "Products successful imported. " % import_products_excel.valid_imported_products
+                     "Products successful updated. " % import_products_excel.valid_imported_products
 
         if import_products_excel.invalid_products != 0:
-            detail_msg += "%s entries are faulty. Please check the following messages for additional details."
+            detail_msg += "%s entries are invalid. Please check the following messages for " \
+                          "more details." % import_products_excel.invalid_products
 
         if len(import_products_excel.import_result_messages) != 0:
             detail_msg += "<ul>"

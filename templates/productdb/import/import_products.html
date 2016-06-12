@@ -11,8 +11,12 @@
         <div class="page-header">
             <h1>Import Products</h1>
         </div>
-        <p>You can download the template for the file upload <a href="{% static 'file/product_database_import_template.xlsx' %}">here</a>.</p>
-        <p>After you <strong>add your products to the Excel template</strong>, you can upload it using the dialog below.</p>
+        <p>
+            You can download the Excel template <a href="{% static 'file/product_database_import_template.xlsx' %}">here</a>.
+            After you <strong>add your products to the Excel template</strong>, you can upload it using the dialog below.
+        </p>
+
+        <p>Empty values within the Excel template are ignored.</p>
 
         <hr>
         <form method="post" class="form" enctype="multipart/form-data">

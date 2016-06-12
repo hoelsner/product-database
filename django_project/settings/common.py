@@ -16,6 +16,8 @@ INSTALLED_APPS = (
     'rest_framework',
     'rest_framework_swagger',
     'bootstrap3',
+    'reversion',
+    'reversion_compare',
     'app.productdb',
     'app.config',
     'app.ciscoeox',
@@ -30,6 +32,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'reversion.middleware.RevisionMiddleware',
 )
 
 CACHES = {
@@ -106,7 +109,10 @@ BOOTSTRAP3 = {
     'success_css_class': 'has-success',
 }
 
-DATA_DIRECTORY = os.path.join(BASE_DIR, "..", "data")
+
+DATA_DIRECTORY = os.path.join("data")
 
 if not os.path.exists(DATA_DIRECTORY):
     os.makedirs(DATA_DIRECTORY, exist_ok=True)
+
+ADD_REVERSION_ADMIN = True

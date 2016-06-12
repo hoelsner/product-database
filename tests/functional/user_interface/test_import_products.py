@@ -16,7 +16,7 @@ class TestImportProducts(DestructiveProductDbFunctionalTest):
         if not os.path.isfile(filename) and verify_that_file_exists:
             self.fail("local file for upload not found: %s" % filename)
 
-        if suppress_notification:
+        if not suppress_notification:
             self.browser.find_element_by_id("id_suppress_notification").click()
 
         self.browser.find_element_by_id("id_excel_file").send_keys(filename)
@@ -38,6 +38,9 @@ class TestImportProducts(DestructiveProductDbFunctionalTest):
     @override_settings(CELERY_EAGER_PROPAGATES_EXCEPTIONS=True,
                        CELERY_ALWAYS_EAGER=True)
     def test_valid_import_product_import_using_the_bundled_excel_template_with_notification(self):
+        if not self.is_redis_running():
+            self.skipTest("local redis server not running, but required for the test case")
+
         # go to the import products page
         self.browser.get(self.server_url + reverse("productdb:import_products"))
         self.browser.implicitly_wait(5)
@@ -50,14 +53,14 @@ class TestImportProducts(DestructiveProductDbFunctionalTest):
         self.handle_upload_dialog(test_excel_file)
 
         # verify the output of the upload dialog
-        expected_title = "25 Products successful imported"
+        expected_title = "22 Products successful updated"
         expected_contents = [
-            "created product WS-C2960S-48FPD-L",
-            "created product WS-C2960S-48LPD-L",
-            "created product WS-C2960S-24PD-L",
-            "created product WS-C2960S-48TD-L",
+            "product WS-C2960S-48FPD-L created",
+            "product WS-C2960S-48LPD-L created",
+            "product WS-C2960S-24PD-L created",
+            "product WS-C2960S-48TD-L created",
         ]
-        time.sleep(2)
+        time.sleep(10)
         page_content = self.browser.find_element_by_tag_name("body").text
         self.assertIn(expected_title, page_content)
         for c in expected_contents:
@@ -122,6 +125,9 @@ class TestImportProducts(DestructiveProductDbFunctionalTest):
     @override_settings(CELERY_EAGER_PROPAGATES_EXCEPTIONS=True,
                        CELERY_ALWAYS_EAGER=True)
     def test_valid_import_product_import_using_the_bundled_excel_template_without_notification(self):
+        if not self.is_redis_running():
+            self.skipTest("local redis server not running, but required for the test case")
+
         # go to the import products page
         self.browser.get(self.server_url + reverse("productdb:import_products"))
         self.browser.implicitly_wait(5)
@@ -134,13 +140,14 @@ class TestImportProducts(DestructiveProductDbFunctionalTest):
         self.handle_upload_dialog(test_excel_file, suppress_notification=True)
 
         # verify the output of the upload dialog
-        expected_title = "25 Products successful imported"
+        expected_title = "22 Products successful updated"
         expected_contents = [
-            "created product WS-C2960S-48FPD-L",
-            "created product WS-C2960S-48LPD-L",
-            "created product WS-C2960S-24PD-L",
-            "created product WS-C2960S-48TD-L",
+            "product WS-C2960S-48FPD-L created",
+            "product WS-C2960S-48LPD-L created",
+            "product WS-C2960S-24PD-L created",
+            "product WS-C2960S-48TD-L created",
         ]
+        time.sleep(10)
         page_content = self.browser.find_element_by_tag_name("body").text
         self.assertIn(expected_title, page_content)
         for c in expected_contents:

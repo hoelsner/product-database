@@ -7,6 +7,7 @@ from tests.base.rest_calls import PRODUCTS_API_ENDPOINT
 from django.contrib.auth.models import User
 import sys
 import os
+import redis
 
 
 class FunctionalTest(StaticLiveServerTestCase):
@@ -31,6 +32,16 @@ class FunctionalTest(StaticLiveServerTestCase):
     def tearDownClass(cls):
         if cls.server_url == cls.live_server_url:
             super().tearDownClass()
+
+    @staticmethod
+    def is_redis_running():
+        try:
+            rs = redis.Redis("localhost")
+            rs.ping()
+            return True
+
+        except:
+            return False
 
     def setUp(self):
         self.download_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
