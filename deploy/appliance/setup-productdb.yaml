@@ -256,6 +256,12 @@
       dest=/etc/systemd/system/productdb-gunicorn.service
       regexp='__PDB_DATABASE_PORT__'
       replace={{ db_port }}
+  - name: set worker threads on gunicorn environment configuration
+    become: true
+    replace:
+      dest=/etc/systemd/system/productdb-gunicorn.service
+      regexp='_GUNICORN_WORKER_'
+      replace='{{ gunicorn_worker }}'
 
   #
   # configure CELERY WORKER service
@@ -323,6 +329,12 @@
       dest=/etc/systemd/system/productdb-celeryworker.service
       regexp='__PDB_DATABASE_PORT__'
       replace={{ db_port }}
+  - name: set worker threads on celery_worker environment configuration
+    become: true
+    replace:
+      dest=/etc/systemd/system/productdb-celeryworker.service
+      regexp='_CELERY_CONCURRENCY_'
+      replace={{ celery_concurrency }}
 
   #
   # configure CELERYCAM service

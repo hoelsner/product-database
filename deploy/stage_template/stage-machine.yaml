@@ -20,6 +20,9 @@
     db_host: "127.0.0.1"            # remote Postgres-SQL server are not tested
     db_port: "5432"
 
+    gunicorn_worker: 8
+    celery_concurrency: 8
+
     enable_ldap: false
 
     # only required if enable_ldap is set to true

@@ -19,7 +19,7 @@ Environment="PDB_DATABASE_PORT=__PDB_DATABASE_PORT__"
 Environment="PDB_CONFIG_FILE=product_database.server.config"
 Environment="LANG='en_US.UTF-8'"
 Environment="LC_ALL='en_US.UTF-8'"
-ExecStart=/var/www/productdb/virtualenv/bin/celery worker -n product_db -A django_project --detach --concurrency=8 --loglevel=INFO --pidfile=../celery_worker.pid --events --beat --time-limit=14400 --soft-time-limit=7200 --statedb=../celerybeat-schedule.db --logfile=../logs/celery_worker.log
+ExecStart=/var/www/productdb/virtualenv/bin/celery worker -n product_db -A django_project --detach --concurrency=_CELERY_CONCURRENCY_ --loglevel=INFO --pidfile=../celery_worker.pid --events --beat --time-limit=14400 --soft-time-limit=7200 --statedb=../celerybeat-schedule.db --logfile=../logs/celery_worker.log
 ExecReload=/bin/kill -s HUP $MAINPID
 ExecStop=/bin/kill -s TERM $MAINPID
 
