@@ -36,10 +36,7 @@ db.sqlite3
 *.pid
 static/lib
 node_modules
-conf/product_database.config
-conf/product_database.test.config
-conf/product_database.cisco_api_test.config
-conf/test.TestCiscoEoxCrawler.config
-!conf/product_database.sample.config
+/conf/*
+!/conf/product_database.sample.config
 deploy/stage_vagrant/ldap-parameters.yaml
 /data

@@ -1,9 +1,10 @@
 from django.core.urlresolvers import reverse
 from django.test import TestCase
-
+from django.test import override_settings
 from app.config.models import NotificationMessage
 
 
+@override_settings(APP_CONFIG_FILE="conf/NotificationMessageTest.config")
 class NotificationMessageTest(TestCase):
     """
     Test the Notification Message views

@@ -13,7 +13,10 @@ def login_required_if_login_only_mode(request):
         # key not in cache
         app_settings = AppSettings()
         app_settings.read_file()
-        cache.set("LOGIN_ONLY_MODE_SETTING", app_settings.is_login_only_mode(), 15 * 60)
+        login_only_mode = app_settings.is_login_only_mode()
+
+        # add setting to cache
+        cache.set("LOGIN_ONLY_MODE_SETTING", login_only_mode, 60 * 60)
 
     if login_only_mode:
         if not request.user.is_authenticated():

@@ -16,7 +16,7 @@ class Migration(migrations.Migration):
             name='JobFile',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('file', models.FileField(upload_to='/Users/hoelsner/Projects/coding-projects-on-github/product-database/src/source/django_project/../data')),
+                ('file', models.FileField(upload_to='../data')),
             ],
         ),
     ]
