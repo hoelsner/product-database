@@ -14,3 +14,11 @@ html,
 body {
   margin-top: 30px;
 }
+
+.search_box {
+  font-weight: normal;
+  display:table-cell;
+  width: 100%;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
