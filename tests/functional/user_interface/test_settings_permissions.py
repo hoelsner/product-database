@@ -15,7 +15,7 @@ class SettingsPermissionTest(DestructiveProductDbFunctionalTest):
 
         # perform login using the regular API user
         # the user will be logged in but is again redirected to the login dialog because of missing permissions
-        self.handle_login_dialog(self.API_USERNAME, self.API_PASSWORD, "HTTP 400 - bad request")
+        self.handle_login_dialog(self.API_USERNAME, self.API_PASSWORD, "HTTP 403 - forbidden request")
 
         # logout user
         self.browser.get(self.server_url + "/productdb/logout/")
@@ -27,7 +27,7 @@ class SettingsPermissionTest(DestructiveProductDbFunctionalTest):
 
         # perform login using the regular API user
         # the user will be logged in but is again redirected to the login dialog because of missing permissions
-        self.handle_login_dialog(self.API_USERNAME, self.API_PASSWORD, "HTTP 400 - bad request")
+        self.handle_login_dialog(self.API_USERNAME, self.API_PASSWORD, "HTTP 403 - forbidden request")
 
         # logout user
         self.browser.get(self.server_url + "/productdb/logout/")
@@ -39,7 +39,7 @@ class SettingsPermissionTest(DestructiveProductDbFunctionalTest):
 
         # perform login using the regular API user
         # the user will be logged in but is again redirected to the login dialog because of missing permissions
-        self.handle_login_dialog(self.API_USERNAME, self.API_PASSWORD, "HTTP 400 - bad request")
+        self.handle_login_dialog(self.API_USERNAME, self.API_PASSWORD, "HTTP 403 - forbidden request")
 
         # logout user
         self.browser.get(self.server_url + "/productdb/logout/")

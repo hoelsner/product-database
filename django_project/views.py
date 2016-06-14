@@ -7,7 +7,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import password_change
 from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect
-from django.shortcuts import redirect, render
+from django.shortcuts import redirect, render, render_to_response
 from djcelery.views import JsonResponse, HttpResponse
 
 from app.config.settings import AppSettings
@@ -35,9 +35,16 @@ def custom_bad_request_view(request):
 
 
 def custom_permission_denied_view(request):
-    response = render(request, 'django_project/custom_400_page.html', {})
+    response = render(request, 'django_project/custom_403_page.html', {})
     response.status_code = 403
     return response
+
+
+def custom_csrf_failure_page(request, reason=""):
+    context = {
+        "message": "Form expired" if reason == "" else reason
+    }
+    return render_to_response('django_project/custom_csrf_failure_page.html', context)
 
 
 @login_required

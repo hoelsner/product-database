@@ -1,0 +1,10 @@
+{% extends 'django_project/base_error_page.html' %}
+
+{% block page_title %}Form expired{% endblock %}
+
+{% block error_heading %}Form expired{% endblock %}
+
+{% block error_content %}
+    You tried to submit a form that is expired. Please reload the page and try again.<br>
+    If you repeatedly get this message, please ensure that you browser accepts cookies.
+{% endblock %}

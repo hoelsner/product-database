@@ -73,6 +73,7 @@ USE_TZ = True
 LOGIN_URL = "/productdb/login/"
 LOGOUT_URL = "/productdb/logout/"
 LOGIN_REDIRECT_URL = "/productdb/"
+CSRF_FAILURE_VIEW = 'django_project.views.custom_csrf_failure_page'
 
 STATIC_URL = '/productdb/static/'
 STATIC_ROOT = os.path.abspath(os.path.join(BASE_DIR, '../../static'))
