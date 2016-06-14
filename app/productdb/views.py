@@ -180,7 +180,7 @@ def bulk_eol_check(request):
 
 
 @login_required()
-@permission_required('is_superuser')
+@permission_required('productdb.change_product', raise_exception=True)
 def import_products(request):
     """
     import of products using Excel
@@ -195,9 +195,17 @@ def import_products(request):
             job_file = JobFile(file=request.FILES['excel_file'])
             job_file.save()
 
+            if request.user.is_superuser:
+                # only the superuser is allowed to add a server notification message
+                create_notification = not form.cleaned_data["suppress_notification"]
+
+            else:
+                # all other users are not allowed to add a server notification
+                create_notification = False
+
             task = tasks.import_price_list.delay(
                 job_file_id=job_file.id,
-                create_notification_on_server=not form.cleaned_data["suppress_notification"],
+                create_notification_on_server=create_notification,
                 user_for_revision=request.user.username
             )
             set_meta_data_for_task(
@@ -211,6 +219,8 @@ def import_products(request):
 
     else:
         form = ImportProductsFileUploadForm(initial={"suppress_notification": True})
+        if not request.user.is_superuser:
+            form.fields["suppress_notification"].disabled = True
 
     context['form'] = form
 

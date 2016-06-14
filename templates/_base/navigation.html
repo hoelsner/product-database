@@ -77,20 +77,22 @@
                             </li>
                         </ul>
                     </li>
-                    {% if user.is_staff %}
+                    {% if user.is_staff or perms.productdb.change_product %}
                         <li class="dropdown">
                             <a class="dropdown-toggle" data-toggle="dropdown" aria-expanded="false" href="#" id="navbar_admin">
                                 <i class="fa fa-wrench" aria-hidden="true"></i>&nbsp;
                                 Admin&nbsp;<span class="caret"></span>
                             </a>
                             <ul class="dropdown-menu" role="menu">
-                                {% if user.is_superuser %}
+                                {% if perms.productdb.change_product %}
                                     <li role="presentation">
                                         <a href="{% url 'productdb:import_products' %}">
                                             <i class="fa fa-file-excel-o"></i>&nbsp;&nbsp;
                                             Import Products
                                         </a>
                                     </li>
+                                {% endif %}
+                                {% if user.is_superuser %}
                                     <li role="presentation">
                                         <a href="{% url 'productdb_config:notification-add' %}" id="navbar_admin_notification_message">
                                             <i class="fa fa-comments" aria-hidden="true"></i>&nbsp;&nbsp;
