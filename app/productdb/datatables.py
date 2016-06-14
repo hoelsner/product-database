@@ -1,7 +1,7 @@
-import re
 from django_datatables_view.base_datatable_view import BaseDatatableView
 from .models import Product
 from django.db.models import Q
+from app.productdb.utils import is_valid_regex
 
 
 class VendorProductListJson(BaseDatatableView):
@@ -48,45 +48,35 @@ class VendorProductListJson(BaseDatatableView):
 
         if search_string:
             # by default, the search field searched in the Product ID and the description field
-            try:
-                re.compile(search_string)
+            if is_valid_regex(search_string):
                 qs = qs.filter(Q(product_id__regex=search_string) |
                                Q(description__regex=search_string))
-
-            except:
+            else:
                 qs = qs.filter(Q(product_id__contains=search_string) |
                                Q(description__contains=search_string))
 
         if product_id_search:
-            try:
-                re.compile(product_id_search)
+            if is_valid_regex(product_id_search):
                 qs = qs.filter(product_id__regex=product_id_search)
-
-            except:
+            else:
                 qs = qs.filter(product_id__contains=product_id_search)
 
         if description_search:
-            try:
-                re.compile(description_search)
+            if is_valid_regex(description_search):
                 qs = qs.filter(description__regex=description_search)
-
-            except:
+            else:
                 qs = qs.filter(description__contains=description_search)
 
         if list_price_search:
-            try:
-                re.compile(list_price_search)
+            if is_valid_regex(list_price_search):
                 qs = qs.filter(list_price__regex=list_price_search)
-
-            except:
+            else:
                 qs = qs.filter(list_price__contains=list_price_search)
 
         if tags_search:
-            try:
-                re.compile(tags_search)
+            if is_valid_regex(tags_search):
                 qs = qs.filter(tags__regex=tags_search)
-
-            except:
+            else:
                 qs = qs.filter(tags__contains=tags_search)
 
         return qs
@@ -98,6 +88,7 @@ class VendorProductListJson(BaseDatatableView):
 
         for item in qs:
             json_data.append({
+                "id": item.id,
                 "product_id": item.product_id,
                 "description": item.description,
                 "list_price": item.list_price,
@@ -162,53 +153,41 @@ class ListProductsJson(BaseDatatableView):
 
         if search_string:
             # by default, the search field searched in the Product ID and the description field
-            try:
-                re.compile(search_string)
+            if is_valid_regex(search_string):
                 qs = qs.filter(Q(product_id__regex=search_string) |
                                Q(description__regex=search_string))
-
-            except:
+            else:
                 qs = qs.filter(Q(product_id__contains=search_string) |
                                Q(description__contains=search_string))
 
         if vendor_search:
-            try:
-                re.compile(vendor_search)
+            if is_valid_regex(vendor_search):
                 qs = qs.filter(vendor__name__regex=vendor_search)
-
-            except:
+            else:
                 qs = qs.filter(vendor__name__contains=vendor_search)
 
         if product_id_search:
-            try:
-                re.compile(product_id_search)
+            if is_valid_regex(product_id_search):
                 qs = qs.filter(product_id__regex=product_id_search)
-
-            except:
+            else:
                 qs = qs.filter(product_id__contains=product_id_search)
 
         if description_search:
-            try:
-                re.compile(description_search)
+            if is_valid_regex(description_search):
                 qs = qs.filter(description__regex=description_search)
-
-            except:
+            else:
                 qs = qs.filter(description__contains=description_search)
 
         if list_price_search:
-            try:
-                re.compile(list_price_search)
+            if is_valid_regex(list_price_search):
                 qs = qs.filter(list_price__regex=list_price_search)
-
-            except:
+            else:
                 qs = qs.filter(list_price__contains=list_price_search)
 
         if tags_search:
-            try:
-                re.compile(tags_search)
+            if is_valid_regex(tags_search):
                 qs = qs.filter(tags__regex=tags_search)
-
-            except:
+            else:
                 qs = qs.filter(tags__contains=tags_search)
 
         return qs
@@ -220,6 +199,7 @@ class ListProductsJson(BaseDatatableView):
 
         for item in qs:
             json_data.append({
+                "id": item.id,
                 "vendor": item.vendor.name,
                 "product_id": item.product_id,
                 "description": item.description,

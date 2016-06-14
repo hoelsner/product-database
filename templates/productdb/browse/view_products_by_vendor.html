@@ -94,6 +94,17 @@
         });
 
         function update_datatable() {
+            // attach search input fields
+            $('#product_table thead th').each(function () {
+                var title = $(this).text();
+                if($(this).hasClass("searchable")) {
+                    $(this).html(
+                            '<input id="column_search_' + title + '" class="search_box" type="text" placeholder="Search '+ title + '" /><br>' +
+                            $(this).html()
+                    );
+                }
+            });
+
             var vs = $('#vendor_selection');
             var table = $('#product_table').DataTable( {
                 "dom": "<'row'<'col-sm-4'l><'col-sm-4'<'text-center'B>><'col-sm-4'f>>" +
@@ -273,17 +284,6 @@
                  .search( '' )
                  .columns().search( '' )
                  .draw();
-
-            // attach search input fields
-            $('#product_table thead th').each(function () {
-                var title = $(this).text();
-                if($(this).hasClass("searchable")) {
-                    $(this).html(
-                            '<input id="column_search_' + title + '" class="search_box" type="text" placeholder="Search '+ title + '" /><br>' +
-                            $(this).html()
-                    );
-                }
-            });
 
             // prevent sorting when clicking in the search field
             $('.search_box').on('click', function(e){

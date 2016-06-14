@@ -1,3 +1,9 @@
+"""
+utility functions
+"""
+import re
+
+
 def normalize_date(product_object, date_format="%Y/%m/%d"):
     """
     reformat the date entries within a product object to display it on the pages
@@ -54,5 +60,29 @@ def normalize_date(product_object, date_format="%Y/%m/%d"):
         result['end_of_new_service_attachment_date'] = product_object.end_of_new_service_attachment_date.strftime(format=date_format)
     else:
         result['end_of_new_service_attachment_date'] = ""
+
+    return result
+
+
+def is_valid_regex(regex_pattern):
+    """
+    test that the given pattern is a valid regular expression
+    """
+    result = True
+
+    if regex_pattern:
+        # check curly brackets (compile function won't throw an exception)
+        open = len([e for e in regex_pattern if e == "{"])
+        close = len([e for e in regex_pattern if e == "}"])
+        if open == close:
+            try:
+                re.compile(regex_pattern, re.IGNORECASE)
+            except:
+                result = False
+        else:
+            # unbalanced curly brackets, invalid statement
+            result = False
+    else:
+        result = False
 
     return result
