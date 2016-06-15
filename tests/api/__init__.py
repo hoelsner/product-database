@@ -56,12 +56,20 @@ def create_real_test_data(server, username, password, test_data_paths=None):
         if "products" in data.keys():
             for product_dict in data['products']:
                 # translate vendor object
-                response = post_rest_call(vendors_api + "byname/", {"name": product_dict['vendor']}, username, password)
+                response = get_rest_call(
+                    vendors_api + "?name=" + product_dict['vendor'].replace(" ", "%20"),
+                    username, password
+                )
                 if response.status_code != 200:
                     raise Exception("Failed to get vendor name '%s'\n%s" % (product_dict['vendor'],
                                                                             response.content.decode("utf-8")))
                 vendor = json.loads(response.content.decode("utf-8"))
-                product_dict['vendor'] = vendor['id']
+                if len(vendor["data"]) == 0:
+                    raise Exception("Failed to get vendor name '%s', "
+                                    "entry not found\n%s" % (product_dict['vendor'],
+                                                             response.content.decode("utf-8")))
+
+                product_dict['vendor'] = vendor["data"][0]['id']
 
                 response = post_rest_call(products_api,
                                           product_dict,

@@ -25,3 +25,4 @@ django-auth-ldap==1.2.8
 django-bootstrap3==7.0.1
 django-reversion==1.10.2
 django-reversion-compare==0.6.2
+django-filter==0.13.0

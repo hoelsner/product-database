@@ -1,4 +1,3 @@
-from tests.functional.api.test_api_interaction import *
 from tests.functional.api.test_swagger_interface import *
 from tests.functional.user_interface.test_login_and_user_settings import *
 from tests.functional.user_interface.test_views import *

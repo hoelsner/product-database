@@ -102,21 +102,15 @@ class TestImportProducts(DestructiveProductDbFunctionalTest):
             }
         ]
         required_keys = ['product_id', 'description', 'list_price', 'currency', 'vendor']
+        self.client.login(username=self.ADMIN_USERNAME, password=self.ADMIN_PASSWORD)
         for part in parts:
-            apicall = {
-                "product_id": part['id']
-            }
             # id field omitted, because it may change depending on the database
-            response = rest_calls.post_rest_call(api_url=self.PRODUCT_BY_NAME_API_URL,
-                                                 data_dict=apicall,
-                                                 username=self.ADMIN_USERNAME,
-                                                 password=self.ADMIN_PASSWORD)
+            response = self.client.get(self.PRODUCT_API_URL + "?product_id=%s" % part['id'])
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-            self.assertEqual(response.status_code,
-                             status.HTTP_200_OK,
-                             "Failed call: %s" % response.content.decode("utf-8"))
-
-            response_json = json.loads(response.content.decode("utf-8"))
+            response_json = response.json()
+            self.assertEqual(1, response_json["pagination"]["total_records"])
+            response_json = response_json["data"][0]
 
             modified_response = [(k, response_json[k]) for k in required_keys if k in response_json.keys()]
             for s in part['expect']:
@@ -189,21 +183,15 @@ class TestImportProducts(DestructiveProductDbFunctionalTest):
             }
         ]
         required_keys = ['product_id', 'description', 'list_price', 'currency', 'vendor']
+        self.client.login(username=self.ADMIN_USERNAME, password=self.ADMIN_PASSWORD)
         for part in parts:
-            apicall = {
-                "product_id": part['id']
-            }
             # id field omitted, because it may change depending on the database
-            response = rest_calls.post_rest_call(api_url=self.PRODUCT_BY_NAME_API_URL,
-                                                 data_dict=apicall,
-                                                 username=self.ADMIN_USERNAME,
-                                                 password=self.ADMIN_PASSWORD)
+            response = self.client.get(self.PRODUCT_API_URL + "?product_id=%s" % part['id'])
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-            self.assertEqual(response.status_code,
-                             status.HTTP_200_OK,
-                             "Failed call: %s" % response.content.decode("utf-8"))
-
-            response_json = json.loads(response.content.decode("utf-8"))
+            response_json = response.json()
+            self.assertEqual(1, response_json["pagination"]["total_records"])
+            response_json = response_json["data"][0]
 
             modified_response = [(k, response_json[k]) for k in required_keys if k in response_json.keys()]
             for s in part['expect']:

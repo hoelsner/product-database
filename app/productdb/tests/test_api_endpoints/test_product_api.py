@@ -4,10 +4,12 @@ Unit tests for Product API endpoint
 import re
 import json
 
+import time
 from rest_framework import status
 
 import app.productdb.tests.base.api_test_calls as apicalls
 import app.productdb.tests.base.api_endpoints as apiurl
+from app.productdb.models import Product
 from app.productdb.tests import *
 
 
@@ -21,6 +23,26 @@ class ProductApiEndpointTest(BaseApiUnitTest):
         for k in empty_keys:
             del dictionary[k]
         return dictionary
+
+    def create_test_data(self):
+        product_names = [
+            "MyTest",
+            "MyTest2",
+            "MyTest3",
+            "AnotherMyTest",
+            "Test",
+            "MTest",
+            "MyTestMyTest",
+        ]
+
+        for product_name in product_names:
+            apicall_data = {
+                "product_id": product_name,
+                "description": "every description is the same"
+            }
+
+            self.client.login(username=self.ADMIN_USERNAME, password=self.ADMIN_PASSWORD)
+            self.client.post(apiurl.PRODUCT_API_ENDPOINT, apicall_data, format='json')
 
     def test_valid_product_names(self):
         product_names = [
@@ -40,6 +62,7 @@ class ProductApiEndpointTest(BaseApiUnitTest):
                 "product_id": product_name
             }
 
+            self.client.login(username=self.ADMIN_USERNAME, password=self.ADMIN_PASSWORD)
             post_response = self.client.post(apiurl.PRODUCT_API_ENDPOINT, apicall_data, format='json')
 
             self.assertEqual(post_response.status_code, status.HTTP_201_CREATED)
@@ -67,13 +90,14 @@ class ProductApiEndpointTest(BaseApiUnitTest):
             response = self.client.delete(apiurl.PRODUCT_DETAIL_API_ENDPOINT % product['id'])
             self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT, response.content.decode("utf-8"))
 
-        apicalls.clean_db(self.client)
+        apicalls.clean_db(self.client, username=self.ADMIN_USERNAME, password=self.ADMIN_PASSWORD)
 
     def test_failed_product_modify_url(self):
         apicall_data = {
             "product_id": "something"
         }
 
+        self.client.login(username=self.ADMIN_USERNAME, password=self.ADMIN_PASSWORD)
         response = self.client.post(apiurl.PRODUCT_API_ENDPOINT, apicall_data, format='json')
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -101,7 +125,11 @@ class ProductApiEndpointTest(BaseApiUnitTest):
         apicall_data = {
             "product_id": test_product_name
         }
-        apicalls.create_product(self.client, "MyProductName")
+
+        self.client.login(username=self.ADMIN_USERNAME, password=self.ADMIN_PASSWORD)
+        apicalls.create_product(
+            self.client, "MyProductName", username=self.ADMIN_USERNAME, password=self.ADMIN_PASSWORD
+        )
 
         # try to create the product again
         response = self.client.post(apiurl.PRODUCT_API_ENDPOINT, apicall_data, format='json')
@@ -113,14 +141,18 @@ class ProductApiEndpointTest(BaseApiUnitTest):
                                        response.content.decode("utf-8"))
 
         # cleanup
-        apicalls.clean_db(self.client)
+        apicalls.clean_db(self.client, username=self.ADMIN_USERNAME, password=self.ADMIN_PASSWORD)
 
     def test_vendor_default_assignment_to_unassigned(self):
         test_product_name = "test_vendor_default_assignment_to_unassigned"
         apicall_data = {
             "product_id": test_product_name
         }
-        apicalls.create_product(self.client, "MyProductName")
+
+        self.client.login(username=self.ADMIN_USERNAME, password=self.ADMIN_PASSWORD)
+        apicalls.create_product(
+            self.client, "MyProductName", username=self.ADMIN_USERNAME, password=self.ADMIN_PASSWORD
+        )
 
         # try to create the product again
         response = self.client.post(apiurl.PRODUCT_API_ENDPOINT, apicall_data, format='json')
@@ -131,7 +163,7 @@ class ProductApiEndpointTest(BaseApiUnitTest):
                           response.content.decode("utf-8"))
 
         # cleanup
-        apicalls.clean_db(self.client)
+        apicalls.clean_db(self.client, username=self.ADMIN_USERNAME, password=self.ADMIN_PASSWORD)
 
     def test_create_with_default_vendors(self):
         # ID values from fixture "default_vendors.yaml"
@@ -155,6 +187,7 @@ class ProductApiEndpointTest(BaseApiUnitTest):
                 "vendor": default_vendors[i]['id']
             }
 
+            self.client.login(username=self.ADMIN_USERNAME, password=self.ADMIN_PASSWORD)
             response = self.client.post(apiurl.PRODUCT_API_ENDPOINT, apicall_data, format='json')
 
             self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -162,7 +195,7 @@ class ProductApiEndpointTest(BaseApiUnitTest):
                              '.*"vendor":%s.*' % re.escape(default_vendors[i]['id']))
 
         # cleanup
-        apicalls.clean_db(self.client)
+        apicalls.clean_db(self.client, username=self.ADMIN_USERNAME, password=self.ADMIN_PASSWORD)
 
     def test_invalid_create_product_call_with_vendor_id(self):
         test_product_name = "MyProductName"
@@ -170,6 +203,8 @@ class ProductApiEndpointTest(BaseApiUnitTest):
             "product_id": test_product_name,
             "vendor": 100000
         }
+
+        self.client.login(username=self.ADMIN_USERNAME, password=self.ADMIN_PASSWORD)
         response = self.client.post(apiurl.PRODUCT_API_ENDPOINT, apicall_data, format='json')
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -177,7 +212,7 @@ class ProductApiEndpointTest(BaseApiUnitTest):
                       response.content.decode("utf-8"))
 
         # cleanup
-        apicalls.clean_db(self.client)
+        apicalls.clean_db(self.client, username=self.ADMIN_USERNAME, password=self.ADMIN_PASSWORD)
 
     def test_invalid_product_call_with_vendor_string(self):
         test_product_name = "MyProductName"
@@ -185,6 +220,8 @@ class ProductApiEndpointTest(BaseApiUnitTest):
             "product_id": test_product_name,
             "vendor": "Invalid Vendor value"
         }
+
+        self.client.login(username=self.ADMIN_USERNAME, password=self.ADMIN_PASSWORD)
         response = self.client.post(apiurl.PRODUCT_API_ENDPOINT, apicall_data, format='json')
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -192,39 +229,41 @@ class ProductApiEndpointTest(BaseApiUnitTest):
                       response.content.decode("utf-8"))
 
         # cleanup
-        apicalls.clean_db(self.client)
+        apicalls.clean_db(self.client, username=self.ADMIN_USERNAME, password=self.ADMIN_PASSWORD)
 
     def test_create_product_default_string_in_description_field(self):
         product_name = "description_field_test"
 
-        product = apicalls.create_product(self.client, product_name)
+        product = apicalls.create_product(self.client, product_name, self.ADMIN_USERNAME, self.ADMIN_PASSWORD)
         self.assertEqual(product['description'], "not set")
 
-        apicalls.clean_db(self.client)
+        apicalls.clean_db(self.client, username=self.ADMIN_USERNAME, password=self.ADMIN_PASSWORD)
 
     def test_create_product_default_string_in_currency_field(self):
         product_name = "currency_field_test"
 
-        product = apicalls.create_product(self.client, product_name)
+        product = apicalls.create_product(self.client, product_name, self.ADMIN_USERNAME, self.ADMIN_PASSWORD)
         self.assertEqual(product['currency'], "USD")
 
-        apicalls.clean_db(self.client)
+        apicalls.clean_db(self.client, username=self.ADMIN_USERNAME, password=self.ADMIN_PASSWORD)
 
     def test_create_product_custom_string_in_currency_field(self):
         product_name = "currency_field_test"
 
-        product = apicalls.create_product(self.client, product_name)
+        product = apicalls.create_product(self.client, product_name, self.ADMIN_USERNAME, self.ADMIN_PASSWORD)
         product['currency'] = "EUR"
 
-        product = apicalls.update_product(self.client, product_dict=product)
+        product = apicalls.update_product(
+            self.client, product_dict=product, username=self.ADMIN_USERNAME, password=self.ADMIN_PASSWORD
+        )
         self.assertEqual(product['currency'], "EUR")
 
-        apicalls.clean_db(self.client)
+        apicalls.clean_db(self.client, username=self.ADMIN_USERNAME, password=self.ADMIN_PASSWORD)
 
     def test_create_product_with_invalid_string_in_currency_field(self):
         product_name = "currency_field_test"
 
-        product = apicalls.create_product(self.client, product_name)
+        product = apicalls.create_product(self.client, product_name, self.ADMIN_USERNAME, self.ADMIN_PASSWORD)
         product['currency'] = "INV"
 
         # try to create the product again
@@ -239,7 +278,7 @@ class ProductApiEndpointTest(BaseApiUnitTest):
                                        response.content.decode("utf-8"))
 
         # cleanup
-        apicalls.clean_db(self.client)
+        apicalls.clean_db(self.client, username=self.ADMIN_USERNAME, password=self.ADMIN_PASSWORD)
 
     def test_create_with_valid_lifecycle_dates(self):
         apicall_data = {
@@ -256,6 +295,7 @@ class ProductApiEndpointTest(BaseApiUnitTest):
             "eol_reference_url": "http://www.cisco.com/en/US/prod/collateral/switches/ps5718/ps6406/eos-eol-notice-c51-730121.html",
         }
 
+        self.client.login(username=self.ADMIN_USERNAME, password=self.ADMIN_PASSWORD)
         response = self.client.post(apiurl.PRODUCT_API_ENDPOINT, apicall_data, format='json')
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.content.decode("utf-8"))
@@ -281,7 +321,7 @@ class ProductApiEndpointTest(BaseApiUnitTest):
         self.assertRegex(response.content.decode("utf-8"),
                          '.*"eol_reference_url":"%s".*' % apicall_data['eol_reference_url'])
 
-        apicalls.clean_db(self.client)
+        apicalls.clean_db(self.client, username=self.ADMIN_USERNAME, password=self.ADMIN_PASSWORD)
 
     def test_create_with_valid_lifecycle_dates_and_null_value(self):
         apicall_data = {
@@ -290,6 +330,7 @@ class ProductApiEndpointTest(BaseApiUnitTest):
             "eol_reference_url": "http://www.cisco.com/en/US/prod/collateral/switches/ps5718/ps6406/eos-eol-notice-c51-730121.html",
         }
 
+        self.client.login(username=self.ADMIN_USERNAME, password=self.ADMIN_PASSWORD)
         response = self.client.post(apiurl.PRODUCT_API_ENDPOINT, apicall_data, format='json')
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.content.decode("utf-8"))
@@ -314,7 +355,7 @@ class ProductApiEndpointTest(BaseApiUnitTest):
         self.assertRegex(response.content.decode("utf-8"),
                          '.*"eol_reference_url":"%s".*' % apicall_data['eol_reference_url'])
 
-        apicalls.clean_db(self.client)
+        apicalls.clean_db(self.client, username=self.ADMIN_USERNAME, password=self.ADMIN_PASSWORD)
 
     def test_create_with_invalid_lifecycle_dates(self):
         apicall_data = {
@@ -331,6 +372,7 @@ class ProductApiEndpointTest(BaseApiUnitTest):
             "eol_reference_url": "http://www.cisco.com/en/US/prod/collateral/switches/ps5718/ps6406/eos-eol-notice-c51-730121.html",
         }
 
+        self.client.login(username=self.ADMIN_USERNAME, password=self.ADMIN_PASSWORD)
         response = self.client.post(apiurl.PRODUCT_API_ENDPOINT, apicall_data, format='json')
 
         date_error = '["Date has wrong format. Use one of these formats instead: YYYY[-MM[-DD]]."]'
@@ -343,12 +385,12 @@ class ProductApiEndpointTest(BaseApiUnitTest):
         self.assertIn('"end_of_service_contract_renewal":%s' % date_error, response.content.decode("utf-8"))
         self.assertIn('"end_of_new_service_attachment_date":%s' % date_error, response.content.decode("utf-8"))
 
-        apicalls.clean_db(self.client)
+        apicalls.clean_db(self.client, username=self.ADMIN_USERNAME, password=self.ADMIN_PASSWORD)
 
     def test_update_with_null_value_list_price_string(self):
         product_name = "list_price"
 
-        product = apicalls.create_product(self.client, product_name)
+        product = apicalls.create_product(self.client, product_name, self.ADMIN_USERNAME, self.ADMIN_PASSWORD)
         self.assertEqual(product['list_price'], None)
 
         # remove all None values from the result
@@ -372,7 +414,7 @@ class ProductApiEndpointTest(BaseApiUnitTest):
                                        "list_price",
                                        response.content.decode("utf-8"))
 
-        apicalls.clean_db(self.client)
+        apicalls.clean_db(self.client, username=self.ADMIN_USERNAME, password=self.ADMIN_PASSWORD)
 
     def test_create_with_valid_list_price(self):
         """
@@ -399,6 +441,7 @@ class ProductApiEndpointTest(BaseApiUnitTest):
                     "list_price": list_price[0]
                 }
 
+            self.client.login(username=self.ADMIN_USERNAME, password=self.ADMIN_PASSWORD)
             response = self.client.post(apiurl.PRODUCT_API_ENDPOINT, apicall_data, format='json')
 
             self.assertEqual(response.status_code,
@@ -410,7 +453,7 @@ class ProductApiEndpointTest(BaseApiUnitTest):
                              "Failed with\n%s" % response.content.decode("utf-8"))
             count += 1
 
-        apicalls.clean_db(self.client)
+        apicalls.clean_db(self.client, username=self.ADMIN_USERNAME, password=self.ADMIN_PASSWORD)
 
     def test_create_with_invalid_list_price(self):
         """
@@ -430,6 +473,7 @@ class ProductApiEndpointTest(BaseApiUnitTest):
                 "list_price": list_price
             }
 
+            self.client.login(username=self.ADMIN_USERNAME, password=self.ADMIN_PASSWORD)
             response = self.client.post(apiurl.PRODUCT_API_ENDPOINT, apicall_data, format='json')
 
             self.assertEqual(response.status_code,
@@ -456,6 +500,7 @@ class ProductApiEndpointTest(BaseApiUnitTest):
                 "list_price": list_price
             }
 
+            self.client.login(username=self.ADMIN_USERNAME, password=self.ADMIN_PASSWORD)
             response = self.client.post(apiurl.PRODUCT_API_ENDPOINT, apicall_data, format='json')
 
             self.assertEqual(response.status_code,
@@ -465,87 +510,21 @@ class ProductApiEndpointTest(BaseApiUnitTest):
                                            STRING_LIST_PRICE_GREATER_OR_EQUAL_ZERO,
                                            "list_price", response.content.decode("utf-8"))
 
-    def test_valid_byname_api_call(self):
-        test_product_name = "my_get_name_api_call_test"
-        apicalls.create_product(self.client, test_product_name)
-
-        # call byname api endpoint
-        valid_apicall = {
-            "product_id": test_product_name
-        }
-        response = self.client.post(apiurl.PRODUCT_BY_NAME_API_ENDPOINT, valid_apicall)
-
-        # verify results
-        self.assertEqual(response.status_code,
-                         status.HTTP_200_OK,
-                         "Failed call: %s" % response.content.decode("utf-8"))
-        self.assertRegex(response.content.decode("utf-8"),
-                         '.*"id":.*"product_id":"%s".*' % re.escape(valid_apicall['product_id']))
-
-        apicalls.clean_db(self.client)
-
-    def test_valid_byname_api_call_with_content_type_json(self):
-        test_product_name = "my_get_name_api_call_test"
-        apicalls.create_product(self.client, test_product_name)
-
-        # call byname
-        valid_apicall = {
-            "product_id": test_product_name
-        }
-        response = self.client.post(apiurl.PRODUCT_BY_NAME_API_ENDPOINT,
-                                    json.dumps(valid_apicall),
-                                    content_type="application/json")
-
-        # verify result
-        self.assertEqual(response.status_code,
-                         status.HTTP_200_OK,
-                         "Failed call: %s" % response.content.decode("utf-8"))
-        self.assertRegex(response.content.decode("utf-8"),
-                         '.*"id":.*"product_id":"%s".*' % re.escape(valid_apicall['product_id']))
-
-        apicalls.clean_db(self.client)
-
-    def test_invalid_byname_api_call_with_wrong_apicall_data_format(self):
-        # call byname
-        invalid_apicall = {
-            "pa_name": "not_existing_product_number"
-        }
-        response = self.client.post(apiurl.PRODUCT_BY_NAME_API_ENDPOINT, invalid_apicall)
-
-        self.assertEqual(response.status_code,
-                         status.HTTP_400_BAD_REQUEST,
-                         "Failed call: %s" % response.content.decode("utf-8"))
-        apicalls.result_contains_error(self, "invalid parameter given, 'product_id' required",
-                                       "error",
-                                       response.content.decode("utf-8"))
-
-    def test_invalid_getbyname_api_call(self):
-        # call byname
-        invalid_apicall = {
-            "product_id": "not_existing_product_number"
-        }
-        response = self.client.post(apiurl.PRODUCT_BY_NAME_API_ENDPOINT, invalid_apicall)
-
-        self.assertEqual(response.status_code,
-                         status.HTTP_404_NOT_FOUND,
-                         "Failed call: %s" % response.content.decode("utf-8"))
-        apicalls.result_contains_error(self, STRING_PRODUCT_NOT_FOUND_MESSAGE % invalid_apicall['product_id'],
-                                       "product_id",
-                                       response.content.decode("utf-8"))
-
     def test_count_api_endpoint(self):
         test_data_count = 5
         for i in range(0, test_data_count):
-            apicalls.create_product(self.client, "test_count-product_%04d" % i)
+            apicalls.create_product(
+                self.client, "test_count-product_%04d" % i, username=self.ADMIN_USERNAME, password=self.ADMIN_PASSWORD
+            )
 
-        #
+        self.client.login(username=self.ADMIN_USERNAME, password=self.ADMIN_PASSWORD)
         response = self.client.get(apiurl.PRODUCT_COUNT_API_ENDPOINT)
         response.content.decode("utf-8")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.content.decode("utf-8"),
                          '{"count":%s}' % test_data_count)
-        apicalls.clean_db(self.client)
+        apicalls.clean_db(self.client, username=self.ADMIN_USERNAME, password=self.ADMIN_PASSWORD)
 
     def test_product_pagination_defaults(self):
         for i in range(1, 55 + 1):
@@ -555,6 +534,7 @@ class ProductApiEndpointTest(BaseApiUnitTest):
             post_response = self.client.post(apiurl.PRODUCT_API_ENDPOINT, apicall_data, format='json')
             self.assertEqual(post_response.status_code, status.HTTP_201_CREATED)
 
+        self.client.login(username=self.ADMIN_USERNAME, password=self.ADMIN_PASSWORD)
         res = self.client.get(apiurl.PRODUCT_API_ENDPOINT)
         self.assertEquals(res.status_code, status.HTTP_200_OK, res.content.decode("utf-8"))
         jres = json.loads(res.content.decode("utf-8"))
@@ -580,7 +560,7 @@ class ProductApiEndpointTest(BaseApiUnitTest):
         self.assertEquals(jres['pagination']['total_records'], 55)
         self.assertEquals(jres['pagination']['page_records'], 5)
 
-        apicalls.clean_db(self.client)
+        apicalls.clean_db(self.client, username=self.ADMIN_USERNAME, password=self.ADMIN_PASSWORD)
 
     def test_product_custom_page_length(self):
         for i in range(1, 55 + 1):
@@ -590,6 +570,7 @@ class ProductApiEndpointTest(BaseApiUnitTest):
             post_response = self.client.post(apiurl.PRODUCT_API_ENDPOINT, apicall_data, format='json')
             self.assertEqual(post_response.status_code, status.HTTP_201_CREATED)
 
+        self.client.login(username=self.ADMIN_USERNAME, password=self.ADMIN_PASSWORD)
         res = self.client.get(apiurl.PRODUCT_API_ENDPOINT + "?page_size=15")
         self.assertEquals(res.status_code, status.HTTP_200_OK, res.content.decode("utf-8"))
         jres = json.loads(res.content.decode("utf-8"))
@@ -615,4 +596,79 @@ class ProductApiEndpointTest(BaseApiUnitTest):
         self.assertEquals(jres['pagination']['total_records'], 55)
         self.assertEquals(jres['pagination']['page_records'], 10)
 
-        apicalls.clean_db(self.client)
+        apicalls.clean_db(self.client, username=self.ADMIN_USERNAME, password=self.ADMIN_PASSWORD)
+
+    def test_product_filter_by_id(self):
+        """
+        call Product API endpoint using the id field (exact match required)
+        """
+        self.client.login(username=self.ADMIN_USERNAME, password=self.ADMIN_PASSWORD)
+        self.create_test_data()
+        p = Product.objects.get(product_id="MyTest")
+
+        response = self.client.get(apiurl.PRODUCT_API_ENDPOINT + "?id=%s" % p.id)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        data = response.json()
+        self.assertTrue("data" in data)
+        self.assertEqual(1, data["pagination"]["total_records"])
+        self.assertEqual(p.product_id, data["data"][0]["product_id"])
+
+    def test_product_filter_by_product_id(self):
+        """
+        call Product API endpoint using the product_id field (exact operation on the database for the field)
+        """
+        self.client.login(username=self.ADMIN_USERNAME, password=self.ADMIN_PASSWORD)
+        self.create_test_data()
+
+        # the response contains only the exact match
+        response = self.client.get(apiurl.PRODUCT_API_ENDPOINT + "?product_id=MyTest")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        data = response.json()
+        self.assertEqual(1, data["pagination"]["total_records"])
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue("data" in data)
+        self.assertEqual("MyTest", data["data"][0]["product_id"])
+
+    def test_product_filter_by_vendor_name(self):
+        """
+        call Product API endpoint using the vendor field (startswith operation within on the database for the field)
+        """
+        self.client.login(username=self.ADMIN_USERNAME, password=self.ADMIN_PASSWORD)
+        self.create_test_data()
+
+        # search by vendor name, returns all test data
+        response = self.client.get(apiurl.PRODUCT_API_ENDPOINT + "?vendor=unassigned")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        data = response.json()
+        self.assertEqual(7, data["pagination"]["total_records"])
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue("data" in data)
+
+    def test_product_search(self):
+        """
+        test the product search feature (regular expressions are possible, search through the product_id, description
+        and tags)
+        """
+        self.client.login(username=self.ADMIN_USERNAME, password=self.ADMIN_PASSWORD)
+        self.create_test_data()
+
+        # search product, expect 5 elements that contains MyTest
+        response = self.client.get(apiurl.PRODUCT_API_ENDPOINT + "?search=MyTest")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.json()
+        self.assertEqual(5, data["pagination"]["total_records"])
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue("data" in data)
+
+        # search product, expect 5 elements that starts with MyTest (regex)
+        response = self.client.get(apiurl.PRODUCT_API_ENDPOINT + "?search=^MyTest")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.json()
+        self.assertEqual(4, data["pagination"]["total_records"])
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue("data" in data)

@@ -4,17 +4,17 @@ Functions to test the API interface
 These functions are used to create and remove test data during the execution of the unit tests for the API endpoints.
 """
 import json
-import re
+from requests.auth import HTTPBasicAuth
 
 import app.productdb.tests.base.api_endpoints as apiurl
 
 
-def create_product(client, product_name):
+def create_product(client, product_name, username, password):
     url = apiurl.PRODUCT_API_ENDPOINT
     product_api_call = {
         "product_id": product_name
     }
-    response = client.post(url, product_api_call, format='json')
+    response = client.post(url, product_api_call, auth=HTTPBasicAuth(username, password), format='json')
     if response.status_code != 201:
         raise Exception("Fail to create product: %s\n"
                         "URL/Code: %s/%s\n"
@@ -25,24 +25,27 @@ def create_product(client, product_name):
     return json.loads(response.content.decode("utf-8"))
 
 
-def get_product_by_name(client, product_name):
-    url = apiurl.PRODUCT_BY_NAME_API_ENDPOINT
-    product_api_call = {
-        "product_id": product_name
-    }
-    response = client.post(url, product_api_call, format='json')
+def get_product_by_name(client, product_name, username, password):
+    url = apiurl.PRODUCT_API_ENDPOINT + "?product_id=" + product_name
+    response = client.get(url, auth=HTTPBasicAuth(username, password), format='json')
 
     if response.status_code != 200:
-        raise Exception("Fail to get product by name: %s\n"
+        raise Exception("Fail to get product by name:\n"
                         "URL/Code: %s/%s\n"
-                        "Response content: %s" % (json.dumps(product_api_call, indent=4),
-                                                  url,
+                        "Response content: %s" % (url,
                                                   response.status_code,
                                                   response.content))
-    return json.loads(response.content.decode("utf-8"))
+    result = json.loads(response.content.decode("utf-8"))["data"]
+    if len(result) == 0:
+        raise Exception("Query returned no results:\n"
+                        "URL/Code: %s/%s\n"
+                        "Response content: %s" % (url,
+                                                  response.status_code,
+                                                  response.content))
+    return result[0]
 
 
-def get_products(client):
+def get_products(client, username, password):
     url = apiurl.PRODUCT_API_ENDPOINT
 
     result = []
@@ -50,7 +53,7 @@ def get_products(client):
     current_page = 1
 
     while current_page <= pages:
-        response = client.get(url + "?page=%d" % current_page, format='json')
+        response = client.get(url + "?page=%d" % current_page, auth=HTTPBasicAuth(username, password), format='json')
 
         if response.status_code != 200:
             raise Exception("Fail to get all product: ---\n"
@@ -67,9 +70,9 @@ def get_products(client):
     return result
 
 
-def update_product(client, product_dict):
+def update_product(client, product_dict, username, password):
     url = apiurl.PRODUCT_DETAIL_API_ENDPOINT % product_dict['id']
-    response = client.put(url, product_dict, format='json')
+    response = client.put(url, product_dict, auth=HTTPBasicAuth(username, password), format='json')
 
     if response.status_code != 200:
         raise Exception("Fail to put product: %s\n"
@@ -81,10 +84,10 @@ def update_product(client, product_dict):
     return json.loads(response.content.decode("utf-8"))
 
 
-def delete_product(client, product_name):
-    product = get_product_by_name(client, product_name)
+def delete_product(client, product_name, username, password):
+    product = get_product_by_name(client, product_name, username=username, password=password)
     url = apiurl.PRODUCT_DETAIL_API_ENDPOINT % product['id']
-    response = client.delete(url)
+    response = client.delete(url, auth=HTTPBasicAuth(username, password))
 
     if response.status_code != 204:
         raise Exception("Fail to delete product: %s\n"
@@ -95,16 +98,16 @@ def delete_product(client, product_name):
                                                   response.content))
 
 
-def clean_db(client):
+def clean_db(client, username, password):
     """
     Remove all elements from the models that is available using the API
     :param client:
     :return:
     """
-    products = get_products(client)
+    products = get_products(client, username=username, password=password)
 
     for product in products:
-        delete_product(client, product['product_id'])
+        delete_product(client, product['product_id'], username=username, password=password)
 
 
 def result_contains_error(api_test_case, error_msg, json_key, content):

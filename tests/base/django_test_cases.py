@@ -88,8 +88,8 @@ class DestructiveProductDbFunctionalTest(FunctionalTest):
         :return:
         """
         drop_all_products(server=self.server_url,
-                          username=self.API_USERNAME,
-                          password=self.API_PASSWORD)
+                          username=self.ADMIN_USERNAME,
+                          password=self.ADMIN_PASSWORD)
 
     def handle_login_dialog(self, username, password, expected_content):
         # perform user login with the given credentials
@@ -113,8 +113,8 @@ class DestructiveProductDbFunctionalTest(FunctionalTest):
         ]
 
         create_real_test_data(server=self.server_url,
-                              username=self.API_USERNAME,
-                              password=self.API_PASSWORD,
+                              username=self.ADMIN_USERNAME,
+                              password=self.ADMIN_PASSWORD,
                               test_data_paths=test_data_paths)
 
     def setUp(self):
@@ -138,7 +138,6 @@ class DestructiveProductDbFunctionalTest(FunctionalTest):
 
         # set API endpoints
         self.PRODUCT_API_URL = self.server_url + PRODUCTS_API_ENDPOINT
-        self.PRODUCT_BY_NAME_API_URL = self.server_url + PRODUCTS_API_ENDPOINT + "byname/"
 
     def tearDown(self):
         super().tearDown()

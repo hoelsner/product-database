@@ -14,20 +14,33 @@ STRING_PRODUCT_INVALID_CURRENCY_VALUE = '"%s" is not a valid choice.'
 
 
 class BaseApiUnitTest(APITestCase):
-    USERNAME = "admin"
-    PASSWORD = "admin"
+    ADMIN_USERNAME = "admin"
+    ADMIN_PASSWORD = "admin"
+    API_USERNAME = "api"
+    API_PASSWORD = "api"
 
     def setUp(self):
         try:
-            User.objects.get(username=self.USERNAME)
+            User.objects.get(username=self.ADMIN_USERNAME)
 
         except:
-            u = User.objects.create_user(username=self.USERNAME, password=self.PASSWORD, email="admin@local.local")
+            u = User.objects.create_superuser(
+                username=self.ADMIN_USERNAME, password=self.ADMIN_PASSWORD, email="admin@local.local"
+            )
+            u.save()
+
+        try:
+            User.objects.get(username=self.API_USERNAME)
+
+        except:
+            u = User.objects.create_user(
+                username=self.API_USERNAME, password=self.API_PASSWORD, email="api@local.local"
+            )
             u.save()
 
         client = APIClient()
 
-        if not client.login(username=self.USERNAME, password=self.PASSWORD):
+        if not client.login(username=self.ADMIN_USERNAME, password=self.ADMIN_PASSWORD):
             self.fail("Login to API failed")
         self.client = client
 
