@@ -22,36 +22,6 @@ class VendorSerializer(HyperlinkedModelSerializer):
         depth = 0
 
 
-class ProductLifecycleSerializer(HyperlinkedModelSerializer):
-
-    class Meta:
-        model = Product
-        fields = (
-            'id',
-            'product_id',
-            'description',
-            'url',
-            'eox_update_time_stamp',
-            'end_of_sale_date',
-            'end_of_support_date',
-            'eol_ext_announcement_date',
-            'end_of_sw_maintenance_date',
-            'end_of_routine_failure_analysis',
-            'end_of_service_contract_renewal',
-            'end_of_new_service_attachment_date',
-            'end_of_sec_vuln_supp_date',
-            'eol_reference_number',
-            'eol_reference_url',
-        )
-        extra_kwargs = {
-            'url': {
-                'lookup_field': 'id',
-                'view_name': 'productdb:products-detail'
-            }
-        }
-        depth = 0
-
-
 class ProductSerializer(HyperlinkedModelSerializer):
     currency = ChoiceField(
         choices=CURRENCY_CHOICES,
@@ -79,13 +49,6 @@ class ProductSerializer(HyperlinkedModelSerializer):
         read_only=False,
         required=False
     )
-
-    @staticmethod
-    def product_list_names(obj):
-        return {
-            product_list.product_list_name
-            for product_list in obj.lists.all()
-        }
 
     class Meta:
         model = Product
