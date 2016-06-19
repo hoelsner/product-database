@@ -6,19 +6,26 @@ Execute a Bulk EoL check
 {% endblock %}
 
 {% block page_content %}
-    <div class="col-md-12">
+    <div class="col-md-10 col-md-offset-1">
         <div class="page-header">
             <h1>Bulk EoL check</h1>
         </div>
 
         <p>On this page, you can execute a bulk check of multiple products against the local
         database. Please enter a list of product IDs in the following text field separated
-        by line breaks.</p>
+        by line breaks, e.g.</p>
         {% if query_result|length > 0 %}
         <a href="{% url 'productdb:bulk_eol_check' %}" class="btn btn-primary btn-lg btn-block" role="button">Start another Bulk EoL check</a>
         {% endif %}
 
         {% if query_result|length == 0 %}
+            <div class="col-md-6 col-md-offset-1 col-sm-offset-1">
+                <p>
+                    WS-C2960-48TT-L<br>
+                    WS-C2960-24LC-S<br>
+                    WS-C2960S-24TS-S
+                </p>
+            </div>
             {% if query_no_result %}
             <div class="alert alert-danger" role="alert">
                 <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
@@ -26,14 +33,17 @@ Execute a Bulk EoL check
                 Query returned no results.
             </div>
             {% endif %}
-            <form class="form-horizontal" method="post">
+            <form class="form form-horizontal" method="post">
+                <div class="form-group">
+                    <input class="btn btn-primary btn-block" type="submit" id="submit" value="Execute EoL bulk check" />
+                </div>
                 <div class="form-group">
                     <textarea id="db_query" name="db_query"
-                              placeholder="Enter product IDs separated by line breaks here..."
+                              placeholder="Enter product IDs/SKUs separated by line breaks here..."
                               class="form-control" rows="25"></textarea>
                 </div>
-                <div class="text-center">
-                    <input class="btn btn-default" type="submit" id="submit" value="Execute EoL bulk check" />
+                <div class="form-group">
+                    <input class="btn btn-primary btn-block" type="submit" id="submit" value="Execute EoL bulk check" />
                 </div>
                 {% csrf_token %}
             </form>
@@ -68,7 +78,7 @@ Execute a Bulk EoL check
                             <th>EoNewSA</th>
                             <th>EoSWM</th>
                             <th>EoRFA</th>
-                            <th>EoSCn</th>
+                            <th>EoSCR</th>
                             <th>EoVulnServ</th>
                             <th>EoSup</th>
                             <th>Link</th>
@@ -98,12 +108,12 @@ Execute a Bulk EoL check
                         <pre id="legend">
 PID        = Product ID
 EoL anno   = End of Life announcement date
-EoS        = End of Sale Date
+EoS        = End of Sale date
 EoNewSA    = End of new service attachment date
 EoSWM      = End of Software Maintenance date
-EoRFA      = End of routine failure analysis
-EoRFA      = End of routine failure analysis
-EoVulnServ = End of Vulnerability/Security Support
+EoRFA      = End of routine failure analysis date
+EoSCR      = End of Software Contract Renewal date
+EoVulnServ = End of Vulnerability/Security Support date
 EoSup      = Last day of support
                         </pre>
                     </div>

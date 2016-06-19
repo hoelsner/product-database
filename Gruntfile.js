@@ -12,7 +12,8 @@ module.exports = function(grunt) {
         '!static/lib/*/css',
         '!static/lib/pdfmake/build',
         '!static/lib/font-awesome/css',
-        '!static/lib/font-awesome/fonts'
+        '!static/lib/font-awesome/fonts',
+        '!static/lib/bootstrap-tour/build'
       ]
     }
   });

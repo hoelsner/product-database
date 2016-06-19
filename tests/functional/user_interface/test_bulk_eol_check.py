@@ -16,7 +16,7 @@ class TestBulkEolCheckTool(DestructiveProductDbFunctionalTest):
         # he sees the bulk EoL products textarea, which contains the text to enter the
         # product IDs separated by a line break
         expected_text = "On this page, you can execute a bulk check of multiple products against the local database. " \
-                        "Please enter a list of product IDs in the following text field separated by line breaks."
+                        "Please enter a list of product IDs in the following text field separated by line breaks"
         page_text = self.browser.find_element_by_tag_name('body').text
         self.assertIn(expected_text, page_text)
 
@@ -100,7 +100,7 @@ MOH
         # Verify that the file is a CSV formatted field (with ";" as delimiter)
         file = os.path.join(self.download_dir, "Bulk EoL check (detailed lifecycle states).csv")
         f = open(file, "r")
-        self.assertEqual("\ufeffPID;EoL anno.;EoS;EoNewSA;EoSWM;EoRFA;EoSCn;EoVulnServ;EoSup;Link\n", f.readline())
+        self.assertEqual("\ufeffPID;EoL anno.;EoS;EoNewSA;EoSWM;EoRFA;EoSCR;EoVulnServ;EoSup;Link\n", f.readline())
         f.close()
 
         # download skipped queries table
@@ -124,7 +124,7 @@ MOH
         # he sees the bulk EoL products textarea, which contains the text to enter the
         # product IDs separated by a line break
         expected_text = "On this page, you can execute a bulk check of multiple products against the local database. " \
-                        "Please enter a list of product IDs in the following text field separated by line breaks."
+                        "Please enter a list of product IDs in the following text field separated by line breaks"
         page_text = self.browser.find_element_by_tag_name('body').text
         self.assertIn(expected_text, page_text)
 

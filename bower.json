@@ -19,6 +19,7 @@
     "datatables.net-buttons-bs": "^1.1.2",
     "font-awesome": "fontawesome#^4.6.3",
     "datatables.net-fixedheader": "^3.1.2",
-    "datatables.net-fixedheader-bs": "^3.1.2"
+    "datatables.net-fixedheader-bs": "^3.1.2",
+    "bootstrap-tour": "^0.10.3"
   }
 }
