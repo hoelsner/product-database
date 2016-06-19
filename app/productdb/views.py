@@ -4,6 +4,7 @@ from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.decorators import permission_required
 from django.core.urlresolvers import reverse
+from django.http import Http404
 from django.shortcuts import redirect, render
 from django.utils.timezone import timedelta, datetime, get_current_timezone
 
@@ -88,6 +89,30 @@ def browse_all_products(request):
         return redirect('%s?next=%s' % (settings.LOGIN_URL, request.path))
 
     return render(request, "productdb/browse/view_products.html", context={})
+
+
+def view_product_details(request, product_id=None):
+    """
+    view product details
+    """
+    if login_required_if_login_only_mode(request):
+        return redirect('%s?next=%s' % (settings.LOGIN_URL, request.path))
+
+    if not product_id:
+        # if product_id is set to none, redirect to the all products view
+        return redirect(reverse("productdb:all_products"))
+
+    else:
+        try:
+            p = Product.objects.get(id=product_id)
+        except:
+            raise Http404("Product with ID %s not found in database" % product_id)
+
+    context = {
+        "product": p
+    }
+
+    return render(request, "productdb/browse/product_detail.html", context=context)
 
 
 def bulk_eol_check(request):

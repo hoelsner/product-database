@@ -1,0 +1,122 @@
+{% extends '_base/page-with_nav-single_row.html' %}
+{% load staticfiles %}
+
+{% block title %}
+    Product details for {{ product.product_id }}
+{% endblock %}
+
+{% block page_content %}
+    <div class="col-md-6 col-md-offset-3">
+        <div class="page-header">
+            <h1>{{ product.product_id }} <small>Product details</small></h1>
+        </div>
+
+        <dl class="dl-horizontal">
+            <dt>Vendor:</dt>
+            <dd>{{ product.vendor.name }}</dd>
+
+            <dt>Product ID:</dt>
+            <dd>{{ product.product_id }}</dd>
+
+            <dt>Description:</dt>
+            <dd>{{ product.description }}</dd>
+
+            {% if product.list_price %}
+                <dt>List Price:</dt>
+                <dd>{{ product.list_price }} {{ product.currency }}</dd>
+            {% endif %}
+
+            <dt>Tags:</dt>
+            <dd>{{ product.tags|default:"<i>No tags defined</i>" }}</dd>
+        </dl>
+
+        {% if product.current_lifecycle_states %}
+            <h2>Lifecycle data</h2>
+            <div class="panel panel-default">
+                <div class="panel-body">
+                {% if product.current_lifecycle_states|length > 1 %}
+                    <div class="alert alert-warning" role="alert">
+                        <strong>Current lifecycle state: </strong>
+                        <ul>
+                            {% for entry in product.current_lifecycle_states %}
+                            <li>{{ entry }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% elif product.current_lifecycle_states|length == 1 %}
+                    {% if "No EoL announcement" in product.current_lifecycle_states.0 %}
+                        <div class="alert alert-info" role="alert">
+                            No End-of-Life announcement saved in the database.
+                        </div>
+
+                    {% else %}
+                        {% if "EoS announced" in product.current_lifecycle_states.0 %}
+                            <div class="alert alert-warning" role="alert">
+                                <strong>Current lifecycle state: </strong>
+                                {{ product.current_lifecycle_states.0 }}
+                            </div>
+
+                        {% elif "End of Sale" in product.current_lifecycle_states.0 %}
+                            <div class="alert alert-warning" role="alert">
+                                <strong>Current lifecycle state: </strong>
+                                {{ product.current_lifecycle_states.0 }}
+                            </div>
+
+                        {% else %}
+                            {# must be End of Support at this stage #}
+                            <div class="alert alert-danger" role="alert">
+                                <strong>Current lifecycle state: </strong>
+                                {{ product.current_lifecycle_states.0 }}
+                            </div>
+
+                        {% endif %}
+                    {% endif %}
+                {% endif %}
+                {% if "No EoL announcement" not in product.current_lifecycle_states.0 %}
+                    <table class="table">
+                        <tr>
+                            <th>End-of-Life Announcement Date:</th>
+                            <td>{{ product.eol_ext_announcement_date|date:"Y-m-d" }}</td>
+                        </tr>
+                        <tr>
+                            <th>End-of-Sale Date:</th>
+                            <td>{{ product.end_of_sale_date|date:"Y-m-d" }}</td>
+                        </tr>
+                        <tr>
+                            <th>End of New Service Attachment Date:</th>
+                            <td>{{ product.end_of_new_service_attachment_date|date:"Y-m-d" }}</td>
+                        </tr>
+                        <tr>
+                            <th>End of SW Maintenance Releases Date:</th>
+                            <td>{{ product.end_of_sw_maintenance_date|date:"Y-m-d" }}</td>
+                        </tr>
+                        <tr>
+                            <th>End of Routine Failure Analysis Date:</th>
+                            <td>{{ product.end_of_routine_failure_analysis|date:"Y-m-d" }}</td>
+                        </tr>
+                        <tr>
+                            <th>End of Service Contract Renewal Date:</th>
+                            <td>{{ product.end_of_service_contract_renewal|date:"Y-m-d" }}</td>
+                        </tr>
+                        <tr>
+                            <th>End of Vulnerability/Security Support Date:</th>
+                            <td>{{ product.end_of_sec_vuln_supp_date|date:"Y-m-d" }}</td>
+                        </tr>
+                        <tr>
+                            <th>Last Date of Support:</th>
+                            <td>{{ product.end_of_support_date|date:"Y-m-d" }}</td>
+                        </tr>
+                        {% if product.eol_reference_url %}
+                            <tr>
+                                <th>Vendor Bulletin:</th>
+                                <td><a href="{{ product.eol_reference_url }}" target="_blank">{{ product.eol_reference_number|default:"Link" }}</a></td>
+                            </tr>
+                        {% endif %}
+                    </table>
+                {% endif %}
+                </div>
+            </div>
+        {% endif %}
+
+    </div>
+{% endblock %}

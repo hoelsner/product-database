@@ -133,7 +133,15 @@
                         "targets": 0,
                         "data": "product_id",
                         "visible": true,
-                        "searchable": true
+                        "searchable": true,
+                        "render": function ( data, type, row ) {
+                            if (data != null) {
+                                return '<a href="{% url 'productdb:product-list' %}' + row["id"] + '/">' + row['product_id'] + '</a>';
+                            }
+                            else {
+                                return ""
+                            }
+                        }
                     },
                     {
                         "targets": 1,

@@ -103,6 +103,22 @@ class BrowseProductsByVendor(DestructiveProductDbFunctionalTest):
         self.assertIn(expected_cisco_row,
                       [row.text for row in rows])
 
+        # navigate to a detail view
+        link = self.browser.find_element_by_link_text("PWR-C1-350WAC")
+        self.browser.execute_script("return arguments[0].scrollIntoView();", link)
+        time.sleep(1)
+        test_product_id = "WS-C2960-24LT-L"
+        self.browser.find_element_by_link_text(test_product_id).click()
+        self.assertIn("%s Product details" % test_product_id, self.browser.find_element_by_tag_name("body").text)
+
+        # reopen the browse vendor products table
+        self.browser.get(self.server_url + reverse("productdb:browse_vendor_products"))
+
+        # the user sees a selection field, where the value "Cisco Systems" is selected
+        pl_selection = self.browser.find_element_by_id("vendor_selection")
+        self.assertIn(default_vendor, pl_selection.text)
+        pl_selection = Select(pl_selection)
+
         # the user chooses the list named "Juniper Networks" and press the button "view product list"
         pl_selection.select_by_visible_text("Juniper Networks")
         self.browser.find_element_by_id("submit").send_keys(Keys.ENTER)
@@ -239,6 +255,11 @@ class BrowseAllProducts(DestructiveProductDbFunctionalTest):
             time.sleep(3)
         if not match:
             self.fail("Element not found")
+
+        # navigate to a detail view
+        test_product_id = "GLC-LH-SMD="
+        self.browser.find_element_by_link_text(test_product_id).click()
+        self.assertIn("%s Product details" % test_product_id, self.browser.find_element_by_tag_name("body").text)
 
     def test_browse_all_products_view_csv_export(self):
         # a user hits the browse product list url

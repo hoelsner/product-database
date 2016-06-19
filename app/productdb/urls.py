@@ -39,6 +39,8 @@ urlpatterns = [
     # user views
     url(r'^vendor/$', views.browse_vendor_products, name='browse_vendor_products'),
     url(r'^products/$', views.browse_all_products, name='all_products'),
+    url(r'^product/$', views.view_product_details, name='product-list'),
+    url(r'^product/(?P<product_id>\d+)/$', views.view_product_details, name='product-detail'),
     url(r'^do/bulkcheck/$', views.bulk_eol_check, name='bulk_eol_check'),
     url(r'^import/products/$', views.import_products, name='import_products'),
     url(r'^about/$', views.about_view, name='about'),
