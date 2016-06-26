@@ -73,9 +73,10 @@ after you've cloned the source code to the Ansible control machine:
  2. edit the `ansible-inventory` file within the new directory (add the hostname and the username of your server)
  3. run the `stage-machine.sh` script from your staging directory
 
-After the installation, there are two users created by default: one "pdb_admin" user with the password "admin", which can
-be used for administration tasks and one "api" user with the password "api" for write actions on the REST API.
-Any read action is permitted without authentication by default. To change this behavior, you can enable the "login-only
+After the installation, there are by default two users available: one superuser with the username **pdb_admin** and the
+password **pdb_admin** and one **api** user with the password **api** as a normal user.
+Any read action on the web-site is permitted without authentication by default. The REST API is only available to registered
+users. To change this behavior, you can enable the "login-only
 mode".
 
 ## Use the Cisco APIs within the Product Database
