@@ -12,11 +12,16 @@
             <h1>Import Products</h1>
         </div>
         <p>
-            You can download the Excel template <a href="{% static 'file/product_database_import_template.xlsx' %}">here</a>.
+            You can use one of the following Excel templates:
+            <a href="{% static 'file/product_database_import_template.xlsx' %}">complete table format</a> or
+            <a href="{% static 'file/product_database_import_template_no_currency.xlsx' %}">without separate currency column</a>.
             After you <strong>add your products to the Excel template</strong>, you can upload it using the dialog below.
         </p>
 
-        <p>Empty values within the Excel template are ignored.</p>
+        <div class="alert alert-info" role="alert">
+            <span class="fa fa-info-circle" aria-hidden="true"></span>&nbsp;
+            Empty values within the Excel file are ignored during the import.
+        </div>
 
         <hr>
         <form method="post" class="form" enctype="multipart/form-data">
