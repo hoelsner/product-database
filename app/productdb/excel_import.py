@@ -127,9 +127,11 @@ class ImportProductsExcelFile:
 
         return changed, faulty_entry, msg
 
-    def import_products_to_database(self, status_callback=None):
+    def import_products_to_database(self, status_callback=None, update_only=False):
         """
         Import products from the associated excel sheet to the database
+        :param status_callback: optional status message callback function
+        :param update_only: don't create new entries
         """
         if self.workbook is None:
             self.__load_workbook__()
@@ -149,179 +151,197 @@ class ImportProductsExcelFile:
                 status_callback("Process entry <strong>%s</strong> of "
                                 "<strong>%s</strong>..." % (current_entry, amount_of_entries))
 
-            faulty_entry = False
-            msg = "import successful"
-            p, created = Product.objects.get_or_create(product_id=row["product id"])
+            faulty_entry = False        # indicates an invalid entry
+            created = False             # indicates that the product was created
+            skip = False                # skip the current entry (used in update_only mode)
+            msg = "import successful"   # message to describe the result of the product import
+
+            if update_only:
+                try:
+                    p = Product.objects.get(product_id=row["product id"])
+
+                except Product.DoesNotExist:
+                    # element doesn't exist
+                    skip = True
+
+                except Exception as ex:
+                    logger.warn("unexpected exception occured during the lookup "
+                                "of product %s (%s)" % (row["product id"], ex) )
+
+            else:
+                p, created = Product.objects.get_or_create(product_id=row["product id"])
+
             changed = created
 
-            # apply changes (only if a value is set, otherwise ignore it)
-            row_key = "description"
-            try:
-                # set the description value
-                if not pd.isnull(row[row_key]):
-                    if p.description != row[row_key]:
-                        p.description = row[row_key]
-                        changed = True
+            if not skip:
+                # apply changes (only if a value is set, otherwise ignore it)
+                row_key = "description"
+                try:
+                    # set the description value
+                    if not pd.isnull(row[row_key]):
+                        if p.description != row[row_key]:
+                            p.description = row[row_key]
+                            changed = True
 
-                # determine the list price and currency from the excel file
-                row_key = "list price"
-                new_currency = "USD"    # default in model
+                    # determine the list price and currency from the excel file
+                    row_key = "list price"
+                    new_currency = "USD"    # default in model
 
-                if not pd.isnull(row[row_key]):
-                    if type(row[row_key]) == float:
-                        new_price = row[row_key]
+                    if not pd.isnull(row[row_key]):
+                        if type(row[row_key]) == float:
+                            new_price = row[row_key]
 
-                    elif type(row[row_key]) == str:
-                        price = row[row_key].split(" ")
-                        if len(price) == 1:
-                            new_price = float(row[row_key])
+                        elif type(row[row_key]) == str:
+                            price = row[row_key].split(" ")
+                            if len(price) == 1:
+                                new_price = float(row[row_key])
 
-                        elif len(price) == 2:
-                            try:
-                                new_price = float(price[0])
-                            except:
-                                raise Exception("cannot convert price information to float")
+                            elif len(price) == 2:
+                                try:
+                                    new_price = float(price[0])
+                                except:
+                                    raise Exception("cannot convert price information to float")
 
-                            # check valid currency value
-                            valid_currency = True if price[1].upper() in dict(CURRENCY_CHOICES).keys() else False
-                            if valid_currency:
-                                new_currency = price[1].upper()
+                                # check valid currency value
+                                valid_currency = True if price[1].upper() in dict(CURRENCY_CHOICES).keys() else False
+                                if valid_currency:
+                                    new_currency = price[1].upper()
+
+                                else:
+                                    raise Exception("cannot set currency unknown value %s" % price[1].upper())
 
                             else:
-                                raise Exception("cannot set currency unknown value %s" % price[1].upper())
+                                raise Exception("invalid format for list price, detected multiple spaces")
 
                         else:
-                            raise Exception("invalid format for list price, detected multiple spaces")
-
+                            logger.debug("list price data type for %s identified as %s" % (
+                                row["product id"],
+                                str(type(row[row_key]))
+                            ))
+                            raise Exception("invalid data-type for list price")
                     else:
-                        logger.debug("list price data type for %s identified as %s" % (
-                            row["product id"],
-                            str(type(row[row_key]))
-                        ))
-                        raise Exception("invalid data-type for list price")
-                else:
-                    new_price = None
+                        new_price = None
 
-                row_key = "currency"
-                if row_key in row:
-                    if not pd.isnull(row[row_key]):
-                        # check valid currency value
-                        valid_currency = True if row[row_key].upper() in dict(CURRENCY_CHOICES).keys() else False
-                        if valid_currency:
-                            new_currency = row[row_key].upper()
+                    row_key = "currency"
+                    if row_key in row:
+                        if not pd.isnull(row[row_key]):
+                            # check valid currency value
+                            valid_currency = True if row[row_key].upper() in dict(CURRENCY_CHOICES).keys() else False
+                            if valid_currency:
+                                new_currency = row[row_key].upper()
 
-                        else:
-                            raise Exception("cannot set currency unknown value %s" % row[row_key].upper())
+                            else:
+                                raise Exception("cannot set currency unknown value %s" % row[row_key].upper())
 
-                # apply the new list price and currency if required
-                if p.list_price != new_price:
-                    p.list_price = new_price
-                    changed = True
-                if p.currency != new_currency:
-                    p.currency = new_currency
-                    changed = True
+                    # apply the new list price and currency if required
+                    if p.list_price != new_price:
+                        p.list_price = new_price
+                        changed = True
+                    if p.currency != new_currency:
+                        p.currency = new_currency
+                        changed = True
 
-                # set vendor to unassigned (ID 0) if no Vendor is provided and the product was created
-                row_key = "vendor"
-                if pd.isnull(row[row_key]) and created:
-                    v = Vendor.objects.get(id=0)
-                    changed = True
-                    p.vendor = v
-
-                elif not pd.isnull(row[row_key]):
-                    if p.vendor.name != row[row_key]:
-                        try:
-                            v = Vendor.objects.get(name=row[row_key])
-
-                        except Vendor.DoesNotExist:
-                            raise Exception("Vendor <strong>%s</strong> doesn't exist" % row[row_key])
-
+                    # set vendor to unassigned (ID 0) if no Vendor is provided and the product was created
+                    row_key = "vendor"
+                    if pd.isnull(row[row_key]) and created:
+                        v = Vendor.objects.get(id=0)
                         changed = True
                         p.vendor = v
 
-                # set Eol note URL and friendly name (both optional)
-                row_key = "eol note url"
-                if row_key in row:
-                    if not pd.isnull(row[row_key]):
-                        if p.eol_reference_url != row[row_key]:
-                            p.eol_reference_url = row[row_key]
-                            changed = True
-
-                row_key = "eol note url (friendly name)"
-                if row_key in row:
-                    if not pd.isnull(row[row_key]):
-                        if p.eol_reference_number != row[row_key]:
-                            p.eol_reference_number = row[row_key]
-
-            except Exception as ex:
-                faulty_entry = True
-                msg = "cannot set %s for <code>%s</code> (%s)" % (row_key, row["product id"], ex)
-
-            # import datetime columns from file
-            data_map = {
-                # product attribute - data frame column name (lowered during the import)
-                "eox_update_time_stamp": "eox update timestamp",
-                "eol_ext_announcement_date": "eol announcement date",
-                "end_of_sale_date": "end of sale date",
-                "end_of_new_service_attachment_date": "end of new service attachment date",
-                "end_of_sw_maintenance_date": "end of sw maintenance date",
-                "end_of_routine_failure_analysis": "end of routing failure analysis date",
-                "end_of_service_contract_renewal": "end of service contract renewal date",
-                "end_of_support_date": "last date of support",
-                "end_of_sec_vuln_supp_date": "end of security/vulnerability support date"
-            }
-
-            for key in data_map.keys():
-                c, f, ret_msg = self._import_datetime_column_from_file(data_map[key], row, key, p)
-                if c:
-                    # value was changed
-                    changed = True
-                if f:
-                    # value was faulty
-                    msg = ret_msg
-                    faulty_entry = True
-                    break
-
-            # save result to database if any
-            try:
-                if changed:
-                    # update element and add revision note
-                    with transaction.atomic(), reversion.create_revision():
-                        p.save()
-                        if self.user_for_revision:
+                    elif not pd.isnull(row[row_key]):
+                        if p.vendor.name != row[row_key]:
                             try:
-                                reversion.set_user(self.user_for_revision)
+                                v = Vendor.objects.get(name=row[row_key])
 
-                            except:
-                                logger.warn("Cannot find username <strong>%s</strong> in database" % self.user_for_revision)
+                            except Vendor.DoesNotExist:
+                                raise Exception("Vendor <strong>%s</strong> doesn't exist" % row[row_key])
 
-                        reversion.set_comment("manual product import")
+                            changed = True
+                            p.vendor = v
 
-                    self.valid_imported_products += 1
-                    # add import result message
-                    if created:
-                        self.import_result_messages.append("product <code>%s</code> created" % p.product_id)
+                    # set Eol note URL and friendly name (both optional)
+                    row_key = "eol note url"
+                    if row_key in row:
+                        if not pd.isnull(row[row_key]):
+                            if p.eol_reference_url != row[row_key]:
+                                p.eol_reference_url = row[row_key]
+                                changed = True
+
+                    row_key = "eol note url (friendly name)"
+                    if row_key in row:
+                        if not pd.isnull(row[row_key]):
+                            if p.eol_reference_number != row[row_key]:
+                                p.eol_reference_number = row[row_key]
+
+                except Exception as ex:
+                    faulty_entry = True
+                    msg = "cannot set %s for <code>%s</code> (%s)" % (row_key, row["product id"], ex)
+
+                # import datetime columns from file
+                data_map = {
+                    # product attribute - data frame column name (lowered during the import)
+                    "eox_update_time_stamp": "eox update timestamp",
+                    "eol_ext_announcement_date": "eol announcement date",
+                    "end_of_sale_date": "end of sale date",
+                    "end_of_new_service_attachment_date": "end of new service attachment date",
+                    "end_of_sw_maintenance_date": "end of sw maintenance date",
+                    "end_of_routine_failure_analysis": "end of routing failure analysis date",
+                    "end_of_service_contract_renewal": "end of service contract renewal date",
+                    "end_of_support_date": "last date of support",
+                    "end_of_sec_vuln_supp_date": "end of security/vulnerability support date"
+                }
+
+                for key in data_map.keys():
+                    c, f, ret_msg = self._import_datetime_column_from_file(data_map[key], row, key, p)
+                    if c:
+                        # value was changed
+                        changed = True
+                    if f:
+                        # value was faulty
+                        msg = ret_msg
+                        faulty_entry = True
+                        break
+
+                # save result to database if any
+                try:
+                    if changed:
+                        # update element and add revision note
+                        with transaction.atomic(), reversion.create_revision():
+                            p.save()
+                            if self.user_for_revision:
+                                try:
+                                    reversion.set_user(self.user_for_revision)
+
+                                except:
+                                    logger.warn("Cannot find username <strong>%s</strong> in database" % self.user_for_revision)
+
+                            reversion.set_comment("manual product import")
+
+                        self.valid_imported_products += 1
+                        # add import result message
+                        if created:
+                            self.import_result_messages.append("product <code>%s</code> created" % p.product_id)
+
+                        else:
+                            self.import_result_messages.append("product <code>%s</code> updated" % p.product_id)
 
                     else:
-                        self.import_result_messages.append("product <code>%s</code> updated" % p.product_id)
+                        self.import_result_messages.append("<i>no changes for product "
+                                                           "<code>%s</code> required</i>" % p.product_id)
 
-                else:
-                    self.import_result_messages.append("<i>no changes for product "
-                                                       "<code>%s</code> required</i>" % p.product_id)
+                except Exception as ex:
+                    faulty_entry = True
+                    msg = "cannot save data for <code>%s</code> in database (%s)" % (row["product id"], ex)
 
-            except Exception as ex:
-                faulty_entry = True
-                msg = "cannot save data for <code>%s</code> in database (%s)" % (row["product id"], ex)
+                if faulty_entry:
+                    logger.error("cannot import %s (%s)" % (row["product id"], msg))
+                    self.import_result_messages.append(msg)
+                    self.invalid_products += 1
 
-            if faulty_entry:
-                logger.error("cannot import %s (%s)" % (row["product id"], msg))
-                self.import_result_messages.append(msg)
-                self.invalid_products += 1
-
-                # terminate the process after 30 errors
-                if self.invalid_products > 30:
-                    self.import_result_messages.append("There are too many errors in your file, please "
-                                                       "correct them and upload it again")
-                    break
+                    # terminate the process after 30 errors
+                    if self.invalid_products > 30:
+                        self.import_result_messages.append("There are too many errors in your file, please "
+                                                           "correct them and upload it again")
+                        break
 
             current_entry += 1

@@ -11,9 +11,13 @@ logger = logging.getLogger(__name__)
 
 
 @app.task(serializer='json', name="productdb.import_price_list", bind=True)
-def import_price_list(self, job_file_id, create_notification_on_server=True, user_for_revision=None):
+def import_price_list(self, job_file_id, create_notification_on_server=True, update_only=False, user_for_revision=None):
     """
     import products from the given price list
+    :param job_file_id: ID within the database that references the Excel file that should be imported
+    :param create_notification_on_server: create a new Notification Message on the Server
+    :param update_only: Don't create new products in the database, update only existing ones
+    :param user_for_revision: username that should be used for the revision tracking (only if started manually)
     """
     def update_task_state(status_message):
         """Update the status message of the task, which is displayed in the watch view"""
@@ -43,7 +47,7 @@ def import_price_list(self, job_file_id, create_notification_on_server=True, use
         import_products_excel.verify_file()
         update_task_state("File valid, start updating the database...")
 
-        import_products_excel.import_products_to_database(status_callback=update_task_state)
+        import_products_excel.import_products_to_database(status_callback=update_task_state, update_only=update_only)
         update_task_state("Database import finished, processing results...")
 
         summary_msg = "User <strong>%s</strong> imported a Product list, %s Products " \

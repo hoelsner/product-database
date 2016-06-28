@@ -1,23 +1,27 @@
 import os
-import json
 import time
 
 from django.core.urlresolvers import reverse
 from django.test import override_settings
 from rest_framework import status
+
+from app.productdb.models import Product, Vendor
 from tests.base.django_test_cases import DestructiveProductDbFunctionalTest
-import tests.base.rest_calls as rest_calls
 
 
 class TestImportProducts(DestructiveProductDbFunctionalTest):
     fixtures = ['default_vendors.yaml', ]
 
-    def handle_upload_dialog(self, filename, verify_that_file_exists=True, suppress_notification=False):
+    def handle_upload_dialog(self, filename, verify_that_file_exists=True,
+                             suppress_notification=False, update_only=False):
         if not os.path.isfile(filename) and verify_that_file_exists:
             self.fail("local file for upload not found: %s" % filename)
 
         if not suppress_notification:
             self.browser.find_element_by_id("id_suppress_notification").click()
+
+        if update_only:
+            self.browser.find_element_by_id("id_update_existing_products_only").click()
 
         self.browser.find_element_by_id("id_excel_file").send_keys(filename)
         self.browser.find_element_by_id("submit").click()
@@ -256,3 +260,74 @@ class TestImportProducts(DestructiveProductDbFunctionalTest):
         expected_content = "Invalid structure in Excel file (sheet 'products' not found)"
         page_content = self.browser.find_element_by_tag_name("body").text
         self.assertIn(expected_content, page_content)
+
+    @override_settings(CELERY_EAGER_PROPAGATES_EXCEPTIONS=True,
+                       CELERY_ALWAYS_EAGER=True)
+    def test_valid_import_product_import_using_the_bundled_excel_template_in_update_only_mode(self):
+        if not self.is_redis_running():
+            self.skipTest("local redis server not running, but required for the test case")
+
+        # create a single product in the database
+        Product.objects.all().delete()
+        p = Product.objects.create(product_id="WS-C2960S-48FPD-L", vendor=Vendor.objects.get(id=1))
+
+        # go to the import products page
+        self.browser.get(self.server_url + reverse("productdb:import_products"))
+        self.browser.implicitly_wait(5)
+
+        # handle the login dialog
+        self.handle_login_dialog(self.ADMIN_USERNAME, self.ADMIN_PASSWORD, "Import Products")
+
+        # add test excel file to dialog and submit the file
+        test_excel_file = os.path.join(os.getcwd(), "tests", "data", "excel_import_products_test.xlsx")
+        self.handle_upload_dialog(test_excel_file, update_only=True)
+
+        # verify the output of the upload dialog
+        expected_title = "1 Products successful updated"
+        expected_contents = [
+            "product WS-C2960S-48FPD-L updated",
+        ]
+        time.sleep(10)
+        page_content = self.browser.find_element_by_tag_name("body").text
+        self.assertIn(expected_title, page_content)
+        for c in expected_contents:
+            self.assertIn(c, page_content)
+
+        self.browser.find_element_by_id("continue_button").click()
+
+        # goto homepage and verify that the notification is visible
+        self.browser.find_element_by_id("navbar_home").click()
+
+        self.assertIn(
+            "Import product list",
+            self.browser.find_element_by_tag_name("body").text
+        )
+        time.sleep(10)
+
+        # verify the import partially using the API
+        parts = [
+            {
+                "id": "WS-C2960S-48FPD-L",
+                "expect": [
+                    ("product_id", "WS-C2960S-48FPD-L"),
+                    ("description", "Catalyst 2960S 48 GigE PoE 740W, 2 x 10G SFP+ LAN Base"),
+                    ("list_price", '8795.00'),
+                    ("currency", "USD"),
+                    ("vendor", 1),
+                ]
+            }
+        ]
+        required_keys = ['product_id', 'description', 'list_price', 'currency', 'vendor']
+        self.client.login(username=self.ADMIN_USERNAME, password=self.ADMIN_PASSWORD)
+        for part in parts:
+            # id field omitted, because it may change depending on the database
+            response = self.client.get(self.PRODUCT_API_URL + "?product_id=%s" % part['id'])
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+            response_json = response.json()
+            self.assertEqual(1, response_json["pagination"]["total_records"])
+            response_json = response_json["data"][0]
+
+            modified_response = [(k, response_json[k]) for k in required_keys if k in response_json.keys()]
+            for s in part['expect']:
+                self.assertIn(s, set(modified_response))

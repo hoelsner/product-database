@@ -4,7 +4,7 @@ Unit tests for the excel import base classes
 from django.test import TestCase
 import os
 from app.productdb.excel_import import ImportProductsExcelFile, InvalidExcelFileFormat, InvalidImportFormatException
-from app.productdb.models import Product
+from app.productdb.models import Product, Vendor
 import datetime
 
 
@@ -98,6 +98,53 @@ class TestBaseExcelImport(TestCase):
         product_file.import_products_to_database()
 
         self.assertEqual(product_file.valid_imported_products, 25)
+        self.assertEqual(product_file.invalid_products, 0)
+        self.assertEqual(product_file.amount_of_products, 25)
+        self.assertIsNotNone(product_file.import_result_messages)
+
+        # verify that the expected products are created in the database
+        for pid in test_product_ids:
+            Product.objects.get(product_id=pid)
+
+        # look at the imported values from the
+        for product in products:
+            p = Product.objects.get(product_id=product['product id'])
+            self.assertEqual(p.description, product['description'])
+            self.assertEqual(p.list_price, product['list price'], p.product_id)
+            self.assertEqual(p.currency, product['currency'])
+            self.assertEqual(p.vendor.name, product['vendor'])
+
+    def test_valid_product_import_in_update_only_mode(self):
+        """
+        test the import using Excel in update only mode. The file contains 25 entries, but only existing entries
+        are updated (we create one entry before starting)
+        """
+        test_product_ids = [
+            'WS-C2960S-48FPD-L'
+        ]
+        products = [
+            {
+                'product id': 'WS-C2960S-48FPD-L',
+                'description': 'Catalyst 2960S 48 GigE PoE 740W, 2 x 10G SFP+ LAN Base',
+                'list price': 8795,
+                'currency': 'USD',
+                'vendor': 'Cisco Systems',
+            }
+        ]
+        valid_test_file = os.path.join(os.getcwd(),
+                                       "tests",
+                                       "data",
+                                       "excel_import_products_test.xlsx")
+        p = Product.objects.create(product_id="WS-C2960S-48FPD-L", vendor=Vendor.objects.get(id=1))
+
+        product_file = ImportProductsExcelFile(valid_test_file)
+        product_file.verify_file()
+
+        self.assertTrue(product_file.valid_file, "given excel file has no valid format")
+
+        product_file.import_products_to_database(update_only=True)
+
+        self.assertEqual(product_file.valid_imported_products, 1)
         self.assertEqual(product_file.invalid_products, 0)
         self.assertEqual(product_file.amount_of_products, 25)
         self.assertIsNotNone(product_file.import_result_messages)

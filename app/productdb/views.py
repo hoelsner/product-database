@@ -231,6 +231,7 @@ def import_products(request):
             task = tasks.import_price_list.delay(
                 job_file_id=job_file.id,
                 create_notification_on_server=create_notification,
+                update_only=form.cleaned_data["update_existing_products_only"],
                 user_for_revision=request.user.username
             )
             set_meta_data_for_task(

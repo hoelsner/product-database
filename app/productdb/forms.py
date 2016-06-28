@@ -20,6 +20,13 @@ class ImportProductsFileUploadForm(forms.Form):
         label="Suppress Server Notification Message"
     )
 
+    update_existing_products_only = forms.BooleanField(
+        required=False,
+        label="Update only existing Products",
+        help_text="Use this option if you need to update the existing Products in the database (e.g. update the prices "
+                  "based on a price list)"
+    )
+
     def clean(self):
         # validation of the import products excel file
         uploaded_file = self.cleaned_data.get("excel_file")
