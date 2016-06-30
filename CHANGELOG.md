@@ -6,7 +6,18 @@
 * add the login only-mode setting (the site requires always a login, not only for the administrative tasks)
 * removed some (almost unused) features, including the custom product lists and the simple backup mechanism
 * Update of the target Cisco EoX API to Version 5 (includes the "End of Vulnerability/Security Support date")
-* optional LDAP authentication
+* add optional LDAP authentication
+* extend the import products using Excel feature:
+  * remove the import product limitation
+  * add additional fields on import (e.g. EoS data)
+  * add create Notification Message option
+  * add update only existing Products option
+* import product now allowed with the `productdb.change_product` permission (only the superuser is allowed to add a notification message)
+* API changes
+  * authentication now always required
+  * use Django object permissions
+  * search and filtering now possible as GET parameter
+* add detail view for Product
 
 ## Version 0.2
 
