@@ -22,7 +22,7 @@ celerybeat-schedule.db
 celeryev.pid
 ### do not include custom staging files
 */stage_*
-!deploy/stage_template
+!deploy/stage_default
 !deploy/stage_vagrant
 tests/selenium_downloads/*
 !tests/*
@@ -40,3 +40,4 @@ node_modules
 !/conf/product_database.sample.config
 deploy/stage_vagrant/ldap-parameters.yaml
 /data
+staging_inventory
