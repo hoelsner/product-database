@@ -3,7 +3,7 @@
 # all tasks that are required to deploy the Product Database on a Ubuntu server version 16.04
 ######################################################################################################
 #
-# requires Ansible > 2.x
+# requires Ansible > 2.x , tested with Ansible Version 2.1.0.0
 #
   - name: register initial provisioning flag
     stat: path=/var/www/productdb/initial_provisioned
@@ -116,8 +116,7 @@
   - name: update python requirements on the new virtualenv for the site
     pip:
       requirements=/var/www/productdb/source/requirements.txt
-      virtualenv=/var/www/productdb/virtualenv
-      executable=pip3
+      executable=/var/www/productdb/virtualenv/bin/pip3
 
   #
   # create key file for Django
