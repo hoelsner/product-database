@@ -31,6 +31,7 @@ class ProductSerializer(HyperlinkedModelSerializer):
     description = CharField(
         initial="not set",
         required=False,
+        allow_blank=True,
         style={'base_template': 'textarea.html'},
     )
     list_price = DecimalField(

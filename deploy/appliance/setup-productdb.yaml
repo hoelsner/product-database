@@ -492,6 +492,7 @@
     with_items:
       - "default_users.yaml"
       - "default_vendors.yaml"
+      - "default_text_blocks.yaml"
     when: initial_provisioning.stat.exists == False
 
   - name: execute systemctl daemon-reload

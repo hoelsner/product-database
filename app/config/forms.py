@@ -19,6 +19,16 @@ class SettingsForm(forms.Form):
         required=False
     )
 
+    homepage_text_before = forms.CharField(
+        widget=forms.Textarea(attrs={'class': "form-control code"}),
+        required=False
+    )
+
+    homepage_text_after = forms.CharField(
+        widget=forms.Textarea(attrs={'class': "form-control code"}),
+        required=False
+    )
+
     cisco_api_enabled = forms.BooleanField(
         initial=False,
         required=False

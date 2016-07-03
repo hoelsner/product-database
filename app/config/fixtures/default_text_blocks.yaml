@@ -1,0 +1,15 @@
+- model: config.textblock
+  pk: 1
+  fields: {name: Homepage text before favorite actions, html_content: "<p>This database
+      contains information about network equipment like routers and switches from
+      multiple vendors.</p>"}
+- model: config.textblock
+  pk: 2
+  fields: {name: Homepage text after favorite actions, html_content: "<p>\r\n    <small>\r\n
+      \       The lifecycle information can be updated periodically using the Cisco
+      EoX API that is available&nbsp;\r\n        at&nbsp;<a href=\"https://apiconsole.cisco.com/\"
+      style=\"white-space: nowrap\">\r\n        <i class=\"fa fa-external-link\"></i>&nbsp;https://apiconsole.cisco.com/
+      (Cisco Partners only)</a>.\r\n    </small>\r\n</p>\r\n<p>\r\n    <small>\r\n
+      \       More information about the Product Database are available on the\r\n
+      \       <a href=\"https://github.com/hoelsner/product-database\" style=\"white-space:
+      nowrap\">\r\n            GitHub project page\r\n        </a>.\r\n    </small>\r\n</p>"}

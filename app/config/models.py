@@ -84,3 +84,24 @@ class NotificationMessage(models.Model):
 
     class Meta:
         ordering = ('created',)
+
+
+class TextBlock(models.Model):
+    """
+    Dynamic content at some page views
+    """
+    TB_HOMEPAGE_TEXT_BEFORE_FAVORITE_ACTIONS = "Homepage text before favorite actions"
+    TB_HOMEPAGE_TEXT_AFTER_FAVORITE_ACTIONS = "Homepage text after favorite actions"
+
+    name = models.CharField(
+        max_length=512,
+        unique=True,
+        verbose_name="Name",
+        help_text="Internal name for the Text Block (predefined)",
+    )
+
+    html_content = models.TextField(
+        max_length=16384,
+        verbose_name="HTML content",
+        help_text="content of the text block (HTML possible)",
+    )

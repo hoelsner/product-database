@@ -7,11 +7,15 @@
 
 {% block page_content %}
     <div class="page-header">
-        <h1>All Products</h1>
+        <h1>
+            <i class="fa fa-search"></i>&nbsp;
+            All Products
+        </h1>
     </div>
     <p>
         On this page, you can view all products that are stored in the database.
         <a href="javascript:browse_all_database_help()"><i class="fa fa-info-circle"></i> Click here</a> to get a quick introduction.
+        You can also search <a href="{% url 'productdb:browse_vendor_products' %}"><i class="fa fa-search"></i>&nbsp;by vendor in the database</a>.
     </p>
     <hr>
     <div class="col-md-12">

@@ -10,7 +10,7 @@ from djcelery.models import WorkerState
 
 from app.config import AppSettings
 from app.config.forms import SettingsForm, NotificationMessageForm
-from app.config.models import NotificationMessage
+from app.config.models import NotificationMessage, TextBlock
 from app.config.utils import test_cisco_eox_api_access
 from django_project.utils import login_required_if_login_only_mode
 
@@ -116,8 +116,17 @@ def change_configuration(request):
     """
     change configuration of the Product Database
     """
+    # read settings from configuration file
     app_config = AppSettings()
     app_config.read_file()
+
+    # read settings from database
+    hp_content_after, _ = TextBlock.objects.get_or_create(
+        name=TextBlock.TB_HOMEPAGE_TEXT_AFTER_FAVORITE_ACTIONS
+    )
+    hp_content_before, _ = TextBlock.objects.get_or_create(
+        name=TextBlock.TB_HOMEPAGE_TEXT_BEFORE_FAVORITE_ACTIONS
+    )
 
     if request.method == "POST":
         # create a form instance and populate it with data from the request:
@@ -125,6 +134,11 @@ def change_configuration(request):
         if form.is_valid():
             # set common settings
             app_config.set_login_only_mode(form.cleaned_data["login_only_mode"])
+
+            hp_content_before.html_content = form.cleaned_data["homepage_text_before"]
+            hp_content_before.save()
+            hp_content_after.html_content = form.cleaned_data["homepage_text_after"]
+            hp_content_after.save()
 
             # set the Cisco API configuration options
             api_enabled = form.cleaned_data["cisco_api_enabled"]
@@ -193,6 +207,8 @@ def change_configuration(request):
         form.fields['eox_auto_sync_auto_create_elements'].initial = app_config.is_auto_create_new_products()
         form.fields['eox_api_queries'].initial = app_config.get_cisco_eox_api_queries()
         form.fields['eox_api_blacklist'].initial = app_config.get_product_blacklist_regex()
+        form.fields['homepage_text_before'].initial = hp_content_before.html_content
+        form.fields['homepage_text_after'].initial = hp_content_after.html_content
 
     context = {
         "form": form,

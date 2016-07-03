@@ -22,3 +22,6 @@ body {
   margin-top: 10px;
   margin-bottom: 10px;
 }
+.code {
+  font-family: monospace;
+}

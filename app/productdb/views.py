@@ -4,11 +4,12 @@ from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.decorators import permission_required
 from django.core.urlresolvers import reverse
+from django.db.models import Q
 from django.http import Http404
 from django.shortcuts import redirect, render
 from django.utils.timezone import timedelta, datetime, get_current_timezone
 
-from app.config.models import NotificationMessage
+from app.config.models import NotificationMessage, TextBlock
 from app.productdb import utils as app_util
 from app.productdb.forms import ImportProductsFileUploadForm
 from app.productdb.models import Product, JobFile
@@ -30,10 +31,35 @@ def home(request):
     if login_required_if_login_only_mode(request):
         return redirect('%s?next=%s' % (settings.LOGIN_URL, request.path))
 
+    today_date = datetime.now().date()
+
     context = {
         "recent_events": NotificationMessage.objects.filter(
-            created__gte=datetime.now(get_current_timezone()) - timedelta(days=14)
-        ).order_by('-created')[:5]
+            created__gte=datetime.now(get_current_timezone()) - timedelta(days=30)
+        ).order_by('-created')[:5],
+        "TB_HOMEPAGE_TEXT_BEFORE_FAVORITE_ACTIONS":
+            TextBlock.objects.filter(name=TextBlock.TB_HOMEPAGE_TEXT_BEFORE_FAVORITE_ACTIONS).first(),
+        "TB_HOMEPAGE_TEXT_AFTER_FAVORITE_ACTIONS":
+            TextBlock.objects.filter(name=TextBlock.TB_HOMEPAGE_TEXT_AFTER_FAVORITE_ACTIONS).first(),
+        "vendors": [x.name for x in Vendor.objects.all() if x.name != "unassigned"],
+        "product_count": Product.objects.all().count(),
+        "product_lifecycle_count": Product.objects.filter(eox_update_time_stamp__isnull=False).count(),
+        "product_no_eol_announcement_count": Product.objects.filter(
+            eox_update_time_stamp__isnull=False,
+            eol_ext_announcement_date__isnull=True
+        ).count(),
+        "product_eol_announcement_count": Product.objects.filter(
+            eol_ext_announcement_date__isnull=False,
+            end_of_sale_date__gt=today_date
+        ).count(),
+        "product_eos_count": Product.objects.filter(
+            Q(end_of_sale_date__lte=today_date, end_of_support_date__gt=today_date)|
+            Q(end_of_sale_date__lte=today_date, end_of_support_date__isnull=True)
+        ).count(),
+        "product_eol_count": Product.objects.filter(
+            end_of_support_date__lte=today_date
+        ).count(),
+        "product_price_count": Product.objects.filter(list_price__isnull=False).count(),
     }
 
     return render(request, "productdb/home.html", context=context)

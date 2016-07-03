@@ -7,13 +7,17 @@
 
 {% block page_content %}
     <div class="page-header">
-        <h1>Browse Products by Vendor</h1>
+        <h1>
+            <i class="fa fa-search"></i>&nbsp;
+            Browse Products by Vendor
+        </h1>
     </div>
 
     {% if vendors|length > 0 %}
         <p>
             On this page, you can view the products for a specific vendor that are stored in the database.
             <a href="javascript:browse_database_by_vendor_help()"><i class="fa fa-info-circle"></i> Click here</a> to get a quick introduction.
+            You can also search within the <a href="{% url 'productdb:all_products' %}"><i class="fa fa-search"></i>&nbsp;entire database</a>.
         </p>
             <div style="text-align: center;">
                 <form class="form form-inline" method="post" id="select_vendor_form">

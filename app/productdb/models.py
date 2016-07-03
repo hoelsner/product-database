@@ -64,7 +64,9 @@ class Product(models.Model):
     )
 
     description = models.TextField(
-        default="not set",
+        default="",
+        blank=True,
+        null=True,
         help_text="description"
     )
 
@@ -89,6 +91,7 @@ class Product(models.Model):
     tags = models.TextField(
         default="",
         blank=True,
+        null=True,
         verbose_name="Tags",
         help_text="unformatted tag field"
     )

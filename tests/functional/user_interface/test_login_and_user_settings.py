@@ -6,7 +6,7 @@ from django.test import override_settings
 
 @override_settings(DEMO_MODE=True)
 class UserActionTests(DestructiveProductDbFunctionalTest):
-    fixtures = ['default_vendors.yaml']
+    fixtures = ['default_vendors.yaml', 'default_text_blocks.yaml']
 
     def test_change_password(self):
         """
@@ -52,7 +52,7 @@ class UserActionTests(DestructiveProductDbFunctionalTest):
 
 @override_settings(DEMO_MODE=True)
 class LoginOnlyModeTest(DestructiveProductDbFunctionalTest):
-    fixtures = ['default_vendors.yaml']
+    fixtures = ['default_vendors.yaml', 'default_text_blocks.yaml']
 
     def test_login_only_mode(self):
         """

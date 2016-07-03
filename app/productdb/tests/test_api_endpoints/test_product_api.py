@@ -235,7 +235,7 @@ class ProductApiEndpointTest(BaseApiUnitTest):
         product_name = "description_field_test"
 
         product = apicalls.create_product(self.client, product_name, self.ADMIN_USERNAME, self.ADMIN_PASSWORD)
-        self.assertEqual(product['description'], "not set")
+        self.assertEqual(product['description'], "")
 
         apicalls.clean_db(self.client, username=self.ADMIN_USERNAME, password=self.ADMIN_PASSWORD)
 

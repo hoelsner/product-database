@@ -8,7 +8,7 @@ from tests.base.django_test_cases import DestructiveProductDbFunctionalTest
 
 
 class ProductDatabaseHomepageView(DestructiveProductDbFunctionalTest):
-    fixtures = ['default_vendors.yaml']
+    fixtures = ['default_vendors.yaml', 'default_text_blocks.yaml']
 
     def test_browse_product_list_view(self):
         expected_content = "This database contains information about network equipment like routers and switches " \
@@ -24,7 +24,7 @@ class ProductDatabaseHomepageView(DestructiveProductDbFunctionalTest):
 
 
 class NotificationMessage(DestructiveProductDbFunctionalTest):
-    fixtures = ['default_vendors.yaml']
+    fixtures = ['default_vendors.yaml', 'default_text_blocks.yaml']
 
     def test_add_notification_message(self):
         # go to the Product Database Homepage

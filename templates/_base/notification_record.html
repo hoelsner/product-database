@@ -1,5 +1,5 @@
 <li class="media">
-    <div class="media">
+    <div class="media" style="border-bottom: 1px dotted #999;">
         {% if event.type == "SUCC" %}
             <div class="media-left media-top"><i class="fa fa-comment-o media-object fa-3x text-success"></i></div>
         {% elif event.type == "ERR" %}
@@ -12,24 +12,36 @@
         <div class="media-body">
             {% if event.type == "SUCC" %}
                 <h4 class="media-heading text-success">
-                    {{ event.title }} <small>{{ event.created|date:"Y-m-d" }}</small>
+                    {{ event.title }}
+                    <small class="pull-right text-muted">
+                        <i class="fa fa-clock-o fa-fw"></i> {{ event.created|date:"Y-m-d" }}
+                    </small>
                 </h4>
             {% elif event.type == "ERR" %}
                 <h4 class="media-heading text-danger">
-                    {{ event.title }} <small>{{ event.created|date:"Y-m-d" }}</small>
+                    {{ event.title }}
+                    <small class="pull-right text-muted">
+                        <i class="fa fa-clock-o fa-fw"></i> {{ event.created|date:"Y-m-d" }}
+                    </small>
                 </h4>
             {% elif event.type == "WARN" %}
                 <h4 class="media-heading text-warning">
-                    {{ event.title }} <small>{{ event.created|date:"Y-m-d" }}</small>
+                    {{ event.title }}
+                    <small class="pull-right text-muted">
+                        <i class="fa fa-clock-o fa-fw"></i> {{ event.created|date:"Y-m-d" }}
+                    </small>
                 </h4>
             {% else %}
                 <h4 class="media-heading text-info">
-                    {{ event.title }} <small>{{ event.created|date:"Y-m-d" }}</small>
+                    {{ event.title }}
+                    <small class="pull-right text-muted">
+                        <i class="fa fa-clock-o fa-fw"></i> {{ event.created|date:"Y-m-d" }}
+                    </small>
                 </h4>
             {% endif %}
             <p>
                 {% autoescape off %}
-                {{ event.summary_message }}
+                {{ event.summary_message }}<br>
                 <a href="{% url 'productdb_config:notification-detail' message_id=event.id %}">view details</a>
                 {% endautoescape %}
             </p>
