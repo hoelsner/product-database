@@ -4,7 +4,7 @@ Unit tests for the excel import base classes
 from django.test import TestCase
 import os
 from app.productdb.excel_import import ImportProductsExcelFile, InvalidExcelFileFormat, InvalidImportFormatException
-from app.productdb.models import Product, Vendor
+from app.productdb.models import Product, Vendor, ProductGroup
 import datetime
 
 
@@ -469,3 +469,48 @@ class TestBaseExcelImport(TestCase):
 
         with self.assertRaises(InvalidExcelFileFormat):
             product_file.verify_file()
+
+    def test_import_with_product_group(self):
+        """
+        test the excel import that contains some product group definitions
+        """
+        my_first_group_name = "My First Group"
+        my_first_group_list = [
+            "WS-C2960S-48FPD-L",
+            "WS-C2960S-24PD-L",
+            "WS-C2960S-24TD-L",
+        ]
+        my_second_group_name = "My Second Group"
+        my_second_group_list = [
+            "WS-C2960S-48LPD-L",
+            "WS-C2960S-48TD-L",
+            "WS-C2960S-48FPS-L",
+        ]
+        example_none_value = "WS-C2960S-48LPS-L"
+        cis_vendor = Vendor.objects.get(id=1)
+        self.assertEqual(ProductGroup.objects.all().count(), 0)
+
+        _ = self.prepare_import_products_excel_file("excel_import_products_test-with_product_group.xlsx")
+
+        self.assertEqual(ProductGroup.objects.all().count(), 2)
+
+        # get new objects
+        pg1 = ProductGroup.objects.filter(name=my_first_group_name).first()
+        self.assertEqual(pg1.vendor, cis_vendor)
+        pg2 = ProductGroup.objects.filter(name=my_second_group_name).first()
+        self.assertEqual(pg2.vendor, cis_vendor)
+
+        # verify products in list
+        self.assertEqual(len(my_first_group_list), pg1.get_all_products().count())
+        result_first_elements = sorted([e.product_id for e in pg1.get_all_products()])
+        my_first_group_list.sort()
+        self.assertListEqual(result_first_elements, my_first_group_list)
+
+        self.assertEqual(len(my_second_group_list), pg2.get_all_products().count())
+        result_second_elements = sorted([e.product_id for e in pg2.get_all_products()])
+        my_second_group_list.sort()
+        self.assertListEqual(result_second_elements, my_second_group_list)
+
+        # test that given value has no group assignment
+        p = Product.objects.get(product_id=example_none_value)
+        self.assertIsNone(p.product_group)

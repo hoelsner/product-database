@@ -4,7 +4,7 @@ import pandas as pd
 from django.db import transaction
 from reversion import revisions as reversion
 from xlrd import XLRDError
-from app.productdb.models import Product, CURRENCY_CHOICES
+from app.productdb.models import Product, CURRENCY_CHOICES, ProductGroup
 from app.productdb.models import Vendor
 
 logger = logging.getLogger(__name__)
@@ -259,16 +259,33 @@ class ImportProductsExcelFile:
                             changed = True
                             p.vendor = v
 
+                    # set vendor to unassigned (ID 0) if no Vendor is provided and the product was created
+                    row_key = "product group"
+                    if row_key in row:  # optional key
+                        if not pd.isnull(row[row_key]):
+                            set_value = False
+                            if not p.product_group:
+                                set_value = True
+
+                            elif p.product_group.name != row[row_key]:
+                                set_value = True
+
+                            if set_value:
+                                pg, _ = ProductGroup.objects.get_or_create(name=row[row_key], vendor=p.vendor)
+
+                                changed = True
+                                p.product_group = pg
+
                     # set Eol note URL and friendly name (both optional)
                     row_key = "eol note url"
-                    if row_key in row:
+                    if row_key in row:  # optional key
                         if not pd.isnull(row[row_key]):
                             if p.eol_reference_url != row[row_key]:
                                 p.eol_reference_url = row[row_key]
                                 changed = True
 
                     row_key = "eol note url (friendly name)"
-                    if row_key in row:
+                    if row_key in row:  # optional key
                         if not pd.isnull(row[row_key]):
                             if p.eol_reference_number != row[row_key]:
                                 p.eol_reference_number = row[row_key]
@@ -277,7 +294,7 @@ class ImportProductsExcelFile:
                     faulty_entry = True
                     msg = "cannot set %s for <code>%s</code> (%s)" % (row_key, row["product id"], ex)
 
-                # import datetime columns from file
+                # import datetime columns from file (all optional)
                 data_map = {
                     # product attribute - data frame column name (lowered during the import)
                     "eox_update_time_stamp": "eox update timestamp",
