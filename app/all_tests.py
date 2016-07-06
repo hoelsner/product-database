@@ -12,4 +12,4 @@ from app.productdb.tests.test_api_endpoints.test_api_interaction import *
 from app.productdb.tests.test_api_endpoints.test_product_api import *
 from app.productdb.tests.test_api_endpoints.test_vendor_api import *
 
-from app.productdb.tests.test_model.test_model import *
+from app.productdb.tests.test_model import *

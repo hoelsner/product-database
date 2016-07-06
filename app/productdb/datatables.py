@@ -11,15 +11,17 @@ class VendorProductListJson(BaseDatatableView):
     # value like ''
     order_columns = [
         'product_id',
+        'product_group',
         'description',
         'list_price',
         'tags'
     ]
     column_order = {
         "product_id": 0,
-        "description": 1,
-        "list_price": 2,
-        "tags": 3
+        "product_group": 1,
+        "description": 2,
+        "list_price": 3,
+        "tags": 4
     }
 
     vendor_id = 0
@@ -28,7 +30,7 @@ class VendorProductListJson(BaseDatatableView):
         if self.kwargs['vendor_id']:
             self.vendor_id = self.kwargs['vendor_id']
 
-        # return queryset used as base for futher sorting/filtering
+        # return queryset used as base for further sorting/filtering
         # these are simply objects displayed in datatable
         return Product.objects.filter(vendor__id=self.vendor_id)
 
@@ -37,11 +39,13 @@ class VendorProductListJson(BaseDatatableView):
         search_string = self.request.GET.get('search[value]', None)
 
         product_id_get_param = 'columns[' + str(self.column_order["product_id"]) + '][search][value]'
+        product_group_get_param = 'columns[' + str(self.column_order["product_group"]) + '][search][value]'
         description_get_param = 'columns[' + str(self.column_order["description"]) + '][search][value]'
         list_price_get_param = 'columns[' + str(self.column_order["list_price"]) + '][search][value]'
         tags_get_param = 'columns[' + str(self.column_order["tags"]) + '][search][value]'
 
         product_id_search = self.request.GET.get(product_id_get_param, None)
+        product_group_search = self.request.GET.get(product_group_get_param, None)
         description_search = self.request.GET.get(description_get_param, None)
         list_price_search = self.request.GET.get(list_price_get_param, None)
         tags_search = self.request.GET.get(tags_get_param, None)
@@ -60,6 +64,13 @@ class VendorProductListJson(BaseDatatableView):
                 qs = qs.filter(product_id__regex=product_id_search)
             else:
                 qs = qs.filter(product_id__contains=product_id_search)
+
+        if product_group_search:
+            # the property for the product group is hidden in the class, therefore a "_" as prefix is required
+            if is_valid_regex(product_group_search):
+                qs = qs.filter(product_group__name__regex=product_group_search)
+            else:
+                qs = qs.filter(product_group__name__contains=product_group_search)
 
         if description_search:
             if is_valid_regex(description_search):
@@ -90,6 +101,7 @@ class VendorProductListJson(BaseDatatableView):
             json_data.append({
                 "id": item.id,
                 "product_id": item.product_id,
+                "product_group": item.product_group.name if item.product_group else "",
                 "description": item.description,
                 "list_price": item.list_price,
                 "currency": item.currency,
@@ -118,6 +130,7 @@ class ListProductsJson(BaseDatatableView):
     order_columns = [
         'vendor',
         'product_id',
+        'product_group',
         'description',
         'list_price',
         'tags'
@@ -125,13 +138,14 @@ class ListProductsJson(BaseDatatableView):
     column_order = {
         "vendor": 0,
         "product_id": 1,
-        "description": 2,
-        "list_price": 3,
-        "tags": 4
+        "product_group": 2,
+        "description": 3,
+        "list_price": 4,
+        "tags": 5
     }
 
     def get_initial_queryset(self):
-        # return queryset used as base for futher sorting/filtering
+        # return queryset used as base for further sorting/filtering
         # these are simply objects displayed in datatable
         return Product.objects.all()
 
@@ -141,12 +155,14 @@ class ListProductsJson(BaseDatatableView):
 
         vendor_get_param = 'columns[' + str(self.column_order["vendor"]) + '][search][value]'
         product_id_get_param = 'columns[' + str(self.column_order["product_id"]) + '][search][value]'
+        product_group_get_param = 'columns[' + str(self.column_order["product_group"]) + '][search][value]'
         description_get_param = 'columns[' + str(self.column_order["description"]) + '][search][value]'
         list_price_get_param = 'columns[' + str(self.column_order["list_price"]) + '][search][value]'
         tags_get_param = 'columns[' + str(self.column_order["tags"]) + '][search][value]'
 
         vendor_search = self.request.GET.get(vendor_get_param, None)
         product_id_search = self.request.GET.get(product_id_get_param, None)
+        product_group_search = self.request.GET.get(product_group_get_param, None)
         description_search = self.request.GET.get(description_get_param, None)
         list_price_search = self.request.GET.get(list_price_get_param, None)
         tags_search = self.request.GET.get(tags_get_param, None)
@@ -171,6 +187,13 @@ class ListProductsJson(BaseDatatableView):
                 qs = qs.filter(product_id__regex=product_id_search)
             else:
                 qs = qs.filter(product_id__contains=product_id_search)
+
+        if product_group_search:
+            # the property for the product group is hidden in the class, therefore a "_" as prefix is required
+            if is_valid_regex(product_group_search):
+                qs = qs.filter(product_group__name__regex=product_group_search)
+            else:
+                qs = qs.filter(product_group__name__contains=product_group_search)
 
         if description_search:
             if is_valid_regex(description_search):
@@ -202,6 +225,7 @@ class ListProductsJson(BaseDatatableView):
                 "id": item.id,
                 "vendor": item.vendor.name,
                 "product_id": item.product_id,
+                "product_group": item.product_group.name if item.product_group else "",
                 "description": item.description,
                 "list_price": item.list_price,
                 "currency": item.currency,

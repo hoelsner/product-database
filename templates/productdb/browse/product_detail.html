@@ -18,6 +18,11 @@
             <dt>Product ID:</dt>
             <dd>{{ product.product_id }}</dd>
 
+            {% if product.product_group %}
+                <dt>Product Group:</dt>
+                <dd>{{ product.product_group.name }}</dd>
+            {% endif %}
+
             <dt>Description:</dt>
             <dd>{{ product.description }}</dd>
 

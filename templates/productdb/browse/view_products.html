@@ -24,6 +24,7 @@
                 <tr id="tour_table_head">
                     <th class="searchable">Vendor</th>
                     <th class="searchable">Product ID</th>
+                    <th class="searchable">Product Group</th>
                     <th class="searchable">Description</th>
                     <th class="searchable">List Price</th>
                     <th class="searchable">Tags</th>
@@ -118,12 +119,18 @@
                     },
                     {
                         "targets": 2,
+                        "data": "product_group",
+                        "visible": false,
+                        "searchable": true
+                    },
+                    {
+                        "targets": 3,
                         "data": "description",
                         "visible": true,
                         "searchable": true
                     },
                     {
-                        "targets": 3,
+                        "targets": 4,
                         "data": "list_price",
                         "visible": true,
                         "searchable": false,
@@ -137,13 +144,13 @@
                         }
                     },
                     {
-                        "targets": 4,
+                        "targets": 5,
                         "data": "tags",
                         "visible": false,
                         "searchable": false
                     },
                     {
-                        "targets": 5,
+                        "targets": 6,
                         "data": "lifecycle_state",
                         "visible": true,
                         "searchable": false,
@@ -158,63 +165,63 @@
                         "sortable": false
                     },
                     {
-                        "targets": 6,
+                        "targets": 7,
                         "data": "eol_ext_announcement_date",
                         "visible": false,
                         "searchable": false,
                         "sortable": false
                     },
                     {
-                        "targets": 7,
+                        "targets": 8,
                         "data": "end_of_sale_date",
                         "visible": false,
                         "searchable": false,
                         "sortable": false
                     },
                     {
-                        "targets": 8,
+                        "targets": 9,
                         "data": "end_of_new_service_attachment_date",
                         "visible": false,
                         "searchable": false,
                         "sortable": false
                     },
                     {
-                        "targets": 9,
+                        "targets": 10,
                         "data": "end_of_sw_maintenance_date",
                         "visible": false,
                         "searchable": false,
                         "sortable": false
                     },
                     {
-                        "targets": 10,
+                        "targets": 11,
                         "data": "end_of_routine_failure_analysis",
                         "visible": false,
                         "searchable": false,
                         "sortable": false
                     },
                     {
-                        "targets": 11,
+                        "targets": 12,
                         "data": "end_of_service_contract_renewal",
                         "visible": false,
                         "searchable": false,
                         "sortable": false
                     },
                     {
-                        "targets": 12,
+                        "targets": 13,
                         "data": "end_of_sec_vuln_supp_date",
                         "visible": false,
                         "searchable": false,
                         "sortable": false
                     },
                     {
-                        "targets": 13,
+                        "targets": 14,
                         "data": "end_of_support_date",
                         "visible": false,
                         "searchable": false,
                         "sortable": false
                     },
                     {
-                        "targets": 14,
+                        "targets": 15,
                         "render": function (data, type, row) {
                             if (row['eol_reference_url'] != null) {
                                 if(row['eol_reference_number'] != null) {

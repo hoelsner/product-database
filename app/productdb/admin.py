@@ -2,7 +2,7 @@ from django.contrib import admin
 from reversion_compare.admin import CompareVersionAdmin
 
 from app.config.models import TextBlock
-from app.productdb.models import Product, Vendor
+from app.productdb.models import Product, Vendor, ProductGroup
 
 
 class ProductAdmin(CompareVersionAdmin, admin.ModelAdmin):
@@ -24,6 +24,23 @@ class ProductAdmin(CompareVersionAdmin, admin.ModelAdmin):
     ignore_duplicate_revisions = True
 
 admin.site.register(Product, ProductAdmin)
+
+
+class ProductGroupAdmin(CompareVersionAdmin, admin.ModelAdmin):
+    list_display = (
+        'name',
+        'vendor'
+    )
+
+    search_fields = (
+        'name',
+        'vendor__name'
+    )
+
+    history_latest_first = True
+    ignore_duplicate_revisions = True
+
+admin.site.register(ProductGroup, ProductGroupAdmin)
 
 
 class VendorAdmin(CompareVersionAdmin, admin.ModelAdmin):

@@ -1,9 +1,11 @@
 from datetime import timedelta
 
+from django.core.exceptions import ValidationError
+from django.db import IntegrityError
 from django.test import TestCase
 from django.utils.datetime_safe import datetime
 
-from app.productdb.models import Vendor, Product
+from app.productdb.models import Vendor, Product, ProductGroup
 
 
 class VendorDataModelTest(TestCase):
@@ -11,7 +13,7 @@ class VendorDataModelTest(TestCase):
 
     def test_delete_fail_for_default_value(self):
         """
-        This test should ensure, that the value "unassigned" cannot be deleted
+        This test ensures, that the value "unassigned" cannot be deleted
         :return:
         """
         try:
@@ -23,7 +25,7 @@ class VendorDataModelTest(TestCase):
 
     def test_delete_pass_for_vendor_default_value(self):
         """
-        This test should ensure, that the value "unassigned" cannot be deleted
+        This test ensures, that any other vendor can be deleted
         :return:
         """
         try:
@@ -36,6 +38,74 @@ class VendorDataModelTest(TestCase):
         v = Vendor.objects.get(id=1)
         self.assertEquals("Cisco Systems", str(v))
         self.assertEquals("Cisco Systems", v.__unicode__())
+
+
+class ProductGroupDataModelTest(TestCase):
+    fixtures = ["default_vendors.yaml"]
+
+    def test_create_product_group(self):
+        """
+        create a product group with some elements
+        """
+        pg1 = ProductGroup.objects.create(name="MyProductGroup")
+        unassigned_vendor = Vendor.objects.get(id=0)
+
+        self.assertEqual(pg1.vendor, unassigned_vendor)  # by default the "unassigned" data object is used
+
+        products_dictlist = [
+            {
+                "product_id": "MyProductId" + str(i),
+                "vendor": unassigned_vendor,
+                "product_group": pg1
+             } for i in range(1, 5)
+        ]
+        for p in products_dictlist:
+            Product.objects.create(**p)
+
+        self.assertEqual(Product.objects.all().count(), pg1.get_all_products().count())
+
+        # adding a Product of a different Vendor will raise a ValidationError when try to save the model
+        inv_product = Product.objects.create(product_id="invalid_vendor", vendor=Vendor.objects.get(id=1))
+        inv_product.product_group = pg1
+        with self.assertRaises(ValidationError):
+            inv_product.save()
+
+        self.assertEqual(Product.objects.all().count() - 1, pg1.get_all_products().count())
+
+    def test_unique_together_constraint(self):
+        """
+        test, that a product group with the same name can be created for multiple vendors, but not within the same vendor
+        """
+        v1 = Vendor.objects.get(id=1)
+        v2 = Vendor.objects.get(id=2)
+        _ = ProductGroup.objects.create(name="test", vendor=v1)
+        _ = ProductGroup.objects.create(name="test", vendor=v2)
+
+        # the following expression with result in an IntegrityError
+        with self.assertRaises(IntegrityError):
+            _ = ProductGroup.objects.create(name="test", vendor=v1)
+
+    def test_change_vendor_to_another_vendor_than_the_associated_products(self):
+        """
+        The change of the vendor as long as there are products associated to it should not be possible
+        """
+        v1 = Vendor.objects.get(id=1)
+        v2 = Vendor.objects.get(id=2)
+        pg = ProductGroup.objects.create(name="test", vendor=v1)
+        p1 = Product.objects.create(product_id="test product 1", vendor=v1, product_group=pg)
+
+        # error while assigning product group
+        with self.assertRaises(ValidationError):
+            pg.vendor = v2
+            pg.save()
+
+        # remove products from the product list
+        p1.product_group = None
+        p1.save()
+
+        # set new vendor on the product group (now it works)
+        pg.vendor = v2
+        pg.save()
 
 
 class ProductDataModelTest(TestCase):

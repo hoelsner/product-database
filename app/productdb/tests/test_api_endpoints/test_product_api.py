@@ -3,13 +3,11 @@ Unit tests for Product API endpoint
 """
 import re
 import json
-
-import time
 from rest_framework import status
 
 import app.productdb.tests.base.api_test_calls as apicalls
 import app.productdb.tests.base.api_endpoints as apiurl
-from app.productdb.models import Product
+from app.productdb.models import Product, ProductGroup, Vendor
 from app.productdb.tests import *
 
 
@@ -672,3 +670,57 @@ class ProductApiEndpointTest(BaseApiUnitTest):
         self.assertEqual(4, data["pagination"]["total_records"])
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue("data" in data)
+
+    def test_filter_by_product_group(self):
+        """
+        test the filter functionality by the product group name (exact operation)
+        """
+        pg = ProductGroup.objects.create(name="test", vendor=Vendor.objects.get(id=1))
+        _ = Product.objects.create(product_id="test_cisco", vendor=Vendor.objects.get(id=1), product_group=pg)
+        _ = Product.objects.create(product_id="only to verify filter")
+
+        self.client.login(username=self.ADMIN_USERNAME, password=self.ADMIN_PASSWORD)
+
+        # search by vendor name, returns all test data
+        response = self.client.get(apiurl.PRODUCT_API_ENDPOINT + "?product_group=test")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        data = response.json()
+        self.assertEqual(data["pagination"]["total_records"], 1)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue("data" in data)
+
+    def test_associate_a_product_to_product_group_using_the_api(self):
+        """
+        test that a product can be assigned to a previously created product group
+        """
+        pg = ProductGroup.objects.create(name="test", vendor=Vendor.objects.get(id=1))
+        p = Product.objects.create(product_id="test_cisco", vendor=Vendor.objects.get(id=1))
+
+        self.client.login(username=self.ADMIN_USERNAME, password=self.ADMIN_PASSWORD)
+
+        # update an existing Product p to the new Product Group pg
+        data ={
+            "product_id": p.product_id,
+            "product_group": pg.id
+        }
+        response = self.client.put(apiurl.PRODUCT_DETAIL_API_ENDPOINT % p.id, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK, response.json())
+
+    def test_invalid_association_product_to_product_group_using_the_api(self):
+        """
+        test that a product group must be created before adding products
+        """
+        pg = ProductGroup.objects.create(name="test", vendor=Vendor.objects.get(id=2))
+        p = Product.objects.create(product_id="test_cisco", vendor=Vendor.objects.get(id=1))
+
+        self.client.login(username=self.ADMIN_USERNAME, password=self.ADMIN_PASSWORD)
+
+        # try to update an existing Product p to the new Product Group pg, which will fail because the vendor values
+        # are different
+        data = {
+            "product_id": p.product_id,
+            "product_group": pg.id
+        }
+        response = self.client.put(apiurl.PRODUCT_DETAIL_API_ENDPOINT % p.id, data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, response.json())

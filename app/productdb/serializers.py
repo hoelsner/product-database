@@ -1,11 +1,11 @@
 from rest_framework.serializers import HyperlinkedModelSerializer
+from rest_framework import serializers
 from rest_framework.serializers import ChoiceField, CharField, DecimalField, PrimaryKeyRelatedField
 from django.core.validators import MinValueValidator
-from app.productdb.models import Product, Vendor, CURRENCY_CHOICES
+from app.productdb.models import Product, Vendor, CURRENCY_CHOICES, ProductGroup
 
 
 class VendorSerializer(HyperlinkedModelSerializer):
-
     class Meta:
         model = Vendor
         fields = (
@@ -17,6 +17,31 @@ class VendorSerializer(HyperlinkedModelSerializer):
             'url': {
                 'lookup_field': 'id',
                 'view_name': 'productdb:vendors-detail'
+            }
+        }
+        depth = 0
+
+
+class ProductGroupSerializer(HyperlinkedModelSerializer):
+    vendor = PrimaryKeyRelatedField(
+        many=False,
+        queryset=Vendor.objects.all(),
+        read_only=False,
+        required=False
+    )
+
+    class Meta:
+        model = ProductGroup
+        fields = (
+            'id',
+            'name',
+            'vendor',
+            'url'
+        )
+        extra_kwargs = {
+            'url': {
+                'lookup_field': 'id',
+                'view_name': 'productdb:productgroups-detail'
             }
         }
         depth = 0
@@ -44,12 +69,31 @@ class ProductSerializer(HyperlinkedModelSerializer):
         validators=[MinValueValidator(0)]
     )
 
+    product_group = PrimaryKeyRelatedField(
+        many=False,
+        queryset=ProductGroup.objects.all(),
+        read_only=False,
+        required=False,
+        allow_null=True
+    )
+
     vendor = PrimaryKeyRelatedField(
         many=False,
         queryset=Vendor.objects.all(),
         read_only=False,
         required=False
     )
+
+    def validate_product_group(self, value):
+        """
+        verify that the product group is associated to the same vendor as the product
+        """
+        if value:  # check for None type
+            if value.vendor.name != self.instance.vendor.name:
+                raise serializers.ValidationError(
+                    "Invalid product group, group and product must be associated to the same vendor"
+                )
+        return value
 
     class Meta:
         model = Product
@@ -61,6 +105,7 @@ class ProductSerializer(HyperlinkedModelSerializer):
             'currency',
             'tags',
             'vendor',
+            'product_group',
             'url',
             'eox_update_time_stamp',
             'end_of_sale_date',

@@ -2,6 +2,7 @@ from datetime import timedelta
 
 import reversion
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models.signals import pre_delete
@@ -53,6 +54,61 @@ class Vendor(models.Model):
 
     class Meta:
         ordering = ('name',)
+
+
+class ProductGroup(models.Model):
+    """
+    Product Group
+    """
+    name = models.CharField(
+        max_length=512,
+        help_text="Name of the Product Group"
+    )
+
+    vendor = models.ForeignKey(
+        Vendor,
+        blank=False,
+        null=False,
+        default=0,
+        verbose_name="Vendor",
+        on_delete=models.SET_DEFAULT
+    )
+
+    def get_all_products(self):
+        """
+        returns a query set that contains all Products
+        """
+        try:
+            result = Product.objects.filter(product_group=self)
+            if result.count() == 0:
+                result = None
+
+        except:
+            # if something went wrong, return None
+            result = None
+
+        return result
+
+    def save(self, *args, **kwargs):
+        # clean the object before save
+        self.clean()
+        super(ProductGroup, self).save(*args, **kwargs)
+
+    def clean(self):
+        #  the vendor can only be changed if no products are associated to it
+        if self.get_all_products():  # not None if no Products are found
+            raise ValidationError({
+                "vendor": ValidationError("cannot set new vendor as long as there are products associated to ir")
+            })
+
+    def __str__(self):
+        return self.name
+
+    def __unicode__(self):
+        return self.name
+
+    class Meta:
+        unique_together = ("name", "vendor")
 
 
 class Product(models.Model):
@@ -176,6 +232,14 @@ class Product(models.Model):
         help_text="URL to the Product bulletin or EoL reference"
     )
 
+    product_group = models.ForeignKey(
+        ProductGroup,
+        null=True,
+        verbose_name="Product Group",
+        on_delete=models.SET_NULL,
+        validators=[]
+    )
+
     @property
     def current_lifecycle_states(self):
         """
@@ -240,6 +304,23 @@ class Product(models.Model):
 
     def __unicode__(self):
         return self.product_id
+
+    def save(self, *args, **kwargs):
+        # clean the object before save
+        self.clean()
+        super(Product, self).save(*args, **kwargs)
+
+    def clean(self):
+        # the vendor values of the product group and the product must be the same
+        if self.product_group:
+            if self.product_group.vendor != self.vendor:
+                raise ValidationError({
+                    "product_group":
+                        ValidationError(
+                            "Invalid product group, group and product must be associated to the same vendor",
+                            code='invalid'
+                        )
+                })
 
     class Meta:
         ordering = ('product_id',)
