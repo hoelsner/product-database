@@ -19,13 +19,11 @@ Execute a Bulk EoL check
         {% endif %}
 
         {% if query_result|length == 0 %}
-            <div class="col-md-6 col-md-offset-1 col-sm-offset-1">
-                <p>
-                    WS-C2960-48TT-L<br>
-                    WS-C2960-24LC-S<br>
-                    WS-C2960S-24TS-S
-                </p>
-            </div>
+            <p style="margin-left: 25px;">
+                WS-C2960-48TT-L<br>
+                WS-C2960-24LC-S<br>
+                WS-C2960S-24TS-S
+            </p>
             {% if query_no_result %}
             <div class="alert alert-danger" role="alert">
                 <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>

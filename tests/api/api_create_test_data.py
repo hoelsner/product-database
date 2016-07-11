@@ -9,4 +9,4 @@ if __name__ == "__main__":
     else:
         print("Use Server: %s" % sys.argv[1])
         print("create real test data")
-        create_real_test_data(sys.argv[1], "admin", "admin")
+        create_real_test_data(sys.argv[1], "pdb_admin", "pdb_admin")

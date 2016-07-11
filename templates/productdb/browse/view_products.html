@@ -121,7 +121,15 @@
                         "targets": 2,
                         "data": "product_group",
                         "visible": false,
-                        "searchable": true
+                        "searchable": true,
+                        "render": function ( data, type, row ) {
+                            if (data != null) {
+                                return '<a href="{% url 'productdb:detail-product_group' %}' + row["product_group_id"] + '/">' + row['product_group'] + '</a>';
+                            }
+                            else {
+                                return ""
+                            }
+                        }
                     },
                     {
                         "targets": 3,

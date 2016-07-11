@@ -88,7 +88,7 @@ class ProductSerializer(HyperlinkedModelSerializer):
         """
         verify that the product group is associated to the same vendor as the product
         """
-        if value:  # check for None type
+        if value and self.instance:  # check for None type
             if value.vendor.name != self.instance.vendor.name:
                 raise serializers.ValidationError(
                     "Invalid product group, group and product must be associated to the same vendor"

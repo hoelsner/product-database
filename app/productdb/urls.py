@@ -36,12 +36,28 @@ urlpatterns = [
         datatables.ListProductsJson.as_view(),
         name='datatables_list_products_view'
     ),
+    url(
+        r'^datatables/product_groups_data/$',
+        datatables.ListProductGroupsJson.as_view(),
+        name='datatables_list_product_groups'
+    ),
+    url(
+        r'^datatables/product_groups_data/(?P<product_group_id>[0-9]+)/products/$',
+        datatables.ListProductsByGroupJson.as_view(),
+        name='datatables_list_products_by_group_view'
+    ),
 
     # user views
     url(r'^vendor/$', views.browse_vendor_products, name='browse_vendor_products'),
+
+    url(r'^productgroups/$', views.list_product_groups, name='list-product_groups'),
+    url(r'^productgroup/$', views.detail_product_group, name='detail-product_group'),
+    url(r'^productgroup/(?P<product_group_id>\d+)/$', views.detail_product_group, name='detail-product_group'),
+
     url(r'^products/$', views.browse_all_products, name='all_products'),
     url(r'^product/$', views.view_product_details, name='product-list'),
     url(r'^product/(?P<product_id>\d+)/$', views.view_product_details, name='product-detail'),
+
     url(r'^do/bulkcheck/$', views.bulk_eol_check, name='bulk_eol_check'),
     url(r'^import/products/$', views.import_products, name='import_products'),
     url(r'^about/$', views.about_view, name='about'),

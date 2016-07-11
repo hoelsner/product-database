@@ -6,6 +6,7 @@ from requests.auth import HTTPBasicAuth
 # API endpoints for tests
 #
 PRODUCTS_API_ENDPOINT = "/productdb/api/v0/products/"
+PRODUCT_GROUPS_API_ENDPOINT = "/productdb/api/v0/productgroups/"
 VENDORS_API_ENDPOINT = "/productdb/api/v0/vendors/"
 
 

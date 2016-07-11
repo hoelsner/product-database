@@ -8,5 +8,5 @@ if __name__ == "__main__":
     else:
         # clean DB
         print("Use Server: %s" % sys.argv[1])
-        drop_all_products(sys.argv[1], "admin", "admin")
+        drop_all_products(sys.argv[1], "pdb_admin", "pdb_admin")
 

@@ -112,6 +112,11 @@ class ProductGroup(models.Model):
 
 
 class Product(models.Model):
+    END_OF_SUPPORT_STR = "End of Support"
+    END_OF_SALE_STR = "End of Sale"
+    EOS_ANNOUNCED_STR = "EoS announced"
+    NO_EOL_ANNOUNCEMENT_STR = "No EoL announcement"
+
     # Used as Primary Key
     product_id = models.CharField(
         unique=True,
@@ -235,6 +240,7 @@ class Product(models.Model):
     product_group = models.ForeignKey(
         ProductGroup,
         null=True,
+        blank=True,
         verbose_name="Product Group",
         on_delete=models.SET_NULL,
         validators=[]
@@ -268,10 +274,10 @@ class Product(models.Model):
 
             if today > end_of_sale_date:
                 if today > end_of_support_date:
-                    result.append("End of Support")
+                    result.append(self.END_OF_SUPPORT_STR)
 
                 else:
-                    result.append("End of Sale")
+                    result.append(self.END_OF_SALE_STR)
                     if today > end_of_new_service_attachment_date:
                         result.append("End of New Service Attachment Date")
 
@@ -289,13 +295,13 @@ class Product(models.Model):
 
             else:
                 # product is eos announced
-                result.append("EoS announced")
+                result.append(self.EOS_ANNOUNCED_STR)
 
             return result
 
         else:
             if self.eox_update_time_stamp is not None:
-                return ["No EoL announcement"]
+                return [self.NO_EOL_ANNOUNCEMENT_STR]
             else:
                 return None
 

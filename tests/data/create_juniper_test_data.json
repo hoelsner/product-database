@@ -1,4 +1,10 @@
 {
+  "product_groups": [
+    {
+      "name": "EX2200",
+      "vendor": "Juniper Networks"
+    }
+  ],
   "products" : [
     {
       "product_id": "EX2200-24T-4G",
@@ -7,6 +13,7 @@
       "currency": "USD",
       "tags": "chassis",
       "vendor": "Juniper Networks",
+      "product_group": "EX2200",
       "eol_ext_announcement_date": "2015-09-02",
       "end_of_sale_date": "2015-09-02"
     },
@@ -16,7 +23,8 @@
       "list_price": "2595.00",
       "currency": "USD",
       "tags": "chassis",
-      "vendor": "Juniper Networks"
+      "vendor": "Juniper Networks",
+      "product_group": "EX2200"
     },
     {
       "product_id": "EX2200-48P-4G",
@@ -24,7 +32,8 @@
       "list_price": "4495.00",
       "currency": "USD",
       "tags": "chassis",
-      "vendor": "Juniper Networks"
+      "vendor": "Juniper Networks",
+      "product_group": "EX2200"
     },
     {
       "product_id": "EX2200-48T-4G",

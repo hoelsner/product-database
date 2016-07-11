@@ -1,0 +1,158 @@
+{% extends '_base/page-with_nav-single_row.html' %}
+{% load staticfiles %}
+
+{% block title %}
+    List all Product Groups - Product Database
+{% endblock %}
+
+{% block page_content %}
+    <div class="page-header">
+        <h1>
+            <i class="fa fa-search"></i>&nbsp;
+            All Product Groups
+        </h1>
+    </div>
+
+    <p>
+        This page contains all Product Groups that are available within the database.
+    </p>
+
+    <div class="col-md-12">
+        <hr>
+        <table id="product_group_table" class="table table-striped table-hover table-responsive" cellspacing="0" width="100%">
+            <thead>
+                <tr id="tour_table_head">
+                    <th class="searchable" width="250px">Vendor</th>
+                    <th class="searchable">Name</th>
+                </tr>
+            </thead>
+        </table>
+    </div>
+{% endblock %}
+
+{% block additional_head_css %}
+    <link href="{% static 'lib/datatables.net-bs/css/dataTables.bootstrap.min.css' %}" rel="stylesheet" type="text/css">
+    <link href="{% static 'lib/datatables.net-buttons-bs/css/buttons.bootstrap.min.css' %}" rel="stylesheet" type="text/css">
+    <link href="{% static 'lib/datatables.net-fixedheader-bs/css/fixedHeader.bootstrap.min.css' %}" rel="stylesheet" type="text/css">
+{% endblock %}
+
+{% block additional_head_js %}
+    <script src="{% static 'lib/jszip/dist/jszip.min.js' %}"></script>
+    <script src="{% static 'lib/pdfmake/build/pdfmake.min.js' %}"></script>
+    <script src="{% static 'lib/pdfmake/build/vfs_fonts.js' %}"></script>
+{% endblock %}
+
+{% block additional_page_js %}
+    <script src="{% static 'lib/datatables.net/js/jquery.dataTables.min.js' %}"></script>
+    <script src="{% static 'lib/datatables.net-bs/js/dataTables.bootstrap.min.js' %}"></script>
+
+    <script src="{% static 'lib/datatables.net-buttons/js/dataTables.buttons.min.js' %}"></script>
+    <script src="{% static 'lib/datatables.net-buttons-bs/js/buttons.bootstrap.min.js' %}"></script>
+
+    <script src="{% static 'lib/datatables.net-buttons/js/buttons.html5.min.js' %}"></script>
+    <script src="{% static 'lib/datatables.net-buttons/js/buttons.colVis.min.js' %}"></script>
+
+    <script src="{% static 'lib/datatables.net-fixedheader/js/dataTables.fixedHeader.min.js' %}"></script>
+
+    <script type="application/javascript">
+        $(document).ready(function() {
+            // attach search input fields
+            $('#product_group_table thead th').each(function () {
+                var title = $(this).text();
+                if($(this).hasClass("searchable")) {
+                    $(this).html(
+                            '<input id="column_search_' + title + '" class="search_box" type="text" placeholder="Search '+ title + '" /><br>' +
+                            $(this).html()
+                    );
+                }
+            });
+
+            var table = $('#product_group_table').DataTable( {
+                "dom": "<'row'<'col-sm-4'l><'col-sm-4'<'text-center'B>><'col-sm-4'f>>" +
+                     "<'row'<'col-sm-12'tr>>" +
+                     "<'row'<'col-sm-5'i><'col-sm-7'p>>",
+                "processing": true,
+                "pagingType": "full_numbers",
+                "lengthMenu": [[50, 10, 25, 100], [50, 10, 25, 100]],
+                "fixedHeader": {
+                    "headerOffset": 50
+                },
+                "serverSide": true,
+                "stateSave": true,
+                "columnDefs": [
+                    {
+                        "targets": 0,
+                        "data": "vendor",
+                        "visible": true,
+                        "searchable": true
+                    },
+                    {
+                        "targets": 1,
+                        "data": "name",
+                        "visible": true,
+                        "searchable": true,
+                        "render": function ( data, type, row ) {
+                            if (data != null) {
+                                return '<a href="{% url 'productdb:detail-product_group' %}' + row["id"] + '/">' + row['name'] + '</a>';
+                            }
+                            else {
+                                return ""
+                            }
+                        }
+                    }
+                ],
+                buttons: [
+                    {
+                        extend: 'copyHtml5',
+                        exportOptions: {
+                            columns: ':visible'
+                        }
+                    },
+                    {
+                        extend: 'csvHtml5',
+                        title: "export product groups",
+                        fieldSeparator: ';',
+                        fieldBoundary: "",
+                        exportOptions: {
+                            columns: ':visible'
+                        },
+                        extension: '.csv'
+                    },
+                    {
+                        extend: 'pdfHtml5',
+                        title: "export product groups",
+                        orientation: 'landscape',
+                        pageSize: 'A4',
+                        exportOptions: {
+                            columns: ':visible'
+                        }
+                    }
+                ],
+                "ajax": "{% url 'productdb:datatables_list_product_groups' %}"
+            });
+
+            // reset all search terms
+            table
+                 .search('')
+                 .columns().search('')
+                 .draw();
+
+            // prevent sorting when clicking in the search field
+            $('.search_box').on('click', function(e){
+               e.stopPropagation();
+            });
+
+            // add the search events
+            table.columns().every( function () {
+                var that = this;
+                $('input', this.header()).on('keyup change', function () {
+                    if (that.search() != this.value) {
+                        that
+                                .search(this.value)
+                                .draw();
+                    }
+                });
+            });
+        });
+    </script>
+{% endblock %}

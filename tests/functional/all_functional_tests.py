@@ -6,3 +6,4 @@ from tests.functional.user_interface.test_cisco_api_settings_view import *
 from tests.functional.user_interface.test_import_products import *
 from tests.functional.user_interface.test_settings_permissions import *
 from tests.functional.user_interface.test_sync_local_db_with_cisco_api import *
+from tests.functional.user_interface.test_product_group_views import *

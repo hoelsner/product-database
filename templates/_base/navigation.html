@@ -15,21 +15,27 @@
         <div class="collapse navbar-collapse" id="navcol-1">
             <ul class="nav navbar-nav">
                 <li class="dropdown">
-                    <a class="dropdown-toggle" data-toggle="dropdown" aria-expanded="false" href="#">
+                    <a class="dropdown-toggle" data-toggle="dropdown" aria-expanded="false" href="#" id="nav_browse">
                         <i class="fa fa-search"></i> <span class="hidden-sm">&nbsp;
                         Browse</span>&nbsp;<span class="caret"></span>
                     </a>
                     <ul class="dropdown-menu" role="menu">
                         <li role="presentation">
-                            <a href="{% url 'productdb:all_products' %}">
+                            <a href="{% url 'productdb:all_products' %}" id="nav_browse_all_products">
                                 <i class="fa fa-search"></i>&nbsp;&nbsp;
                                 All Products
                             </a>
                         </li>
                         <li role="presentation">
-                            <a href="{% url 'productdb:browse_vendor_products' %}">
+                            <a href="{% url 'productdb:list-product_groups' %}" id="nav_browse_all_product_groups">
                                 <i class="fa fa-search"></i>&nbsp;&nbsp;
-                                By Vendor
+                                All Product Groups
+                            </a>
+                        </li>
+                        <li role="presentation">
+                            <a href="{% url 'productdb:browse_vendor_products' %}" id="nav_browse_all_vendor_products">
+                                <i class="fa fa-search"></i>&nbsp;&nbsp;
+                                Products By Vendor
                             </a>
                         </li>
                         <li class="divider"></li>

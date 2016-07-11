@@ -195,6 +195,25 @@ class ProductApiEndpointTest(BaseApiUnitTest):
         # cleanup
         apicalls.clean_db(self.client, username=self.ADMIN_USERNAME, password=self.ADMIN_PASSWORD)
 
+    def test_create_with_product_group(self):
+        pg = ProductGroup.objects.create(name="test", vendor=Vendor.objects.get(id=1))
+
+        apicall_data = {
+            "product_id": "product-test",
+            "vendor": 1,
+            "product_group": pg.id
+        }
+
+        self.client.login(username=self.ADMIN_USERNAME, password=self.ADMIN_PASSWORD)
+        response = self.client.post(apiurl.PRODUCT_API_ENDPOINT, apicall_data, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertRegex(response.content.decode("utf-8"),
+                         '.*"product_group":%s.*' % pg.id)
+
+        # cleanup
+        apicalls.clean_db(self.client, username=self.ADMIN_USERNAME, password=self.ADMIN_PASSWORD)
+
     def test_invalid_create_product_call_with_vendor_id(self):
         test_product_name = "MyProductName"
         apicall_data = {

@@ -12,7 +12,7 @@ from django.utils.timezone import timedelta, datetime, get_current_timezone
 from app.config.models import NotificationMessage, TextBlock
 from app.productdb import utils as app_util
 from app.productdb.forms import ImportProductsFileUploadForm
-from app.productdb.models import Product, JobFile
+from app.productdb.models import Product, JobFile, ProductGroup
 from app.productdb.models import Vendor
 import app.productdb.tasks as tasks
 from django_project.celery import set_meta_data_for_task
@@ -115,6 +115,40 @@ def browse_all_products(request):
         return redirect('%s?next=%s' % (settings.LOGIN_URL, request.path))
 
     return render(request, "productdb/browse/view_products.html", context={})
+
+
+def list_product_groups(request):
+    """
+    browse all product groups in the database
+    """
+    if login_required_if_login_only_mode(request):
+        return redirect('%s?next=%s' % (settings.LOGIN_URL, request.path))
+
+    return render(request, "productdb/product_group/list-product_groups.html", context={})
+
+
+def detail_product_group(request, product_group_id=None):
+    """
+    detail view for a product group
+    """
+    if login_required_if_login_only_mode(request):
+        return redirect('%s?next=%s' % (settings.LOGIN_URL, request.path))
+
+    if not product_group_id:
+        # if product_id is set to none, redirect to the all products view
+        return redirect(reverse("productdb:all_products"))
+
+    else:
+        try:
+            pg = ProductGroup.objects.get(id=product_group_id)
+        except:
+            raise Http404("Product Group with ID %s not found in database" % product_group_id)
+
+    context = {
+        "product_group": pg
+    }
+
+    return render(request, "productdb/product_group/detail-product_group.html", context=context)
 
 
 def view_product_details(request, product_id=None):

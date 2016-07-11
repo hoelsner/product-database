@@ -1,4 +1,18 @@
 {
+  "product_groups": [
+    {
+      "name": "Catalyst 2960",
+      "vendor": "Cisco Systems"
+    },
+    {
+      "name": "Catalyst 2960X",
+      "vendor": "Cisco Systems"
+    },
+    {
+      "name": "Catalyst 3850",
+      "vendor": "Cisco Systems"
+    }
+  ],
   "products" : [
     {
       "product_id": "WS-C2960-48TT-L",
@@ -10,6 +24,7 @@
       "description": "not set",
       "tags": "chassis",
       "vendor": "Cisco Systems",
+      "product_group": "Catalyst 2960",
       "eox_update_time_stamp": "2015-01-23",
       "end_of_sale_date": "2014-01-31",
       "end_of_support_date": "2019-01-31",
@@ -26,6 +41,7 @@
       "description": "Catalyst 2960 24 10/100 (8 PoE) + 2 T/SFP LAN Lite Image",
       "tags": "chassis",
       "vendor": "Cisco Systems",
+      "product_group": "Catalyst 2960",
       "eox_update_time_stamp": "2015-01-23",
       "end_of_sale_date": "2014-01-31",
       "end_of_support_date": "2019-01-31",
@@ -42,6 +58,7 @@
       "description": "Cat 2960 24 10/100 (8 PoE) + 2 T/SFP LAN Lite REFURBISHED",
       "tags": "chassis",
       "vendor": "Cisco Systems",
+      "product_group": "Catalyst 2960",
       "eox_update_time_stamp": "2015-01-23",
       "end_of_sale_date": "2018-01-31",
       "end_of_support_date": "2019-01-31",
@@ -58,6 +75,7 @@
       "description": "Catalyst 2960 24 10/100 (8 PoE)+ 2 1000BT LAN Base Image",
       "tags": "chassis",
       "vendor": "Cisco Systems",
+      "product_group": "Catalyst 2960",
       "eox_update_time_stamp": "2015-01-23",
       "end_of_sale_date": "2014-01-31",
       "end_of_support_date": "2019-01-31",
@@ -74,6 +92,7 @@
       "description": "Catalyst 2960 24 10/100 PoE + 2 T/SFP LAN Lite Image",
       "tags": "chassis",
       "vendor": "Cisco Systems",
+      "product_group": "Catalyst 2960",
       "eox_update_time_stamp": "2015-01-23",
       "end_of_sale_date": "2014-01-31",
       "end_of_support_date": "2019-01-31",
@@ -90,6 +109,7 @@
       "description": "Cat 2960 24 10/100 PoE +2 T/SFP LAN Lite Image REFURBISHED",
       "tags": "chassis",
       "vendor": "Cisco Systems",
+      "product_group": "Catalyst 2960",
       "eox_update_time_stamp": "2015-01-23",
       "end_of_sale_date": "2014-01-31",
       "end_of_support_date": "2019-01-31",
@@ -106,6 +126,7 @@
       "description": "Catalyst 2960 24 10/100 + 2T/SFP LAN Base Image",
       "tags": "chassis",
       "vendor": "Cisco Systems",
+      "product_group": "Catalyst 2960",
       "eox_update_time_stamp": "2015-01-23",
       "end_of_sale_date": "2014-01-31",
       "end_of_support_date": "2019-01-31",
@@ -122,6 +143,7 @@
       "description": "not set",
       "tags": "chassis",
       "vendor": "Cisco Systems",
+      "product_group": "Catalyst 2960",
       "eox_update_time_stamp": "2015-01-23",
       "end_of_sale_date": "2014-01-31",
       "end_of_support_date": "2019-01-31",
@@ -138,6 +160,7 @@
       "description": "Catalyst 2960 24 10/100 + 2 1000BT LAN Base Image",
       "tags": "chassis",
       "vendor": "Cisco Systems",
+      "product_group": "Catalyst 2960",
       "eox_update_time_stamp": "2015-01-23",
       "end_of_sale_date": "2014-01-31",
       "end_of_support_date": "2019-01-31",
@@ -154,6 +177,7 @@
       "description": "Catalyst 2960 48 10/100 PoE + 2 1000BT +2 SFP LAN Base Image",
       "tags": "chassis",
       "vendor": "Cisco Systems",
+      "product_group": "Catalyst 2960",
       "eox_update_time_stamp": "2015-01-23",
       "end_of_sale_date": "2014-01-31",
       "end_of_support_date": "2019-01-31",
@@ -171,7 +195,8 @@
       "list_price": "4595.00",
       "currency": "USD",
       "tags": "chassis",
-      "vendor": "Cisco Systems"
+      "vendor": "Cisco Systems",
+      "product_group": "Catalyst 2960X"
     },
     {
       "product_id": "CAB-ACE",
@@ -179,7 +204,8 @@
       "list_price": "0.00",
       "currency": "USD",
       "tags": "power_cord",
-      "vendor": "Cisco Systems"
+      "vendor": "Cisco Systems",
+      "product_group": "Catalyst 2960X"
     },
     {
       "product_id": "C2960X-STACK",
@@ -187,7 +213,8 @@
       "list_price": "1195",
       "currency": "USD",
       "tags": "spare",
-      "vendor": "Cisco Systems"
+      "vendor": "Cisco Systems",
+      "product_group": "Catalyst 2960X"
     },
     {
       "product_id": "CAB-STK-E-0.5M",
@@ -195,7 +222,8 @@
       "list_price": "0.00",
       "currency": "USD",
       "tags": "spare",
-      "vendor": "Cisco Systems"
+      "vendor": "Cisco Systems",
+      "product_group": "Catalyst 2960X"
     },
     {
       "product_id": "WS-C2960X-24PS-L",
@@ -203,7 +231,8 @@
       "list_price": "3195.00",
       "currency": "USD",
       "tags": "chassis",
-      "vendor": "Cisco Systems"
+      "vendor": "Cisco Systems",
+      "product_group": "Catalyst 2960X"
     },
     {
       "product_id": "WS-C2960X-24TD-L",
@@ -211,7 +240,8 @@
       "list_price": "3795.00",
       "currency": "USD",
       "tags": "chassis",
-      "vendor": "Cisco Systems"
+      "vendor": "Cisco Systems",
+      "product_group": "Catalyst 2960X"
     },
     {
       "product_id": "WS-C2960X-24TS-L",
@@ -219,7 +249,8 @@
       "list_price": "2395.00",
       "currency": "USD",
       "tags": "chassis",
-      "vendor": "Cisco Systems"
+      "vendor": "Cisco Systems",
+      "product_group": "Catalyst 2960X"
     },
     {
       "product_id": "WS-C3850-12S-S",
@@ -227,7 +258,8 @@
       "list_price": "10000.00",
       "currency": "USD",
       "tags": "chassis",
-      "vendor": "Cisco Systems"
+      "vendor": "Cisco Systems",
+      "product_group": "Catalyst 3850"
     },
     {
       "product_id": "S3850UK9-37E",
@@ -235,7 +267,8 @@
       "list_price": "0.00",
       "currency": "USD",
       "tags": "software",
-      "vendor": "Cisco Systems"
+      "vendor": "Cisco Systems",
+      "product_group": "Catalyst 3850"
     },
     {
       "product_id": "C3850-NM-4-1G",
@@ -243,7 +276,8 @@
       "list_price": "500.00",
       "currency": "USD",
       "tags": "spare",
-      "vendor": "Cisco Systems"
+      "vendor": "Cisco Systems",
+      "product_group": "Catalyst 3850"
     },
     {
       "product_id": "CAB-TA-EU",
@@ -251,7 +285,8 @@
       "list_price": "0.00",
       "currency": "USD",
       "tags": "power_cord included_product",
-      "vendor": "Cisco Systems"
+      "vendor": "Cisco Systems",
+      "product_group": "Catalyst 3850"
     },
     {
       "product_id": "STACK-T1-50CM",
@@ -259,7 +294,8 @@
       "list_price": "0.00",
       "currency": "USD",
       "tags": "included_product",
-      "vendor": "Cisco Systems"
+      "vendor": "Cisco Systems",
+      "product_group": "Catalyst 3850"
     },
     {
       "product_id": "CAB-SPWR-30CM",
@@ -267,7 +303,8 @@
       "list_price": "0",
       "currency": "USD",
       "tags": "included_product",
-      "vendor": "Cisco Systems"
+      "vendor": "Cisco Systems",
+      "product_group": "Catalyst 3850"
     },
     {
       "product_id": "PWR-C1-350WAC",
@@ -275,7 +312,8 @@
       "list_price": "0.00",
       "currency": "USD",
       "tags": "included_product",
-      "vendor": "Cisco Systems"
+      "vendor": "Cisco Systems",
+      "product_group": "Catalyst 3850"
     },
     {
       "product_id": "WS-C3850-12S-E",
@@ -283,7 +321,8 @@
       "list_price": "12000",
       "currency": "USD",
       "tags": "chassis",
-      "vendor": "Cisco Systems"
+      "vendor": "Cisco Systems",
+      "product_group": "Catalyst 3850"
     },
     {
       "product_id": "C3850-NM-2-10G",
@@ -291,7 +330,8 @@
       "list_price": "2500.00",
       "currency": "USD",
       "tags": "spare",
-      "vendor": "Cisco Systems"
+      "vendor": "Cisco Systems",
+      "product_group": "Catalyst 3850"
     },
     {
       "product_id": "GLC-SX-MMD=",
@@ -315,7 +355,8 @@
       "list_price": "100.00",
       "currency": "USD",
       "tags": "spare",
-      "vendor": "Cisco Systems"
+      "vendor": "Cisco Systems",
+      "product_group": "Catalyst 3850"
     }
   ]
 }
