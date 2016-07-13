@@ -234,19 +234,29 @@ class CiscoEoxApi(BaseCiscoApiConsole):
 
             except Exception as ex:
                 logger.error("cannot contact API endpoint at %s" % url, exc_info=True)
-                raise ConnectionFailedException("cannot contact API endpoint at %s" % url) from ex
+                raise ConnectionFailedException(
+                    "Query \"%s\": Cannot contact API endpoint at %s" % (product_id, url)
+                ) from ex
 
             if result.text.find("Not Authorized") != -1:
                 logger.debug("call not authorized: %s" % result.text)
-                raise AuthorizationFailedException("Not Authorized")
+                raise AuthorizationFailedException("Query %s: Not Authorized, invalid credentials" % product_id)
+
+            elif result.text.find("Developer Inactive") != -1:
+                logger.debug("call not authorized: %s" % result.text)
+                raise AuthorizationFailedException(
+                    "Query \"%s\": Invalid Permission, check your application mapping in "
+                    "the API configuration" % product_id
+                )
 
             self.last_json_result = result.json()
             self.last_page_call = page
 
             # check for API error
             if self.has_api_error():
-                logger.fatal("Cisco EoX API error occured: %s" % self.get_api_error_message())
-                raise CiscoApiCallFailed(self.get_api_error_message())
+                msg = "Query \"%s\": Cisco EoX API error occurred: %s" % (product_id, self.get_api_error_message())
+                logger.fatal(msg)
+                raise CiscoApiCallFailed(msg)
 
             return self.last_json_result
 

@@ -98,7 +98,7 @@ class ConfigFileSettingsTest(TestCase):
         self.assertEqual(value, "")
 
         # set values
-        blacklist_entries = "test"
+        blacklist_entries = "test\nanother\ntest"
         settings.set_product_blacklist_regex(blacklist_entries)
         settings.write_file()
         value = settings.get_product_blacklist_regex()

@@ -58,8 +58,8 @@
             <div class="col-sm-9">
                 {{ form.eox_api_queries }}
                 <span id="helpBlock" class="help-block">
-                    EoX queries which are executed line by line. Please note, that every query must contain at least three characters.
-                    Wildcard (*) are also allowed.
+                    EoX queries are executed line by line. Please note, that every query must contain at least three characters.
+                    A Wildcard sign (*) is also allowed.
                 </span>
             </div>
         </div>
@@ -70,8 +70,8 @@
             <div class="col-sm-9">
                 {{ form.eox_api_blacklist }}
                 <span id="helpBlock" class="help-block">
-                    Product numbers separated by semicolon (;). If a PID is part of this list, it isn't added to the local database.
-                    This option is only in use if the "auto-create new products" option is enabled.
+                    Product numbers or regular expressions separated by semicolon (;) or word wrap. If a PID is part of this list, it won't be created in the database.
+                    This option is only required, if <strong>auto-create new products</strong>-option is enabled.
                 </span>
             </div>
         </div>

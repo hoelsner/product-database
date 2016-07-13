@@ -1,3 +1,4 @@
+import re
 import json
 import logging
 from reversion import revisions as reversion
@@ -23,9 +24,24 @@ def convert_time_format(date_format):
     return "%Y-%m-%d"
 
 
+def product_id_in_database(product_id):
+    """
+    checks that the Product ID is stored in the database
+    """
+    try:
+        result = Product.objects.filter(product_id=product_id)
+        if len(result) == 0:
+            return False
+        else:
+            return True
+    except:
+        logger.debug("Cannot find product %s in database" % product_id, exc_info=True)
+        return False
+
+
 def update_local_db_based_on_record(eox_record, create_missing=False):
     """
-    update a database record based on a Cisco EoX API call
+    update a database record based on a record provided by the Cisco EoX API
 
     :param eox_record: JSON data from the Cisco EoX API
     :param create_missing: set to True, if the product should be created if it doesn't exist in the local database
@@ -67,8 +83,8 @@ def update_local_db_based_on_record(eox_record, create_missing=False):
 
         else:
             date_format = convert_time_format(eox_record['UpdatedTimeStamp']['dateFormat'])
-            updated_time_stamp = datetime.strptime(eox_record['UpdatedTimeStamp']['value'],
-                                                   date_format).date()
+            updated_time_stamp = datetime.strptime(eox_record['UpdatedTimeStamp']['value'], date_format).date()
+
             if product.eox_update_time_stamp >= updated_time_stamp:
                 logger.debug("update of product not required: %s >= %s " % (product.eox_update_time_stamp,
                                                                             updated_time_stamp))
@@ -81,92 +97,38 @@ def update_local_db_based_on_record(eox_record, create_missing=False):
                 result_record["updated"] = True
 
         if update:
-            if "UpdatedTimeStamp" in eox_record.keys():
-                value = eox_record['UpdatedTimeStamp']['value']
-                if value != " ":
-                    euts = datetime.strptime(value,
-                                             convert_time_format(
-                                                 eox_record['UpdatedTimeStamp']['dateFormat']
-                                             )).date()
-                    product.eox_update_time_stamp = euts
+            # save datetime values from Cisco EoX API record
+            value_map = {
+                # <API value> : <class attribute>
+                "UpdatedTimeStamp": "eox_update_time_stamp",
+                "EndOfSaleDate": "end_of_sale_date",
+                "LastDateOfSupport": "end_of_support_date",
+                "EOXExternalAnnouncementDate": "eol_ext_announcement_date",
+                "EndOfSWMaintenanceReleases": "end_of_sw_maintenance_date",
+                "EndOfRoutineFailureAnalysisDate": "end_of_routine_failure_analysis",
+                "EndOfServiceContractRenewal": "end_of_service_contract_renewal",
+                "EndOfSvcAttachDate": "end_of_new_service_attachment_date",
+                "EndOfSecurityVulSupportDate": "end_of_sec_vuln_supp_date",
+            }
 
-            if "EndOfSaleDate" in eox_record.keys():
-                value = eox_record['EndOfSaleDate']['value']
-                if value != " ":
-                    eosd = datetime.strptime(value,
-                                             convert_time_format(
-                                                 eox_record['EndOfSaleDate']['dateFormat']
-                                             )).date()
-                    product.end_of_sale_date = eosd
+            for key in value_map.keys():
+                if eox_record.get(key, None):
+                    value = eox_record[key].get("value", None)
+                    if value != " ":
+                        setattr(
+                            product,
+                            value_map[key],
+                            datetime.strptime(
+                                value,
+                                convert_time_format(eox_record[key].get("dateFormat", "%Y-%m-%d"))
+                            ).date()
+                        )
 
-            if "LastDateOfSupport" in eox_record.keys():
-                value = eox_record['LastDateOfSupport']['value']
-                if value != " ":
-                    eosud = datetime.strptime(value,
-                                              convert_time_format(
-                                                  eox_record['LastDateOfSupport']['dateFormat']
-                                              )).date()
-                    product.end_of_support_date = eosud
-
-            if "EOXExternalAnnouncementDate" in eox_record.keys():
-                value = eox_record['EOXExternalAnnouncementDate']['value']
-                if value != " ":
-                    eead = datetime.strptime(value,
-                                             convert_time_format(
-                                                 eox_record['EOXExternalAnnouncementDate']['dateFormat']
-                                             )).date()
-                    product.eol_ext_announcement_date = eead
-
-            if "EndOfSWMaintenanceReleases" in eox_record.keys():
-                value = eox_record['EndOfSWMaintenanceReleases']['value']
-                if value != " ":
-                    eosmd = datetime.strptime(value,
-                                              convert_time_format(
-                                                  eox_record['EndOfSWMaintenanceReleases']['dateFormat']
-                                              )).date()
-                    product.end_of_sw_maintenance_date = eosmd
-
-            if "EndOfRoutineFailureAnalysisDate" in eox_record.keys():
-                value = eox_record['EndOfRoutineFailureAnalysisDate']['value']
-                if value != " ":
-                    eorfa_date = datetime.strptime(value,
-                                                   convert_time_format(
-                                                       eox_record['EndOfRoutineFailureAnalysisDate']['dateFormat']
-                                                   )).date()
-                    product.end_of_routine_failure_analysis = eorfa_date
-
-            if "EndOfServiceContractRenewal" in eox_record.keys():
-                value = eox_record['EndOfServiceContractRenewal']['value']
-                if value != " ":
-                    eoscr = datetime.strptime(value,
-                                              convert_time_format(
-                                                  eox_record['EndOfServiceContractRenewal']['dateFormat']
-                                              )).date()
-                    product.end_of_service_contract_renewal = eoscr
-
-            if "EndOfSvcAttachDate" in eox_record.keys():
-                value = eox_record['EndOfSvcAttachDate']['value']
-                if value != " ":
-                    eonsa = datetime.strptime(value,
-                                              convert_time_format(
-                                                  eox_record['EndOfSvcAttachDate']['dateFormat']
-                                              )).date()
-                    product.end_of_new_service_attachment_date = eonsa
-
-            if "EndOfSecurityVulSupportDate" in eox_record.keys():
-                value = eox_record['EndOfSecurityVulSupportDate']['value']
-                if value != " ":
-                    eovsd = datetime.strptime(value,
-                                              convert_time_format(
-                                                  eox_record['EndOfSecurityVulSupportDate']['dateFormat']
-                                              )).date()
-                    product.end_of_sec_vuln_supp_date = eovsd
-
-            if "ProductBulletinNumber" in eox_record.keys():
-                product.eol_reference_number = eox_record['ProductBulletinNumber']
-
+            # save string values from Cisco EoX API record
             if "LinkToProductBulletinURL" in eox_record.keys():
-                product.eol_reference_url = eox_record['LinkToProductBulletinURL']
+                product.eol_reference_url = eox_record.get('LinkToProductBulletinURL', "")
+                if ("ProductBulletinNumber" in eox_record.keys()) and (product.eol_reference_url != ""):
+                    product.eol_reference_number = eox_record.get('ProductBulletinNumber', "EoL bulletin")
 
             with transaction.atomic(), reversion.create_revision():
                 product.save()
@@ -181,15 +143,37 @@ def update_local_db_based_on_record(eox_record, create_missing=False):
     return result_record
 
 
-def query_cisco_eox_api(query_string, blacklist, create_missing=False):
+def update_cisco_eox_database(api_query):
     """
-    execute a query against the Cisco API and updates the local database if the product
-    is not defined as blacklisted.
-    :param query_string: query that is executed
-    :param blacklist: list of strings that shouldn't be imported to the database
-    :param create_missing:
+    synchronizes the local database with the Cisco EoX API using the specified query
+    :param api_query: single query that is send to the Cisco EoX API
     :return:
     """
+    if type(api_query) is not str:
+        raise ValueError("api_query must be a string value")
+
+    # load application settings and check, that the API is enabled
+    app_settings = AppSettings()
+    app_settings.read_file()
+
+    if not app_settings.is_cisco_api_enabled():
+        msg = "Cisco API access not enabled"
+        logger.warn(msg)
+        raise CiscoApiCallFailed(msg)
+
+    blacklist_raw_string = app_settings.get_product_blacklist_regex()
+    create_missing = app_settings.is_auto_create_new_products()
+
+    # clean blacklist string and remove empty statements
+    # (split lines, if any and split the string by semicolon)
+    blacklist = []
+    for e in [e.split(";") for e in blacklist_raw_string.splitlines()]:
+        blacklist += e
+    blacklist = [e for e in blacklist if e != ""]
+
+    # start Cisco EoX API query
+    logger.info("Query EoX database: %s" % api_query)
+
     eoxapi = CiscoEoxApi()
     eoxapi.load_client_credentials()
     results = []
@@ -200,8 +184,8 @@ def query_cisco_eox_api(query_string, blacklist, create_missing=False):
         result_pages = 0
 
         while current_page <= max_pages:
-            logger.info("Executing API query '%s' on page '%d" % (query_string, current_page))
-            eoxapi.query_product(product_id=query_string, page=current_page)
+            logger.info("Executing API query '%s' on page '%d" % (api_query, current_page))
+            eoxapi.query_product(product_id=api_query, page=current_page)
             if current_page == 1:
                 result_pages = eoxapi.amount_of_pages()
                 logger.info("Initial query returns %d page(s)" % result_pages)
@@ -210,7 +194,7 @@ def query_cisco_eox_api(query_string, blacklist, create_missing=False):
 
             # check for errors
             if eoxapi.has_error(records[0]):
-                logger.info("Query '%s' returns no valid values: %s" % (query_string,
+                logger.info("Query '%s' returns no valid values: %s" % (api_query,
                                                                         eoxapi.get_error_description(records[0])))
             else:
                 # check that the query has valid results
@@ -225,22 +209,31 @@ def query_cisco_eox_api(query_string, blacklist, create_missing=False):
                         result_record["message"] = None
                         logger.info("processing product '%s'..." % pid)
 
-                        # check if record is product of the blacklist
-                        if pid not in blacklist:
-                            res = update_local_db_based_on_record(record, create_missing)
-                            res["blacklist"] = False
-                            result_record.update(res)
+                        pid_in_database = product_id_in_database(pid)
 
-                        else:
+                        # check if the product ID is blacklisted by a regular expression
+                        pid_blacklisted = False
+                        for regex in blacklist:
+                            if re.search(regex, pid, re.I):
+                                pid_blacklisted = True
+                                break
+
+                        # ignore if the product id is not in the database
+                        if pid_blacklisted and not pid_in_database:
                             logger.info("Product '%s' blacklisted... no further processing" % pid)
                             result_record.update({
                                 "blacklist": True
                             })
 
+                        else:
+                            res = update_local_db_based_on_record(record, create_missing)
+                            res["blacklist"] = False
+                            result_record.update(res)
+
                         results.append(result_record)
 
                 else:
-                    logger.warn("Query '%s' returns no valid values" % query_string)
+                    logger.warn("Query '%s' returns no valid values" % api_query)
 
             if current_page == result_pages:
                 break
@@ -248,50 +241,24 @@ def query_cisco_eox_api(query_string, blacklist, create_missing=False):
             else:
                 current_page += 1
 
+        # filter empty result strings
+        if len(results) == 0:
+            results = [
+                {
+                    "PID": None,
+                    "blacklist": False,
+                    "updated": False,
+                    "created": False,
+                    "message": "No product update required"
+                }
+            ]
+
     except ConnectionFailedException:
-        logger.error("connection for query failed: %s" % query_string, exc_info=True)
+        logger.error("connection for query failed: %s" % api_query, exc_info=True)
         raise
 
     except CiscoApiCallFailed:
-        logger.fatal("query failed: %s" % query_string, exc_info=True)
+        logger.fatal("Query failed: %s" % api_query, exc_info=True)
         raise
 
     return results
-
-
-def update_cisco_eox_database(api_query):
-    """
-    Synchronizes the local EoX data from the Cisco EoX API using the specified queries or the queries specified in the
-    configuration when api_query is set to None
-    :param api_query: single query that is send to the Cisco EoX API
-    :return:
-    """
-    # load application settings and check, that the API is enabled
-    app_settings = AppSettings()
-    app_settings.read_file()
-
-    if not app_settings.is_cisco_api_enabled():
-        msg = "Cisco API access not enabled"
-        logger.warn(msg)
-        raise CiscoApiCallFailed(msg)
-
-    blacklist = app_settings.get_product_blacklist_regex().split(";")
-    create_missing = app_settings.is_auto_create_new_products()
-
-    # start with Cisco EoX API queries
-    logger.info("Query EoX database: %s" % api_query)
-    query_results = query_cisco_eox_api(api_query, blacklist, create_missing)
-
-    # filter empty result strings
-    if len(query_results) == 0:
-        query_results = [
-            {
-                "PID": None,
-                "blacklist": False,
-                "updated": False,
-                "created": False,
-                "message": "No product update required"
-            }
-        ]
-
-    return query_results

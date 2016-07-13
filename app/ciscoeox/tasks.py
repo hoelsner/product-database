@@ -40,7 +40,15 @@ def execute_task_to_synchronize_cisco_eox_states(self, ignore_periodic_sync_flag
         })
 
         # read queries from configuration
-        queries = app_config.get_cisco_eox_api_queries().splitlines()
+        queries_raw_string = app_config.get_cisco_eox_api_queries()
+
+        # clean queries string and remove empty statements
+        # (split lines, if any and split the string by semicolon)
+        queries = []
+        for e in [e.split(";") for e in queries_raw_string.splitlines()]:
+            queries += e
+        queries = [e for e in queries if e != ""]
+
         if len(queries) == 0:
             result = {
                 "status_message": "No Cisco EoX API queries configured."
@@ -73,7 +81,7 @@ def execute_task_to_synchronize_cisco_eox_states(self, ignore_periodic_sync_flag
 
             else:
                 try:
-                    # execute query by query
+                    # execute all queries from the configuration and collect the results
                     notify_metrics = {
                         "queries": {}
                     }
@@ -107,7 +115,7 @@ def execute_task_to_synchronize_cisco_eox_states(self, ignore_periodic_sync_flag
 
                         counter += 1
 
-                    # create NotificationMessage
+                    # create NotificationMessage based on the results
                     detailed_html = ""
                     blist_counter = 0
                     update_counter = 0
@@ -186,6 +194,11 @@ def execute_task_to_synchronize_cisco_eox_states(self, ignore_periodic_sync_flag
                     else:
                         summary_html += "<strong>%d</strong> products are ignored." % blist_counter
 
+                    # show the executed queries in the summary message
+                    summary_html += " The following queries was executed: %s" % ", ".join(
+                        ["<code>%s</code>" % query for query in queries]
+                    )
+
                     NotificationMessage.objects.create(
                         title="Synchronization with Cisco EoX API",
                         type=NotificationMessage.MESSAGE_SUCCESS,
@@ -219,7 +232,7 @@ def execute_task_to_synchronize_cisco_eox_states(self, ignore_periodic_sync_flag
                     }
 
                 except CiscoApiCallFailed as ex:
-                    msg = "Server unreachable (%s)" % str(ex)
+                    msg = "Cisco EoX API call failed (%s)" % str(ex)
                     logger.error(msg, exc_info=True)
 
                     NotificationMessage.objects.create(

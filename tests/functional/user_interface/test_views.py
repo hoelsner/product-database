@@ -76,6 +76,7 @@ class BrowseProductsByVendor(DestructiveProductDbFunctionalTest):
         # a user hits the browse product list url
         self.browser.get(self.server_url + reverse("productdb:browse_vendor_products"))
         self.browser.implicitly_wait(3)
+        time.sleep(3)
 
         # check that the user sees a table
         page_text = self.browser.find_element_by_tag_name('body').text
