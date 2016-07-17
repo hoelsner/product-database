@@ -1,3 +1,4 @@
+{# If a "share_link" variable is set to True, only a login link is rendered #}
 <nav class="navbar navbar-inverse navbar-fixed-top">
     <div class="container-fluid">
         <div class="navbar-header">
@@ -13,55 +14,64 @@
             </button>
         </div>
         <div class="collapse navbar-collapse" id="navcol-1">
-            <ul class="nav navbar-nav">
-                <li class="dropdown">
-                    <a class="dropdown-toggle" data-toggle="dropdown" aria-expanded="false" href="#" id="nav_browse">
-                        <i class="fa fa-search"></i> <span class="hidden-sm">&nbsp;
-                        Browse</span>&nbsp;<span class="caret"></span>
-                    </a>
-                    <ul class="dropdown-menu" role="menu">
-                        <li role="presentation">
-                            <a href="{% url 'productdb:all_products' %}" id="nav_browse_all_products">
-                                <i class="fa fa-search"></i>&nbsp;&nbsp;
-                                All Products
-                            </a>
-                        </li>
-                        <li role="presentation">
-                            <a href="{% url 'productdb:list-product_groups' %}" id="nav_browse_all_product_groups">
-                                <i class="fa fa-search"></i>&nbsp;&nbsp;
-                                All Product Groups
-                            </a>
-                        </li>
-                        <li role="presentation">
-                            <a href="{% url 'productdb:browse_vendor_products' %}" id="nav_browse_all_vendor_products">
-                                <i class="fa fa-search"></i>&nbsp;&nbsp;
-                                Products By Vendor
-                            </a>
-                        </li>
-                        <li class="divider"></li>
-                        <li>
-                            <a href="{% url 'productdb_config:notification-list' %}">
-                                <i class="fa fa-comments" aria-hidden="true"></i>&nbsp;&nbsp;
-                                Notification Messages
-                            </a>
-                        </li>
-                    </ul>
-                </li>
-                <li class="dropdown">
-                    <a class="dropdown-toggle" data-toggle="dropdown" aria-expanded="false" href="#">
-                        <i class="fa fa-cogs"></i>
-                        <span class="hidden-sm">&nbsp;Actions</span>&nbsp;<span class="caret"></span>
-                    </a>
-                    <ul class="dropdown-menu" role="menu">
-                        <li role="presentation">
-                            <a href="{% url 'productdb:bulk_eol_check' %}">
-                                <i class="fa fa-cogs"></i>&nbsp;&nbsp;
-                                Bulk EoL Check
-                            </a>
-                        </li>
-                    </ul>
-                </li>
-            </ul>
+            {% if not share_link %}
+                <ul class="nav navbar-nav">
+                    <li class="dropdown">
+                        <a class="dropdown-toggle" data-toggle="dropdown" aria-expanded="false" href="#" id="nav_browse">
+                            <i class="fa fa-search"></i> <span class="hidden-sm">&nbsp;
+                            Browse</span>&nbsp;<span class="caret"></span>
+                        </a>
+                        <ul class="dropdown-menu" role="menu">
+                            <li role="presentation">
+                                <a href="{% url 'productdb:all_products' %}" id="nav_browse_all_products">
+                                    <i class="fa fa-search"></i>&nbsp;&nbsp;
+                                    All Products
+                                </a>
+                            </li>
+                            <li role="presentation">
+                                <a href="{% url 'productdb:list-product_groups' %}" id="nav_browse_all_product_groups">
+                                    <i class="fa fa-search"></i>&nbsp;&nbsp;
+                                    All Product Groups
+                                </a>
+                            </li>
+                            <li class="divider"></li>
+                            <li role="presentation">
+                                <a href="{% url 'productdb:browse_vendor_products' %}" id="nav_browse_all_vendor_products">
+                                    <i class="fa fa-cube"></i>&nbsp;&nbsp;
+                                    Products By Vendor
+                                </a>
+                            </li>
+                            <li role="presentation">
+                                <a href="{% url 'productdb:list-product_lists' %}" id="nav_browse_all_product_lists">
+                                    <i class="fa fa-list-ul"></i>&nbsp;&nbsp;
+                                    All Product Lists
+                                </a>
+                            </li>
+                            <li class="divider"></li>
+                            <li>
+                                <a href="{% url 'productdb_config:notification-list' %}">
+                                    <i class="fa fa-comments" aria-hidden="true"></i>&nbsp;&nbsp;
+                                    All Notification Messages
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    <li class="dropdown">
+                        <a class="dropdown-toggle" data-toggle="dropdown" aria-expanded="false" href="#">
+                            <i class="fa fa-cogs"></i>
+                            <span class="hidden-sm">&nbsp;Actions</span>&nbsp;<span class="caret"></span>
+                        </a>
+                        <ul class="dropdown-menu" role="menu">
+                            <li role="presentation">
+                                <a href="{% url 'productdb:bulk_eol_check' %}">
+                                    <i class="fa fa-cogs"></i>&nbsp;&nbsp;
+                                    Bulk EoL Check
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+            {% endif %}
             <ul class="nav navbar-nav navbar-right">
                 {% if user.is_authenticated %}
                     <li class="dropdown">
@@ -154,7 +164,7 @@
                     </li>
                 {% else %}
                     <li role="presentation">
-                        <a href="{% url 'login' %}" id="navbar_login">
+                        <a href="{% url 'login' %}{% if request.get_full_path %}?next={{ request.get_full_path }}{% endif %}" id="navbar_login">
                             <i class="fa fa-sign-in"></i>
                             <span class="hidden-sm">&nbsp;&nbsp;Login</span>
                         </a>

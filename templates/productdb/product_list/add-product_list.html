@@ -1,0 +1,31 @@
+{% extends '_base/page-with_nav-single_row.html' %}
+{% load staticfiles %}
+{% load bootstrap3 %}
+
+{% block title %}
+    Add Product List - Product Database
+{% endblock %}
+
+{% block page_content %}
+    <div class="col-md-6 col-md-offset-3">
+        <div class="page-header">
+            <h1>
+                <i class="fa fa-list-ul"></i>&nbsp;
+                Add Product List
+                <small>
+                    <a href="javascript:window.location.href=document.referrer;" data-toggle="tooltip" title="back to previous page"><i class="fa fa-chevron-circle-left" aria-hidden="true"></i></a>
+                </small>
+            </h1>
+        </div>
+        {% bootstrap_messages %}
+        <form method="post" class="form">
+            {% csrf_token %}
+            {% bootstrap_form form show_help=False%}
+            {% buttons %}
+                <button type="submit" class="btn btn-block btn-success" id="submit">
+                    Add Product List
+                </button>
+            {% endbuttons %}
+        </form>
+    </div>
+{% endblock %}

@@ -25,11 +25,13 @@
                             All Products
                         </a>
                         <a class="btn btn-default" role="button" href="{% url 'productdb:browse_vendor_products' %}">
-                            <i class="fa fa-search"></i>&nbsp;&nbsp;
+                            <i class="fa fa-cube"></i>&nbsp;&nbsp;
                             Products by Vendor
                         </a>
-                    </div>
-                    <div class="btn-group" role="group">
+                        <a class="btn btn-default" role="button" href="{% url 'productdb:list-product_lists' %}">
+                            <i class="fa fa-list-ul"></i>&nbsp;&nbsp;
+                            Product Lists
+                        </a>
                         <a class="btn btn-default" role="button" href="{% url 'productdb:bulk_eol_check' %}">
                             <i class="fa fa-cogs"></i>&nbsp;&nbsp;
                             Bulk EoL check

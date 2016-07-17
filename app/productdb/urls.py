@@ -54,6 +54,17 @@ urlpatterns = [
     url(r'^productgroup/$', views.detail_product_group, name='detail-product_group'),
     url(r'^productgroup/(?P<product_group_id>\d+)/$', views.detail_product_group, name='detail-product_group'),
 
+    url(r'^productlists/$', views.list_product_lists, name='list-product_lists'),
+    url(r'^productlists/$', views.detail_product_list, name='detail-product_list'),
+    url(r'^productlists/(?P<product_list_id>\d+)/$', views.detail_product_list, name='detail-product_list'),
+    url(r'^productlists/add', views.add_product_list, name="add-product_list"),
+    url(r'^productlists/edit/$', views.edit_product_list, name='edit-product_list'),
+    url(r'^productlists/edit/(?P<product_list_id>\d+)/$', views.edit_product_list, name='edit-product_list'),
+    url(r'^productlists/delete/$', views.delete_product_list, name='delete-product_list'),
+    url(r'^productlists/delete/(?P<product_list_id>\d+)/$', views.delete_product_list, name='delete-product_list'),
+
+    url(r'^share/productlists/(?P<product_list_id>\d+)/$', views.share_product_list, name='share-product_list'),
+
     url(r'^products/$', views.browse_all_products, name='all_products'),
     url(r'^product/$', views.view_product_details, name='product-list'),
     url(r'^product/(?P<product_id>\d+)/$', views.view_product_details, name='product-detail'),

@@ -1,8 +1,6 @@
 from django.contrib import admin
 from reversion_compare.admin import CompareVersionAdmin
-
-from app.config.models import TextBlock
-from app.productdb.models import Product, Vendor, ProductGroup
+from app.productdb.models import Product, Vendor, ProductGroup, ProductList
 
 
 class ProductAdmin(CompareVersionAdmin, admin.ModelAdmin):
@@ -54,13 +52,27 @@ class VendorAdmin(CompareVersionAdmin, admin.ModelAdmin):
 admin.site.register(Vendor, VendorAdmin)
 
 
-class TextBlockAdmin(admin.ModelAdmin):
-    list_display = (
+class ProductListAdmin(admin.ModelAdmin):
+    list_display = [
         'name',
-    )
-    fields = (
+        'description',
+        'update_user',
+        'update_date'
+    ]
+    fields = [
         'name',
-        'html_content'
-    )
+        'description',
+        'string_product_list',
+        'update_user',
+        'update_date'
+    ]
 
-admin.site.register(TextBlock, TextBlockAdmin)
+    readonly_fields = [
+        'update_date'
+    ]
+
+    history_latest_first = True
+    ignore_duplicate_revisions = True
+
+
+admin.site.register(ProductList, ProductListAdmin)

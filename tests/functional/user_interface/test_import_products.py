@@ -26,19 +26,6 @@ class TestImportProducts(DestructiveProductDbFunctionalTest):
         self.browser.find_element_by_id("id_excel_file").send_keys(filename)
         self.browser.find_element_by_id("submit").click()
 
-    def handle_login_dialog(self, username, password, expected_content):
-        # perform user login with the given credentials
-        page_text = self.browser.find_element_by_tag_name('body').text
-        self.assertIn("Login", page_text)
-
-        self.browser.find_element_by_id("username").send_keys(username)
-        self.browser.find_element_by_id("password").send_keys(password)
-        self.browser.find_element_by_id("login_button").click()
-
-        # check that the user sees the expected title
-        page_text = self.browser.find_element_by_tag_name('body').text
-        self.assertIn(expected_content, page_text, "Login failed")
-
     @override_settings(CELERY_EAGER_PROPAGATES_EXCEPTIONS=True,
                        CELERY_ALWAYS_EAGER=True)
     def test_valid_import_product_import_using_the_bundled_excel_template_with_notification(self):

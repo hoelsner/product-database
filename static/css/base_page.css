@@ -25,3 +25,7 @@ body {
 .code {
   font-family: monospace;
 }
+
+.selected {
+  background-color: #5bc0de !important;
+}

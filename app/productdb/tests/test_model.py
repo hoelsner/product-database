@@ -1,11 +1,12 @@
 from datetime import timedelta
 
+from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 from django.test import TestCase
 from django.utils.datetime_safe import datetime
 
-from app.productdb.models import Vendor, Product, ProductGroup
+from app.productdb.models import Vendor, Product, ProductGroup, ProductList
 
 
 class VendorDataModelTest(TestCase):
@@ -204,3 +205,49 @@ class ProductDataModelTest(TestCase):
             ['End of Support'],
             p.current_lifecycle_states
         )
+
+
+class ProductListModelTest(TestCase):
+    fixtures = ["default_users.yaml"]
+
+    def test_product_list_with_valid_product_list_string(self):
+        test_pid_list = sorted([
+            "even-2",
+            "even-4",
+            "odd-1",
+            "even-6"
+        ])
+        for i in range(0, 10):
+            name = "odd-" if i % 2 else "even-"
+            Product.objects.create(product_id=name + str(i))
+        self.assertEqual(10, Product.objects.all().count())
+
+        pl = ProductList.objects.create(name="test_list",
+                                        string_product_list=";".join(test_pid_list),
+                                        update_user=User.objects.get(username='pdb_admin'))
+
+        self.assertEqual(test_pid_list, pl.get_string_product_list_as_list())
+        self.assertEqual(len(test_pid_list), pl.get_product_list_objects().count())
+
+        pids_in_list = sorted([e.product_id for e in pl.get_product_list_objects()])
+
+        self.assertEqual(test_pid_list, pids_in_list)
+
+    def test_product_list_with_invalid_product_list_string(self):
+        test_pid_list = sorted([
+            "even-2",
+            "even-4",
+            "odd-1",
+            "even-6",
+            "invalid_pid"
+        ])
+        for i in range(0, 10):
+            name = "odd-" if i % 2 else "even-"
+            Product.objects.create(product_id=name + str(i))
+        self.assertEqual(10, Product.objects.all().count())
+
+        with self.assertRaises(ValidationError):
+            ProductList.objects.create(name="test_list",
+                                       string_product_list=";".join(test_pid_list),
+                                       update_user=User.objects.get(username='pdb_admin'))
+

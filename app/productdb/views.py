@@ -3,16 +3,20 @@ import logging
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.decorators import permission_required
+from django.contrib.auth.models import AnonymousUser
 from django.core.urlresolvers import reverse
 from django.db.models import Q
 from django.http import Http404
-from django.shortcuts import redirect, render
+from django.shortcuts import redirect, render, get_object_or_404
+from django.template.defaultfilters import safe
+from django.utils.html import escape
 from django.utils.timezone import timedelta, datetime, get_current_timezone
+from django.contrib import messages
 
 from app.config.models import NotificationMessage, TextBlock
 from app.productdb import utils as app_util
-from app.productdb.forms import ImportProductsFileUploadForm
-from app.productdb.models import Product, JobFile, ProductGroup
+from app.productdb.forms import ImportProductsFileUploadForm, ProductListForm
+from app.productdb.models import Product, JobFile, ProductGroup, ProductList
 from app.productdb.models import Vendor
 import app.productdb.tasks as tasks
 from django_project.celery import set_meta_data_for_task
@@ -127,6 +131,20 @@ def list_product_groups(request):
     return render(request, "productdb/product_group/list-product_groups.html", context={})
 
 
+def list_product_lists(request):
+    """
+    browse all product lists in the database
+    """
+    if login_required_if_login_only_mode(request):
+        return redirect('%s?next=%s' % (settings.LOGIN_URL, request.path))
+
+    context = {
+        "product_lists": ProductList.objects.all()
+    }
+
+    return render(request, "productdb/product_list/list-product_list.html", context=context)
+
+
 def detail_product_group(request, product_group_id=None):
     """
     detail view for a product group
@@ -135,8 +153,8 @@ def detail_product_group(request, product_group_id=None):
         return redirect('%s?next=%s' % (settings.LOGIN_URL, request.path))
 
     if not product_group_id:
-        # if product_id is set to none, redirect to the all products view
-        return redirect(reverse("productdb:all_products"))
+        # if product_group_id is set to none, redirect to the all products groups view
+        return redirect(reverse("productdb:list-product_groups"))
 
     else:
         try:
@@ -149,6 +167,63 @@ def detail_product_group(request, product_group_id=None):
     }
 
     return render(request, "productdb/product_group/detail-product_group.html", context=context)
+
+
+def share_product_list(request, product_list_id):
+    """
+    public share link that doesn't require an authentication to view the Product List
+    :param request:
+    :param product_list_id:
+    :return:
+    """
+    return detail_product_list(request, product_list_id, share_link=True)
+
+
+def detail_product_list(request, product_list_id=None, share_link=False):
+    """
+    detail view for a product list
+    :param request:
+    :param product_list_id:
+    :param share_link: will use a template that only shows the login link in the header
+    :return:
+    """
+    if login_required_if_login_only_mode(request) and not share_link:
+        return redirect('%s?next=%s' % (settings.LOGIN_URL, request.path))
+
+    if not product_list_id:
+        # view 404 if a share_link page should be rendered
+        if share_link:
+            raise Http404("Product List not found")
+
+        # if product_id is set to none, redirect to the all products view
+        return redirect(reverse("productdb:list-product_lists"))
+
+    else:
+        try:
+            pl = ProductList.objects.get(id=product_list_id)
+
+        except:
+            raise Http404("Product List with ID %s not found in database" % product_list_id)
+
+    # build share by email link content
+    share_link_url = request.get_raw_uri().split("/productdb/")[0] + \
+                     reverse("productdb:share-product_list", kwargs={"product_list_id": product_list_id})
+    share_link_content = "?Subject=" + \
+                         escape(pl.name + " - Product List") + \
+                         "&body=" + \
+                         escape("Hi,%%0D%%0Dplease take a look on the %s Product List:%%0D%%0D"
+                                "%s%%0D%%0DThank you.%%0D%%0DKind Regards,%%0D%s" % (pl.name,
+                                                                                     share_link_url,
+                                                                                     "Henry"))
+
+    context = {
+        "product_list": pl,
+        "export_description": pl.description.splitlines()[0] if len(pl.description.splitlines()) != 0 else "",
+        "share_link_content": share_link_content,
+        "share_link": False if request.user.is_authenticated() else share_link
+    }
+
+    return render(request, "productdb/product_list/detail-product_list.html", context=context)
 
 
 def view_product_details(request, product_id=None):
@@ -262,6 +337,108 @@ def bulk_eol_check(request):
             context['query_no_result'] = True
 
     return render(request, "productdb/do/bulk_eol_check.html", context=context)
+
+
+@login_required()
+@permission_required("productdb.add_product_list", raise_exception=True)
+def add_product_list(request):
+    if request.method == "POST":
+        form = ProductListForm(request.POST)
+        if form.is_valid():
+            pl = form.save(commit=False)
+            pl.update_user = request.user
+            pl.save()
+            return redirect(reverse("productdb:list-product_lists"))
+
+    else:
+        form = ProductListForm()
+
+    context = {
+        "form": form
+    }
+
+    return render(request, "productdb/product_list/add-product_list.html", context=context)
+
+
+@login_required()
+@permission_required("productdb.change_product_list", raise_exception=True)
+def edit_product_list(request, product_list_id=None):
+    pl = get_object_or_404(ProductList, id=product_list_id)
+
+    if pl.update_user != request.user:
+        messages.add_message(
+            request,
+            level=messages.WARNING,
+            message="You are not allowed to change this Product List. Only the "
+                    "original Author is allowed to perform this action."
+        )
+
+    if request.method == "POST":
+        form = ProductListForm(request.POST, instance=pl)
+        if pl.update_user != request.user:
+            messages.add_message(
+                request,
+                level=messages.ERROR,
+                message="You are not allowed to change this Product List. Only the "
+                        "original Author is allowed to perform this action."
+            )
+
+        elif form.is_valid():
+            pl = form.save(commit=False)
+            pl.update_user = request.user
+            pl.save()
+            return redirect(reverse("productdb:list-product_lists"))
+
+    else:
+        form = ProductListForm(instance=pl)
+
+    context = {
+        "product_list": pl,
+        "form": form
+    }
+
+    return render(request, "productdb/product_list/edit-product_list.html", context=context)
+
+
+@login_required()
+@permission_required("productdb.delete_product_list", raise_exception=True)
+def delete_product_list(request, product_list_id=None):
+    pl = get_object_or_404(ProductList, id=product_list_id)
+
+    if pl.update_user != request.user:
+        messages.add_message(
+            request,
+            level=messages.WARNING,
+            message="You are not allowed to change this Product List. Only the "
+                    "original Author is allowed to perform this action."
+        )
+    else:
+        messages.add_message(request, level=messages.ERROR, message="Be careful, this action cannot be undone!")
+
+    if request.method == "POST":
+        if pl.update_user != request.user:
+            messages.add_message(
+                request,
+                level=messages.ERROR,
+                message="You are not allowed to change this Product List. Only the "
+                        "original Author is allowed to perform this action."
+            )
+
+        elif request.POST.get("really_delete"):
+            pl.delete()
+            messages.add_message(
+                request,
+                level=messages.INFO,
+                message=safe("Product List <strong>%s</strong> successfully deleted." % pl.name)
+            )
+            return redirect(reverse("productdb:list-product_lists"))
+
+    context = {
+        "product_list": pl,
+    }
+
+    return render(request, "productdb/product_list/delete-product_list.html", context=context)
+
 
 
 @login_required()

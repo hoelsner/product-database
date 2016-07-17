@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from app.config.models import NotificationMessage
+from app.config.models import NotificationMessage, TextBlock
 
 
 class NotificationMessageAdmin(admin.ModelAdmin):
@@ -18,3 +18,15 @@ class NotificationMessageAdmin(admin.ModelAdmin):
     )
 
 admin.site.register(NotificationMessage, NotificationMessageAdmin)
+
+
+class TextBlockAdmin(admin.ModelAdmin):
+    list_display = (
+        'name',
+    )
+    fields = (
+        'name',
+        'html_content'
+    )
+
+admin.site.register(TextBlock, TextBlockAdmin)

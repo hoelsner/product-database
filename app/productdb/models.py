@@ -1,15 +1,18 @@
 from datetime import timedelta
 
-import reversion
 from django.conf import settings
+from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
+from django.db.models import Q
 from django.db.models.signals import pre_delete
 from django.dispatch import receiver
 from django.utils.timezone import datetime
 
 # choices for the currency
+from app.productdb.validators import validate_product_list_string
+
 CURRENCY_CHOICES = (
     ('EUR', 'Euro'),
     ('USD', 'US-Dollar'),
@@ -330,3 +333,68 @@ class Product(models.Model):
 
     class Meta:
         ordering = ('product_id',)
+
+
+class ProductList(models.Model):
+    name = models.CharField(
+        max_length=2048,
+        unique=True,
+        help_text="unique name for the product list",
+        verbose_name="Product List Name:"
+    )
+
+    string_product_list = models.TextField(
+        max_length=16384,
+        help_text="Product IDs separated by word wrap or semicolon",
+        verbose_name="Unstructured Product ID list:",
+        validators=[validate_product_list_string]
+    )
+
+    description = models.TextField(
+        max_length=4096,
+        blank=True,
+        null=True,
+        verbose_name="Description:",
+        help_text="short description what's part of this Product List"
+    )
+
+    update_date = models.DateField(
+        auto_now=True
+    )
+
+    update_user = models.ForeignKey(
+        User,
+        related_name='product_lists',
+        on_delete=models.CASCADE
+    )
+
+    def get_string_product_list_as_list(self):
+        result = []
+        for line in self.string_product_list.splitlines():
+            result += line.split(";")
+        return sorted([e.strip() for e in result])
+
+    def get_product_list_objects(self):
+        q_filter = Q()
+        for product_id in self.get_string_product_list_as_list():
+            q_filter.add(Q(product_id=product_id), Q.OR)
+
+        return Product.objects.filter(q_filter)
+
+    def save(self, **kwargs):
+        self.full_clean()
+
+        # normalize value in database and remove duplicates
+        values = self.get_string_product_list_as_list()
+        self.string_product_list = "\n".join(list(set(values)))
+
+        super(ProductList, self).save(**kwargs)
+
+    def __str__(self):
+        return self.name
+
+    def __unicode__(self):
+        return self.name
+
+    class Meta:
+        ordering = ('name',)

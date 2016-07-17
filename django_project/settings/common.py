@@ -64,11 +64,17 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'django_project.wsgi.application'
 
-LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'Europe/Berlin'
-USE_I18N = True
-USE_L10N = True
+LANGUAGE_CODE = os.getenv("PDB_LANGUAGE_CODE", "en-us")
+TIME_ZONE = os.getenv("PDB_TIME_ZONE", "Europe/Berlin")
+USE_I18N = False
+USE_L10N = False
 USE_TZ = True
+
+TIME_FORMAT = os.getenv("PDB_TIME_FORMAT", "P")
+DATE_FORMAT = os.getenv("PDB_DATE_FORMAT", "N j, Y")
+SHORT_DATE_FORMAT = os.getenv("PDB_SHORT_DATE_FORMAT", "Y-m-d")
+DATETIME_FORMAT = os.getenv("PDB_DATETIME_FORMAT", DATE_FORMAT + ", " + TIME_FORMAT)
+SHORT_DATETIME_FORMAT = os.getenv("PDB_SHORT_DATETIME_FORMAT", SHORT_DATE_FORMAT + " " + TIME_FORMAT)
 
 LOGIN_URL = "/productdb/login/"
 LOGOUT_URL = "/productdb/logout/"

@@ -45,4 +45,3 @@ def test_cisco_eox_api_access(client_id, client_secret, drop_credentials=True):
 
     except Exception as ex:
         return False, str(ex)
-
