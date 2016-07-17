@@ -81,35 +81,35 @@
                     <table class="table">
                         <tr>
                             <th>End-of-Life Announcement Date:</th>
-                            <td>{{ product.eol_ext_announcement_date|date:"Y-m-d" }}</td>
+                            <td>{{ product.eol_ext_announcement_date|date:"SHORT_DATE_FORMAT" }}</td>
                         </tr>
                         <tr>
                             <th>End-of-Sale Date:</th>
-                            <td>{{ product.end_of_sale_date|date:"Y-m-d" }}</td>
+                            <td>{{ product.end_of_sale_date|date:"SHORT_DATE_FORMAT" }}</td>
                         </tr>
                         <tr>
                             <th>End of New Service Attachment Date:</th>
-                            <td>{{ product.end_of_new_service_attachment_date|date:"Y-m-d" }}</td>
+                            <td>{{ product.end_of_new_service_attachment_date|date:"SHORT_DATE_FORMAT" }}</td>
                         </tr>
                         <tr>
                             <th>End of SW Maintenance Releases Date:</th>
-                            <td>{{ product.end_of_sw_maintenance_date|date:"Y-m-d" }}</td>
+                            <td>{{ product.end_of_sw_maintenance_date|date:"SHORT_DATE_FORMAT" }}</td>
                         </tr>
                         <tr>
                             <th>End of Routine Failure Analysis Date:</th>
-                            <td>{{ product.end_of_routine_failure_analysis|date:"Y-m-d" }}</td>
+                            <td>{{ product.end_of_routine_failure_analysis|date:"SHORT_DATE_FORMAT" }}</td>
                         </tr>
                         <tr>
                             <th>End of Service Contract Renewal Date:</th>
-                            <td>{{ product.end_of_service_contract_renewal|date:"Y-m-d" }}</td>
+                            <td>{{ product.end_of_service_contract_renewal|date:"SHORT_DATE_FORMAT" }}</td>
                         </tr>
                         <tr>
                             <th>End of Vulnerability/Security Support Date:</th>
-                            <td>{{ product.end_of_sec_vuln_supp_date|date:"Y-m-d" }}</td>
+                            <td>{{ product.end_of_sec_vuln_supp_date|date:"SHORT_DATE_FORMAT" }}</td>
                         </tr>
                         <tr>
                             <th>Last Date of Support:</th>
-                            <td>{{ product.end_of_support_date|date:"Y-m-d" }}</td>
+                            <td>{{ product.end_of_support_date|date:"SHORT_DATE_FORMAT" }}</td>
                         </tr>
                         {% if product.eol_reference_url %}
                             <tr>

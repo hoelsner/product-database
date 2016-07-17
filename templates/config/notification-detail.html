@@ -25,7 +25,7 @@
                 {% else %}
                     <i class="fa fa-comment-o media-object text-info"></i>
                 {% endif %}
-                {{ message.title }} <small>{{ message.created|date:"Y-m-d" }}</small>
+                {{ message.title }} <small>{{ message.created|date:"SHORT_DATE_FORMAT" }}</small>
             </h1>
         </div>
         {% autoescape off %}
