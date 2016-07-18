@@ -3,7 +3,6 @@ import logging
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.decorators import permission_required
-from django.contrib.auth.models import AnonymousUser
 from django.core.urlresolvers import reverse
 from django.db.models import Q
 from django.http import Http404
@@ -340,7 +339,7 @@ def bulk_eol_check(request):
 
 
 @login_required()
-@permission_required("productdb.add_product_list", raise_exception=True)
+@permission_required("productdb.add_productlist", raise_exception=True)
 def add_product_list(request):
     if request.method == "POST":
         form = ProductListForm(request.POST)
@@ -361,7 +360,7 @@ def add_product_list(request):
 
 
 @login_required()
-@permission_required("productdb.change_product_list", raise_exception=True)
+@permission_required("productdb.change_productlist", raise_exception=True)
 def edit_product_list(request, product_list_id=None):
     pl = get_object_or_404(ProductList, id=product_list_id)
 
@@ -401,7 +400,7 @@ def edit_product_list(request, product_list_id=None):
 
 
 @login_required()
-@permission_required("productdb.delete_product_list", raise_exception=True)
+@permission_required("productdb.delete_productlist", raise_exception=True)
 def delete_product_list(request, product_list_id=None):
     pl = get_object_or_404(ProductList, id=product_list_id)
 
@@ -438,7 +437,6 @@ def delete_product_list(request, product_list_id=None):
     }
 
     return render(request, "productdb/product_list/delete-product_list.html", context=context)
-
 
 
 @login_required()

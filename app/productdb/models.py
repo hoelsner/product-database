@@ -56,6 +56,8 @@ class Vendor(models.Model):
         super().delete(using)
 
     class Meta:
+        verbose_name = "vendor"
+        verbose_name_plural = "vendors"
         ordering = ('name',)
 
 
@@ -111,6 +113,8 @@ class ProductGroup(models.Model):
         return self.name
 
     class Meta:
+        verbose_name = "product group"
+        verbose_name_plural = "product groups"
         unique_together = ("name", "vendor")
 
 
@@ -332,6 +336,8 @@ class Product(models.Model):
                 })
 
     class Meta:
+        verbose_name = "product"
+        verbose_name_plural = "products"
         ordering = ('product_id',)
 
 
@@ -397,4 +403,6 @@ class ProductList(models.Model):
         return self.name
 
     class Meta:
+        verbose_name = "product list"
+        verbose_name_plural = "product lists"
         ordering = ('name',)

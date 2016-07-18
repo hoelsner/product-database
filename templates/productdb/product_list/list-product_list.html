@@ -106,7 +106,7 @@
                 },
                 stateSave: true,
                 buttons: [
-                    {% if perms.productdb.add_product_list %}
+                    {% if perms.productdb.add_productlist %}
                         {
                             text: "Add New",
                             className: "btn-success",
@@ -115,7 +115,7 @@
                             }
                         },
                     {% endif %}
-                    {% if perms.productdb.edit_product_list %}
+                    {% if perms.productdb.change_productlist %}
                         {
                             text: "Edit Selected",
                             className: "btn-primary",
@@ -127,7 +127,7 @@
                             }
                         },
                     {% endif %}
-                    {% if perms.productdb.delete_product_list %}
+                    {% if perms.productdb.delete_productlist %}
                         {
                             text: "Delete Selected",
                             className: "btn-danger",
