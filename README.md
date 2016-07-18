@@ -1,37 +1,17 @@
 
 # Product Database
 
-*Version 0.3 (development) - see [Changelog](CHANGELOG.md) for details*
+*Version 0.3 - see [Changelog](CHANGELOG.md) for details*
 
 This version is currently in development and contains multiple major changes to the underlying operating system and the
 application . **Please note that an update path from Version 0.2 is not maintained.**
 
-The following new features are planned/implemented:
-
-* ~~change OS to Ubuntu 16.04 and to Django 1.9/Python 3.5~~
-* ~~support of the Cisco EoX API Version 5.0~~
-* ~~remove the Cisco Hello API dependency~~
-* ~~new user interface~~
-* ~~central notification panel~~
-* ~~LDAP authentication backend~~
-* ~~implement process based import function (remove the 20000 entry limit)~~
-* add Product Groups
-* save/provide Product Migration details from the Cisco EoX API
-* add lifecycle data to the import product function
-* add Slack notifications to send messages about the status of the Product Database (errors, crawler execution results...)
-* implement process based Bulk-EoL check function and store the results in the database
-* additional data from Cisco Product Information API (e.g. the Product Group, link to the support page etc.)
-* add web scraping component
-
-----
-
-This web service provides a central point of management for product information, which is targeted primarily
-for network products. It currently focuses on the following use cases:
+This web service provides a central point of management for product information, which targets primarily
+network products. It currently focuses on the following use cases:
 
 * automatic check of lifecycle states for a list of products against the local database (bulk EoL check)
-* REST API access to a central database which holds information about products from network vendors
-* import products using an Excel template (limited to 20000 records per Excel file)
-* easy setup on a single Linux Server using Ansible
+* REST API access to a central database which holds information about products from network vendors/manufacturers
+* import data using Excel
 
 This web service is based on python 3.5.1 and Django 1.9. A detailed list with all dependencies is available in the
 `requirements.txt` file.
