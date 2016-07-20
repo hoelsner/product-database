@@ -411,6 +411,21 @@ class TestBaseExcelImport(TestCase):
         self.assertEqual("http://localhost", lc_product.eol_reference_url)
         self.assertEqual("comment", lc_product.eol_reference_number)
 
+    def test_ignore_list_price_by_excel_upload_with_separate_currency_column(self):
+        lc_product_id = "WS-C2960S-48FPD-L"
+        lc_product = Product.objects.create(product_id=lc_product_id)
+        lc_product.list_price = 1.0
+        lc_product.currency = "EUR"
+        lc_product.save()
+
+        _ = self.prepare_import_products_excel_file("excel_import_products_test-without_list_prices.xlsx")
+
+        # verify the lifecycle information for the test products
+        lc_product = Product.objects.get(product_id=lc_product_id)
+
+        self.assertEqual(1.0, lc_product.list_price)
+        self.assertEqual("EUR", lc_product.currency)
+
     def test_change_product_list_price_by_excel_upload_with_separate_currency_column(self):
         lc_product_id = "WS-C2960S-48FPD-L"
         lc_product = Product.objects.create(product_id=lc_product_id)

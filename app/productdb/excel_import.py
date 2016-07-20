@@ -234,12 +234,13 @@ class ImportProductsExcelFile:
                                 raise Exception("cannot set currency unknown value %s" % row[row_key].upper())
 
                     # apply the new list price and currency if required
-                    if p.list_price != new_price:
-                        p.list_price = new_price
-                        changed = True
-                    if p.currency != new_currency:
-                        p.currency = new_currency
-                        changed = True
+                    if new_price:
+                        if p.list_price != new_price:
+                            p.list_price = new_price
+                            changed = True
+                        if p.currency != new_currency:
+                            p.currency = new_currency
+                            changed = True
 
                     # set vendor to unassigned (ID 0) if no Vendor is provided and the product was created
                     row_key = "vendor"
