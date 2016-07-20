@@ -404,16 +404,6 @@ def edit_product_list(request, product_list_id=None):
 def delete_product_list(request, product_list_id=None):
     pl = get_object_or_404(ProductList, id=product_list_id)
 
-    if pl.update_user != request.user:
-        messages.add_message(
-            request,
-            level=messages.WARNING,
-            message="You are not allowed to change this Product List. Only the "
-                    "original Author is allowed to perform this action."
-        )
-    else:
-        messages.add_message(request, level=messages.ERROR, message="Be careful, this action cannot be undone!")
-
     if request.method == "POST":
         if pl.update_user != request.user:
             messages.add_message(
@@ -431,6 +421,16 @@ def delete_product_list(request, product_list_id=None):
                 message=safe("Product List <strong>%s</strong> successfully deleted." % pl.name)
             )
             return redirect(reverse("productdb:list-product_lists"))
+
+    if pl.update_user != request.user:
+        messages.add_message(
+            request,
+            level=messages.WARNING,
+            message="You are not allowed to change this Product List. Only the "
+                    "original Author is allowed to perform this action."
+        )
+    else:
+        messages.add_message(request, level=messages.ERROR, message="Be careful, this action cannot be undone!")
 
     context = {
         "product_list": pl,
