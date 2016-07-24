@@ -1,4 +1,5 @@
 {% extends '_base/page-with_nav-single_row.html' %}
+{% load bootstrap3 %}
 
 {% block title %}
     Status - Product Database
@@ -9,6 +10,8 @@
         <div class="page-header">
             <h1>Product Database <small>Status </small></h1>
         </div>
+
+        {% bootstrap_messages %}
 
         <div class="panel panel-default">
             <div class="panel-heading">

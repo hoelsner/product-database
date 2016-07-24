@@ -129,6 +129,7 @@ class DestructiveProductDbFunctionalTest(FunctionalTest):
         u.save()
         u = User(username='api')
         u.set_password('api')
+        u.email = "api@localhost.localhost"
         u.is_superuser = False
         u.is_staff = False
         u.save()

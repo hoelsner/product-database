@@ -1,0 +1,50 @@
+{% extends '_base/page-with_nav-single_row.html' %}
+{% load staticfiles %}
+{% load bootstrap3 %}
+
+{% block title %}
+    Edit User Profile - Product Database
+{% endblock %}
+
+{% block page_content %}
+    <div class="col-md-6 col-md-offset-3">
+        <div class="page-header">
+            <h1>
+                <i class="fa fa-wrench"></i>&nbsp;
+                Edit User Profile
+                <small>
+                    {{ product_list.name }}
+                    <a href="{{ back_to }}" data-toggle="tooltip" title="back to previous page"><i class="fa fa-chevron-circle-left" aria-hidden="true"></i></a>
+                </small>
+            </h1>
+        </div>
+        {% bootstrap_messages %}
+        <form method="post" class="form">
+            {% csrf_token %}
+
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3 class="panel-title">Personal Data</h3>
+                </div>
+                <div class="panel-body">
+                    {% bootstrap_field form.email layout="horizontal"  %}
+                </div>
+            </div>
+
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                     <h3 class="panel-title">User Interface Settings</h3>
+                </div>
+                <div class="panel-body">
+                    {% bootstrap_field form.preferred_vendor layout="horizontal" %}
+                </div>
+            </div>
+
+            {% buttons %}
+                <button type="submit" class="btn btn-block btn-primary" id="submit">
+                    Save
+                </button>
+            {% endbuttons %}
+        </form>
+    </div>
+{% endblock %}

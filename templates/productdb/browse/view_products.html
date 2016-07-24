@@ -1,5 +1,6 @@
 {% extends '_base/page-with_nav-single_row.html' %}
 {% load staticfiles %}
+{% load bootstrap3 %}
 
 {% block title %}
     All Products - Product Database
@@ -12,6 +13,9 @@
             All Products
         </h1>
     </div>
+
+    {% bootstrap_messages %}
+
     <p>
         On this page, you can view all products that are stored in the database.
         <a href="javascript:browse_all_database_help()"><i class="fa fa-info-circle"></i> Click here</a> to get a quick introduction.

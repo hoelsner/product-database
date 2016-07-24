@@ -1,5 +1,5 @@
 - fields:
-    email: ''
+    email: 'admin@localhost.localhost'
     first_name: ''
     groups: []
     is_active: true
@@ -12,7 +12,7 @@
   model: auth.user
   pk: 1
 - fields:
-    email: ''
+    email: 'api@localhost.localhost'
     first_name: ''
     groups: []
     is_active: true

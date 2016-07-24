@@ -5,7 +5,7 @@ from django.test import TestCase
 from app.productdb.models import ProductList, Product, Vendor
 
 
-class ProductListViewTests(TestCase):
+class ProductListViewTest(TestCase):
     fixtures = ["default_users.yaml", "default_vendors.yaml"]
 
     def test_share_product_list_link(self):
@@ -111,3 +111,19 @@ class ProductListViewTests(TestCase):
         msg = "Product List <strong>%s</strong> successfully deleted." % pl.name
         self.assertIn(msg, response.content.decode("utf-8"))
         self.assertEqual(0, ProductList.objects.all().count())
+
+
+class UserProfileViewTest(TestCase):
+    fixtures = ["default_users.yaml", "default_vendors.yaml"]
+
+    def test_user_profile_edit_with_unauthenticated_user(self):
+        response = self.client.get(reverse("productdb:edit-user_profile"), follow=True)
+        self.assertEqual(response.status_code, 200, "should redirect to login page")
+        self.assertIn("Please enter your credentials below.", response.content.decode("utf-8"))
+        self.assertEqual(('/productdb/login/?next=/productdb/profile/edit/', 302), response.redirect_chain[0])
+
+    def test_user_profile_edit_with_authenticated_user(self):
+        self.client.login(username="api", password="api")
+        response = self.client.get(reverse("productdb:edit-user_profile"))
+        self.assertEqual(response.status_code, 200, "should view the edit page")
+        self.assertIn("Edit User Profile", response.content.decode("utf-8"))

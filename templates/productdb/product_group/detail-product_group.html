@@ -1,5 +1,6 @@
 {% extends '_base/page-with_nav-single_row.html' %}
 {% load staticfiles %}
+{% load bootstrap3 %}
 
 {% block title %}
     Product Group details for {{ product_group.name }}
@@ -9,6 +10,8 @@
     <div class="page-header">
         <h1>{{ product_group.name }} <small>Product Group details</small></h1>
     </div>
+
+    {% bootstrap_messages %}
 
     <dl class="dl-horizontal">
         <dt>Vendor:</dt>

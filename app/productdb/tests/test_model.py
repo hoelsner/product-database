@@ -208,7 +208,7 @@ class ProductDataModelTest(TestCase):
 
 
 class ProductListModelTest(TestCase):
-    fixtures = ["default_users.yaml"]
+    fixtures = ["default_vendors.yaml", "default_users.yaml"]
 
     def test_product_list_with_valid_product_list_string(self):
         test_pid_list = sorted([
@@ -251,3 +251,19 @@ class ProductListModelTest(TestCase):
                                        string_product_list=";".join(test_pid_list),
                                        update_user=User.objects.get(username='pdb_admin'))
 
+
+class UserProfileModelTest(TestCase):
+    fixtures = ["default_vendors.yaml"]
+
+    def test_user_with_no_user_profile_defined(self):
+        """
+        test the auto-create function of a user profile if it doesn't already exist in the database
+        :return:
+        """
+        admin_user = User.objects.create_user(username="pdb_admin", password="pdb_admin", email="admin@local.local")
+        admin_user.save()
+
+        self.assertIsNotNone(admin_user.profile)
+
+        # verify defaults
+        self.assertEqual(admin_user.profile.preferred_vendor.name, "Cisco Systems")

@@ -1,4 +1,5 @@
 {% extends '_base/page-with_nav-single_row.html' %}
+{% load bootstrap3 %}
 
 {% block title %}
     Message {{ message.title }} - Product Database
@@ -28,6 +29,9 @@
                 {{ message.title }} <small>{{ message.created|date:"SHORT_DATE_FORMAT" }}</small>
             </h1>
         </div>
+
+        {% bootstrap_messages %}
+
         {% autoescape off %}
         {{ message.summary_message }}
         <hr>

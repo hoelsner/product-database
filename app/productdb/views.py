@@ -3,6 +3,7 @@ import logging
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.decorators import permission_required
+from django.core.exceptions import PermissionDenied
 from django.core.urlresolvers import reverse
 from django.db.models import Q
 from django.http import Http404
@@ -14,8 +15,8 @@ from django.contrib import messages
 
 from app.config.models import NotificationMessage, TextBlock
 from app.productdb import utils as app_util
-from app.productdb.forms import ImportProductsFileUploadForm, ProductListForm
-from app.productdb.models import Product, JobFile, ProductGroup, ProductList
+from app.productdb.forms import ImportProductsFileUploadForm, ProductListForm, UserProfileForm
+from app.productdb.models import Product, JobFile, ProductGroup, ProductList, UserProfile
 from app.productdb.models import Vendor
 import app.productdb.tasks as tasks
 from django_project.celery import set_meta_data_for_task
@@ -97,7 +98,12 @@ def browse_vendor_products(request):
     if request.method == "POST":
         selected_vendor = request.POST['vendor_selection']
     else:
-        default_vendor = "Cisco Systems"
+        if request.user.is_authenticated():
+            default_vendor = request.user.profile.preferred_vendor.name
+
+        else:
+            default_vendor = "Cisco Systems"
+
         for vendor in context['vendors']:
             if vendor.name == default_vendor:
                 selected_vendor = vendor.id
@@ -486,3 +492,35 @@ def import_products(request):
     context['form'] = form
 
     return render(request, "productdb/import/import_products.html", context=context)
+
+
+@login_required()
+def edit_user_profile(request):
+    if not request.user.is_authenticated():
+        raise PermissionDenied
+
+    up, _ = UserProfile.objects.get_or_create(user=request.user)
+    back_to = request.GET.get("back_to") if request.GET.get("back_to") else reverse("productdb:home")
+
+    if request.method == "POST":
+        form = UserProfileForm(request.POST, instance=up)
+
+        if form.is_valid():
+            form.save()
+
+            request.user.email = form.cleaned_data.get("email")
+            request.user.save()
+
+            messages.add_message(request, messages.INFO, "User Profile successful updated")
+
+            return redirect(back_to) if back_to else redirect(reverse("productdb:home"))
+
+    else:
+        form = UserProfileForm(instance=up, initial={"email": request.user.email})
+
+    context = {
+        "form": form,
+        "back_to": back_to
+    }
+
+    return render(request, "productdb/user_profile/edit-user_profile.html", context=context)

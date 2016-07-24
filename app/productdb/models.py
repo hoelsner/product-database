@@ -1,12 +1,12 @@
 from datetime import timedelta
-
+from django.contrib.auth.models import User
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import Q
-from django.db.models.signals import pre_delete
+from django.db.models.signals import pre_delete, post_save
 from django.dispatch import receiver
 from django.utils.timezone import datetime
 
@@ -406,3 +406,27 @@ class ProductList(models.Model):
         verbose_name = "product list"
         verbose_name_plural = "product lists"
         ordering = ('name',)
+
+
+class UserProfile(models.Model):
+    user = models.OneToOneField(User, related_name='profile')
+
+    preferred_vendor = models.ForeignKey(
+        Vendor,
+        blank=False,
+        null=False,
+        default=1,
+        verbose_name="preferred vendor",
+        help_text="vendor that is selected by default in all vendor specific views",
+        on_delete=models.SET_DEFAULT
+    )
+
+    def __str__(self):
+        return "User Profile for %s" % self.user.username
+
+
+@receiver(post_save, sender=User)
+def create_user_profile_if_not_exist(sender, instance, **kwargs):
+    if UserProfile.objects.filter(user=instance).count() < 1:
+        # create new user profile with default options
+        UserProfile.objects.create(user=instance)

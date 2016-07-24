@@ -155,6 +155,13 @@
                                 </li>
                             {% endif %}
                             <li role="presentation">
+                                <a href="{% url 'productdb:edit-user_profile' %}?back_to={{ request.path|urlencode }}" id="navbar_loggedin_user_profile" id="navbar_loggedin_user_settings">
+                                    <i class="fa fa-wrench"></i>&nbsp;&nbsp;
+                                    User Settings
+                                </a>
+                            </li>
+                            <li role="presentation" class="divider"></li>
+                            <li role="presentation">
                                 <a href="{% url 'logout' %}" id="navbar_loggedin_logout">
                                     <i class="fa fa-sign-out"></i>&nbsp;&nbsp;
                                     Logout

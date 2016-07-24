@@ -1,5 +1,6 @@
 {% extends '_base/page-with_nav-single_row.html' %}
 {% load staticfiles %}
+{% load bootstrap3 %}
 
 {% block title %}
     Cisco EoX query - Product Database
@@ -9,6 +10,8 @@
     <div class="page-header">
         <h1>Manual Cisco EoX API query</h1>
     </div>
+
+    {% bootstrap_messages %}
 
     <p>Please note: This tool is primary for testing and debugging purpose.</p>
 

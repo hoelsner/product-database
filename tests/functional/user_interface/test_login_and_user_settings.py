@@ -1,5 +1,8 @@
 from django.core.urlresolvers import reverse
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support.select import Select
 
+from app.productdb.models import Vendor
 from tests.base.django_test_cases import DestructiveProductDbFunctionalTest
 from django.test import override_settings
 
@@ -125,3 +128,127 @@ class LoginOnlyModeTest(DestructiveProductDbFunctionalTest):
         self.browser.find_element_by_id("id_login_only_mode").click()
         self.browser.find_element_by_id("submit").click()
         self.assertIn("Settings saved successfully", self.browser.find_element_by_tag_name("body").text)
+
+
+@override_settings(DEMO_MODE=True)
+class UserProfileTest(DestructiveProductDbFunctionalTest):
+    fixtures = ['default_vendors.yaml', 'default_text_blocks.yaml']
+
+    def test_preferred_vendor_user_profile(self):
+        default_vendor = Vendor.objects.get(id=1).name
+
+        self.browser.get(self.server_url + reverse("productdb:home"))
+        self.browser.implicitly_wait(3)
+
+        # verify the vendor selection if the user is not logged in
+        self.browser.find_element_by_id("nav_browse").click()
+        self.browser.find_element_by_id("nav_browse_all_vendor_products").click()
+        self.assertIn(
+            "Browse Products by Vendor",
+            self.browser.find_element_by_class_name("page-header").text,
+            "should view the Browse Product by Vendor page"
+        )
+
+        # login
+        self.browser.find_element_by_id("navbar_login").click()
+        self.assertIn(
+            "Please enter your credentials below.",
+            self.browser.find_element_by_tag_name("body").text,
+            "should view the login page"
+        )
+
+        homepage_message = "Browse Products by Vendor"
+        self.handle_login_dialog(
+            self.API_USERNAME,
+            self.API_PASSWORD,
+            homepage_message
+        )
+
+        # verify the selected default vendor
+        pref_vendor_select = self.browser.find_element_by_id("vendor_selection")
+        self.assertIn(default_vendor, pref_vendor_select.text)
+
+        # view the edit settings page
+        self.browser.find_element_by_id("navbar_loggedin").click()
+        self.browser.find_element_by_id("navbar_loggedin_user_profile").click()
+        self.assertIn(
+            "Edit User Profile",
+            self.browser.find_element_by_tag_name("body").text,
+            "should view the Edit User Profile page"
+        )
+
+        # verify that the vendor with the ID 1 is selected
+        pref_vendor_select = self.browser.find_element_by_id("id_preferred_vendor")
+        self.assertIn(default_vendor, pref_vendor_select.text)
+        pref_vendor_select = Select(pref_vendor_select)
+
+        # change the vendor selection
+        changed_vendor_name = "Juniper Networks"
+        pref_vendor_select.select_by_visible_text(changed_vendor_name)
+        self.browser.find_element_by_id("submit").send_keys(Keys.ENTER)
+
+        # redirect to the Browse Products by Vendor
+        self.assertIn(
+            "Browse Products by Vendor",
+            self.browser.find_element_by_class_name("page-header").text,
+            "should view the Browse Product by Vendor page"
+        )
+
+        # verify that the new default vendor is selected
+        pref_vendor_select = self.browser.find_element_by_id("vendor_selection")
+        self.assertIn(changed_vendor_name, pref_vendor_select.text)
+
+    def test_email_change_in_user_profile(self):
+        self.browser.get(self.server_url + reverse("productdb:home"))
+        self.browser.implicitly_wait(3)
+
+        # login
+        self.browser.find_element_by_id("navbar_login").click()
+        self.assertIn(
+            "Please enter your credentials below.",
+            self.browser.find_element_by_tag_name("body").text,
+            "should view the login page"
+        )
+
+        homepage_message = "This database contains information about network equipment like routers and switches " \
+                           "from multiple vendors."
+        self.handle_login_dialog(
+            self.API_USERNAME,
+            self.API_PASSWORD,
+            homepage_message
+        )
+
+        # view the edit settings page
+        self.browser.find_element_by_id("navbar_loggedin").click()
+        self.browser.find_element_by_id("navbar_loggedin_user_profile").click()
+        self.assertIn(
+            "api@localhost.localhost",
+            self.browser.find_element_by_id("id_email").get_attribute('value')
+        )
+
+        # change email
+        new_email = "a@b.com"
+        self.browser.find_element_by_id("id_email").clear()
+        self.browser.find_element_by_id("id_email").send_keys(new_email)
+        self.browser.find_element_by_id("submit").click()
+
+        # verify redirect to homepage
+        self.assertIn(
+            homepage_message,
+            self.browser.find_element_by_tag_name("body").text,
+            "should view the homepage after save"
+        )
+        self.assertIn(
+            "User Profile successful updated",
+            self.browser.find_element_by_tag_name("body").text,
+            "should view a message that the user profile was saved"
+        )
+
+        # verify new value in email address
+        self.browser.find_element_by_id("navbar_loggedin").click()
+        self.browser.find_element_by_id("navbar_loggedin_user_profile").click()
+        self.assertIn(
+            new_email,
+            self.browser.find_element_by_id("id_email").get_attribute('value'),
+            "show view the correct email address of the user (%s)" % new_email
+        )

@@ -1,4 +1,5 @@
 {% extends '_base/page-with_nav-single_row.html' %}
+{% load bootstrap3 %}
 
 {% block title %}
     Notification Messages - Product Database
@@ -9,6 +10,9 @@
         <div class="page-header">
             <h1>Notification Messages</h1>
         </div>
+
+        {% bootstrap_messages %}
+
         {% if recent_events|length == 0 %}
             <p>There are currently no notification messages on the server.</p>
         {% else %}

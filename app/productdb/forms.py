@@ -2,9 +2,20 @@ import tempfile
 import logging
 from django import forms
 from app.productdb.excel_import import ImportProductsExcelFile, InvalidImportFormatException, InvalidExcelFileFormat
-from app.productdb.models import ProductList
+from app.productdb.models import ProductList, UserProfile
 
 logger = logging.getLogger("app.productdb.forms")
+
+
+class UserProfileForm(forms.ModelForm):
+    email = forms.EmailField(
+        label="Contact eMail:",
+        help_text="eMail address that is associated to your account"
+    )
+
+    class Meta:
+        model = UserProfile
+        fields = ['preferred_vendor']
 
 
 class ProductListForm(forms.ModelForm):
