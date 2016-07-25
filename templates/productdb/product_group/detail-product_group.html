@@ -8,7 +8,15 @@
 
 {% block page_content %}
     <div class="page-header">
-        <h1>{{ product_group.name }} <small>Product Group details</small></h1>
+        <h1>
+            {{ product_group.name }}
+            <small>
+                Product Group details
+                <a href="{{ back_to }}" data-toggle="tooltip" id="_back" title="back to previous page">
+                    <i class="fa fa-chevron-circle-left" aria-hidden="true"></i>
+                </a>
+            </small>
+        </h1>
     </div>
 
     {% bootstrap_messages %}
@@ -102,7 +110,7 @@
                         "searchable": true,
                         "render": function ( data, type, row ) {
                             if (data != null) {
-                                return '<a href="{% url 'productdb:product-list' %}' + row["id"] + '/">' + row['product_id'] + '</a>';
+                                return '<a href="{% url 'productdb:product-list' %}' + row["id"] + '/?back_to={{ request.get_full_path|urlencode }}">' + row['product_id'] + '</a>';
                             }
                             else {
                                 return ""

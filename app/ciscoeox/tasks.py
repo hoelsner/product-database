@@ -195,7 +195,7 @@ def execute_task_to_synchronize_cisco_eox_states(self, ignore_periodic_sync_flag
                         summary_html += "<strong>%d</strong> products are ignored." % blist_counter
 
                     # show the executed queries in the summary message
-                    summary_html += " The following queries was executed: %s" % ", ".join(
+                    summary_html += " The following queries were executed: %s" % ", ".join(
                         ["<code>%s</code>" % query for query in queries]
                     )
 

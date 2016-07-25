@@ -19,7 +19,7 @@
                 {% endif %}
                 <a href="mailto:{{ share_link_content|safe }}" data-toggle="tooltip" title="share by e-Mail"><i class="fa fa-envelope" aria-hidden="true"></i></a>
                 {% if not share_link %}
-                    <a href="javascript:window.location.href=document.referrer;" data-toggle="tooltip" id="_back" title="back to previous page">
+                    <a href="{{ back_to }}" data-toggle="tooltip" id="_back" title="back to previous page">
                         <i class="fa fa-chevron-circle-left" aria-hidden="true"></i>
                     </a>
                 {% endif %}
@@ -77,14 +77,14 @@
                             {% if share_link %}
                                 {{ product.product_id }}
                             {% else %}
-                                <a href="{% url 'productdb:product-detail' product_id=product.id %}">{{ product.product_id }}</a>
+                                <a href="{% url 'productdb:product-detail' product_id=product.id %}?back_to={{ request.get_full_path|urlencode }}">{{ product.product_id }}</a>
                             {% endif %}
                         </td>
                         <td>
                             {% if share_link %}
                                 {{ product.product_group.name }}
                             {% else %}
-                                <a href="{% url 'productdb:detail-product_group' %}">{{ product.product_group.name }}</a>
+                                <a href="{% url 'productdb:detail-product_group' product_group_id=product.product_group.id %}?back_to={{ request.get_full_path|urlencode }}">{{ product.product_group.name }}</a>
                             {% endif %}
                         </td>
                         <td>{{ product.description }}</td>

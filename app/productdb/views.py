@@ -168,7 +168,8 @@ def detail_product_group(request, product_group_id=None):
             raise Http404("Product Group with ID %s not found in database" % product_group_id)
 
     context = {
-        "product_group": pg
+        "product_group": pg,
+        "back_to": request.GET.get("back_to") if request.GET.get("back_to") else reverse("productdb:list-product_groups")
     }
 
     return render(request, "productdb/product_group/detail-product_group.html", context=context)
@@ -225,7 +226,8 @@ def detail_product_list(request, product_list_id=None, share_link=False):
         "product_list": pl,
         "export_description": pl.description.splitlines()[0] if len(pl.description.splitlines()) != 0 else "",
         "share_link_content": share_link_content,
-        "share_link": False if request.user.is_authenticated() else share_link
+        "share_link": False if request.user.is_authenticated() else share_link,
+        "back_to": request.GET.get("back_to") if request.GET.get("back_to") else reverse("productdb:list-product_lists")
     }
 
     return render(request, "productdb/product_list/detail-product_list.html", context=context)
@@ -249,7 +251,8 @@ def view_product_details(request, product_id=None):
             raise Http404("Product with ID %s not found in database" % product_id)
 
     context = {
-        "product": p
+        "product": p,
+        "back_to": request.GET.get("back_to") if request.GET.get("back_to") else reverse("productdb:all_products")
     }
 
     return render(request, "productdb/browse/product_detail.html", context=context)
@@ -359,7 +362,8 @@ def add_product_list(request):
         form = ProductListForm()
 
     context = {
-        "form": form
+        "form": form,
+        "back_to": request.GET.get("back_to") if request.GET.get("back_to") else reverse("productdb:list-product_lists")
     }
 
     return render(request, "productdb/product_list/add-product_list.html", context=context)
@@ -397,9 +401,12 @@ def edit_product_list(request, product_list_id=None):
     else:
         form = ProductListForm(instance=pl)
 
+    default_back_to = reverse("productdb:detail-product_list", kwargs={"product_list_id": product_list_id})
+    back_to = request.GET.get("back_to") if request.GET.get("back_to") else default_back_to
     context = {
         "product_list": pl,
-        "form": form
+        "form": form,
+        "back_to": back_to
     }
 
     return render(request, "productdb/product_list/edit-product_list.html", context=context)
@@ -440,6 +447,7 @@ def delete_product_list(request, product_list_id=None):
 
     context = {
         "product_list": pl,
+        "back_to": request.GET.get("back_to") if request.GET.get("back_to") else reverse("productdb:list-product_lists")
     }
 
     return render(request, "productdb/product_list/delete-product_list.html", context=context)

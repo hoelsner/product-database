@@ -1,8 +1,32 @@
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.test import TestCase
+from django.utils.encoding import escape_uri_path
 
-from app.productdb.models import ProductList, Product, Vendor
+from app.productdb.models import ProductList, Product, Vendor, ProductGroup
+
+
+def test_backlink_on_page(url, default_back_to_url, test_obj):
+    # verify custom back to link
+    home_url = "this_is_a_custom_backlink_that_must be part of the page"
+    response = test_obj.client.get(url + "?back_to=" + escape_uri_path(home_url))
+
+    test_obj.assertEqual(response.status_code, 200)
+    test_obj.assertIn(
+        "href=\"%s\"" % home_url,
+        response.content.decode("utf-8"),
+        "page should contain the specified link"
+    )
+
+    # verify default back to link
+    response = test_obj.client.get(url)
+
+    test_obj.assertEqual(response.status_code, 200)
+    test_obj.assertIn(
+        "href=\"%s\"" % default_back_to_url,
+        response.content.decode("utf-8"),
+        "page should contain the specified link"
+    )
 
 
 class ProductListViewTest(TestCase):
@@ -112,6 +136,43 @@ class ProductListViewTest(TestCase):
         self.assertIn(msg, response.content.decode("utf-8"))
         self.assertEqual(0, ProductList.objects.all().count())
 
+    def test_back_to_links_in_product_list_objects(self):
+        Product.objects.create(product_id="Product ID")
+        pl = ProductList.objects.create(
+            name="Product List",
+            description="",
+            string_product_list="Product ID",
+            update_user=User.objects.get(username="api")
+        )
+
+        # possible without authentication
+        test_backlink_on_page(
+            url=reverse("productdb:detail-product_list", kwargs={"product_list_id": pl.id}),
+            default_back_to_url=reverse("productdb:list-product_lists"),
+            test_obj=self
+        )
+
+        # permissions required
+        self.client.login(username="pdb_admin", password="pdb_admin")
+
+        test_backlink_on_page(
+            url=reverse("productdb:add-product_list"),
+            default_back_to_url=reverse("productdb:list-product_lists"),
+            test_obj=self
+        )
+
+        test_backlink_on_page(
+            url=reverse("productdb:edit-product_list", kwargs={"product_list_id": pl.id}),
+            default_back_to_url=reverse("productdb:list-product_lists"),
+            test_obj=self
+        )
+
+        test_backlink_on_page(
+            url=reverse("productdb:delete-product_list", kwargs={"product_list_id": pl.id}),
+            default_back_to_url=reverse("productdb:list-product_lists"),
+            test_obj=self
+        )
+
 
 class UserProfileViewTest(TestCase):
     fixtures = ["default_users.yaml", "default_vendors.yaml"]
@@ -127,3 +188,29 @@ class UserProfileViewTest(TestCase):
         response = self.client.get(reverse("productdb:edit-user_profile"))
         self.assertEqual(response.status_code, 200, "should view the edit page")
         self.assertIn("Edit User Profile", response.content.decode("utf-8"))
+
+
+class ProductViewTest(TestCase):
+    fixtures = ["default_users.yaml", "default_vendors.yaml"]
+
+    def test_back_to_link_in_product_group_detail_view(self):
+        p = Product.objects.create(product_id="Test")
+
+        test_backlink_on_page(
+            url=reverse("productdb:product-detail", kwargs={"product_id": p.id}),
+            default_back_to_url=reverse("productdb:all_products"),
+            test_obj=self
+        )
+
+
+class ProductGroupViewTest(TestCase):
+    fixtures = ["default_users.yaml", "default_vendors.yaml"]
+
+    def test_back_to_link_in_product_group_detail_view(self):
+        pg = ProductGroup.objects.create(name="Test")
+
+        test_backlink_on_page(
+            url=reverse("productdb:detail-product_group", kwargs={"product_group_id": pg.id}),
+            default_back_to_url=reverse("productdb:list-product_groups"),
+            test_obj=self
+        )
