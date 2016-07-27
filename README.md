@@ -1,7 +1,10 @@
 
 # Product Database
 
-*Version 0.3 - see [Changelog](CHANGELOG.md) for details*
+*Version 0.4 (development) - see [Changelog](CHANGELOG.md) for details*
+
+**This is the Product Database development branch. I recommend to use the latest [stable version 0.3](https://github.com/hoelsner/product-database/tree/v0.3) 
+for production.**
 
 This version is currently in development and contains multiple major changes to the underlying operating system and the
 application . **Please note that an update path from Version 0.2 is not maintained.**

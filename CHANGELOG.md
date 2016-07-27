@@ -1,5 +1,10 @@
 # changelog
 
+## Version 0.4
+
+* add User Profile settings (change eMail and preferred vendor)
+* search function now configurable (like or regular expressions) - see [issue #3](https://github.com/hoelsner/product-database/issues/3)
+
 ## Version 0.3
 
 * complete redesign of the user interface
