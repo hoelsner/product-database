@@ -22,30 +22,31 @@
             <a href="javascript:browse_database_by_vendor_help()"><i class="fa fa-info-circle"></i> Click here</a> to get a quick introduction.
             You can also search within the <a href="{% url 'productdb:all_products' %}"><i class="fa fa-search"></i>&nbsp;entire database</a>.
         </p>
-            <div style="text-align: center;">
-                <form class="form form-inline" method="post" id="select_vendor_form">
-                    {% csrf_token %}
-                    <div class="form-group">
-                        <label for="vendor_selection">Vendor: </label>
-                        <select class="form-control" id="vendor_selection" name="vendor_selection">
-                        {% for ven in vendors %}
-                            {% if vendor_selection %}
-                                {% ifequal ven.id|add:"0" vendor_selection|add:"0" %}
-                                <option value="{{ ven.id }}" selected>{{ ven.name }}</option>
-                                {% else %}
-                                <option value="{{ ven.id }}">{{ ven.name }}</option>
-                                {% endifequal %}
+        {% include "productdb/_components/search_function_info_with_config_link.html" %}
+        <div style="text-align: center;">
+            <form class="form form-inline" method="post" id="select_vendor_form">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="vendor_selection">Vendor: </label>
+                    <select class="form-control" id="vendor_selection" name="vendor_selection">
+                    {% for ven in vendors %}
+                        {% if vendor_selection %}
+                            {% ifequal ven.id|add:"0" vendor_selection|add:"0" %}
+                            <option value="{{ ven.id }}" selected>{{ ven.name }}</option>
                             {% else %}
-                                <option value="{{ ven.id }}">{{ ven.name }}</option>
-                            {% endif %}
-                        {% endfor %}
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <input class="btn btn-primary" type="submit" id="submit" value="view products for the selected vendor" />
-                    </div>
-                </form>
-            </div>
+                            <option value="{{ ven.id }}">{{ ven.name }}</option>
+                            {% endifequal %}
+                        {% else %}
+                            <option value="{{ ven.id }}">{{ ven.name }}</option>
+                        {% endif %}
+                    {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <input class="btn btn-primary" type="submit" id="submit" value="view products for the selected vendor" />
+                </div>
+            </form>
+        </div>
         <div class="col-md-12">
             <hr>
             <table id="product_table" class="table table-striped table-hover table-responsive" cellspacing="0" width="100%">

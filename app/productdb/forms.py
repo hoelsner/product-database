@@ -15,7 +15,7 @@ class UserProfileForm(forms.ModelForm):
 
     class Meta:
         model = UserProfile
-        fields = ['preferred_vendor']
+        fields = ['preferred_vendor', 'regex_search']
 
 
 class ProductListForm(forms.ModelForm):

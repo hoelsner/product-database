@@ -4,6 +4,15 @@ from django.db.models import Q
 from app.productdb.utils import is_valid_regex
 
 
+def get_try_regex_from_user_profile(request):
+    if request.user.is_authenticated():
+        return request.user.profile.regex_search
+
+    else:
+        # default value, if not authenticated
+        return False
+
+
 class ColumnSearchMixin:
     """
     column search implementation for datatables
@@ -11,9 +20,13 @@ class ColumnSearchMixin:
     # the following dictionary is required in the class, that implements the column based search function
     column_based_filter = {}
 
-    def apply_column_based_search(self, request, query_set):
+    def apply_column_based_search(self, request, query_set, try_regex=True):
         """
         apply the column based search parameters from datatables to the query_set
+
+        :param request: the request object
+        :param query_set: the query_set that should be used to apply the filters
+        :param try_regex: indicates that the search term should try regular expression first
         """
         # apply column based search parameters
         for name, param in self.column_based_filter.items():
@@ -24,7 +37,7 @@ class ColumnSearchMixin:
                 query_set = query_set.filter(**{
                     "%s__%s" % (
                         param["expr"],
-                        "regex" if is_valid_regex(column_search_string) else "contains"
+                        "regex" if is_valid_regex(column_search_string) and try_regex else "contains"
                     ): column_search_string
                 })
         return query_set
@@ -73,17 +86,18 @@ class VendorProductListJson(BaseDatatableView, ColumnSearchMixin):
 
     def filter_queryset(self, qs):
         search_string = self.request.GET.get('search[value]', None)
+        try_regex = get_try_regex_from_user_profile(self.request)
 
         if search_string:
             # search in the Product Group name and Vendor name by default
-            operation = "regex" if is_valid_regex(search_string) else "contains"
+            operation = "regex" if is_valid_regex(search_string) and try_regex else "contains"
             qs = qs.filter(
                 Q(**{"product_id__%s" % operation: search_string}) |
                 Q(**{"description__%s" % operation: search_string})
             )
 
         # apply column based search
-        qs = self.apply_column_based_search(request=self.request, query_set=qs)
+        qs = self.apply_column_based_search(request=self.request, query_set=qs, try_regex=try_regex)
 
         return qs
 
@@ -141,17 +155,18 @@ class ListProductGroupsJson(BaseDatatableView, ColumnSearchMixin):
     def filter_queryset(self, qs):
         # use request parameters to filter queryset
         search_string = self.request.GET.get('search[value]', None)
+        try_regex = get_try_regex_from_user_profile(self.request)
 
         if search_string:
             # search in the Product Group name and Vendor name by default
-            operation = "regex" if is_valid_regex(search_string) else "contains"
+            operation = "regex" if is_valid_regex(search_string) and try_regex else "contains"
             qs = qs.filter(
                 Q(**{"name__%s" % operation: search_string}) |
                 Q(**{"vendor__name__%s" % operation: search_string})
             )
 
         # apply column based search
-        qs = self.apply_column_based_search(request=self.request, query_set=qs)
+        qs = self.apply_column_based_search(request=self.request, query_set=qs, try_regex=try_regex)
 
         return qs
 
@@ -211,17 +226,18 @@ class ListProductsByGroupJson(BaseDatatableView, ColumnSearchMixin):
     def filter_queryset(self, qs):
         # use request parameters to filter queryset
         search_string = self.request.GET.get('search[value]', None)
+        try_regex = get_try_regex_from_user_profile(self.request)
 
         if search_string:
             # search in the Product Group name and Vendor name by default
-            operation = "regex" if is_valid_regex(search_string) else "contains"
+            operation = "regex" if is_valid_regex(search_string) and try_regex else "contains"
             qs = qs.filter(
                 Q(**{"product_id__%s" % operation: search_string}) |
                 Q(**{"description__%s" % operation: search_string})
             )
 
         # apply column based search
-        qs = self.apply_column_based_search(request=self.request, query_set=qs)
+        qs = self.apply_column_based_search(request=self.request, query_set=qs, try_regex=try_regex)
 
         return qs
 
@@ -294,17 +310,18 @@ class ListProductsJson(BaseDatatableView, ColumnSearchMixin):
     def filter_queryset(self, qs):
         # use request parameters to filter queryset
         search_string = self.request.GET.get('search[value]', None)
+        try_regex = get_try_regex_from_user_profile(self.request)
 
         if search_string:
             # search in the Product Group name and Vendor name by default
-            operation = "regex" if is_valid_regex(search_string) else "contains"
+            operation = "regex" if is_valid_regex(search_string) and try_regex else "contains"
             qs = qs.filter(
                 Q(**{"product_id__%s" % operation: search_string}) |
                 Q(**{"description__%s" % operation: search_string})
             )
 
         # apply column based search
-        qs = self.apply_column_based_search(request=self.request, query_set=qs)
+        qs = self.apply_column_based_search(request=self.request, query_set=qs, try_regex=try_regex)
 
         return qs
 

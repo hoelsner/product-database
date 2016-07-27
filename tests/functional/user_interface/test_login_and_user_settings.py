@@ -6,6 +6,8 @@ from app.productdb.models import Vendor
 from tests.base.django_test_cases import DestructiveProductDbFunctionalTest
 from django.test import override_settings
 
+import time
+
 
 @override_settings(DEMO_MODE=True)
 class UserActionTests(DestructiveProductDbFunctionalTest):
@@ -251,4 +253,78 @@ class UserProfileTest(DestructiveProductDbFunctionalTest):
             new_email,
             self.browser.find_element_by_id("id_email").get_attribute('value'),
             "show view the correct email address of the user (%s)" % new_email
+        )
+
+    def test_search_option_in_user_profile(self):
+        search_term = "WS-C2960X-24T(D|S)"
+        self.browser.get(self.server_url + reverse("productdb:home"))
+        self.browser.implicitly_wait(3)
+
+        # login
+        self.browser.find_element_by_id("navbar_login").click()
+        self.assertIn(
+            "Please enter your credentials below.",
+            self.browser.find_element_by_tag_name("body").text,
+            "should view the login page"
+        )
+
+        homepage_message = "This database contains information about network equipment like routers and switches " \
+                           "from multiple vendors."
+        self.handle_login_dialog(
+            self.API_USERNAME,
+            self.API_PASSWORD,
+            homepage_message
+        )
+
+        # go to the all products view
+        self.browser.find_element_by_id("nav_browse").click()
+        self.browser.find_element_by_id("nav_browse_all_products").click()
+
+        self.assertIn(
+            "On this page, you can view all products that are stored in the database.",
+            self.browser.find_element_by_tag_name("body").text,
+            "should display the view all products page"
+        )
+
+        # try to search for the product
+        self.browser.find_element_by_id("column_search_Product ID").send_keys(search_term)
+        time.sleep(2)
+
+        self.assertIn(
+            "No matching records found",
+            self.browser.find_element_by_tag_name("body").text,
+            "should show no results (regular expression is used but by default not enabled)"
+        )
+
+        # enable the regular expression search feature in the user profile
+        self.browser.find_element_by_id("navbar_loggedin").click()
+        self.browser.find_element_by_id("navbar_loggedin_user_profile").click()
+
+        self.assertIn(
+            "Contact eMail:",
+            self.browser.find_element_by_tag_name("body").text,
+            "Should show the Edit User Profile view"
+        )
+
+        self.browser.find_element_by_id("id_regex_search").click()
+        self.browser.find_element_by_id("submit").click()
+
+        self.assertIn(
+            "On this page, you can view all products that are stored in the database.",
+            self.browser.find_element_by_tag_name("body").text,
+            "should redirect to original page"
+        )
+
+        self.browser.find_element_by_id("column_search_Product ID").send_keys(search_term)
+        time.sleep(2)
+
+        self.assertIn(
+            "WS-C2960X-24TS",
+            self.browser.find_element_by_tag_name("body").text,
+            "should show no results (regular expression is used but by default not enabled)"
+        )
+        self.assertIn(
+            "WS-C2960X-24TD",
+            self.browser.find_element_by_tag_name("body").text,
+            "should show no results (regular expression is used but by default not enabled)"
         )

@@ -194,11 +194,10 @@ class BrowseProductsByVendor(DestructiveProductDbFunctionalTest):
         self.browser.find_element_by_id("column_search_Product ID").clear()
 
         # search description by column
-        self.browser.find_element_by_id("column_search_Description").send_keys("(1|10)G SFP")
+        self.browser.find_element_by_id("column_search_Description").send_keys("10G SFP")
         table = self.browser.find_element_by_id('product_table')
         self.assertIn(expected_table_content, table.text)
-        for r in table_rows:
-            self.assertIn(r, table.text)
+        self.assertIn(table_rows[0], table.text)
         self.browser.find_element_by_id("column_search_Description").clear()
 
         # search description by column
@@ -314,7 +313,7 @@ class BrowseAllProducts(DestructiveProductDbFunctionalTest):
         self.browser.find_element_by_id("column_search_Vendor").clear()
 
         # search product by column
-        self.browser.find_element_by_id("column_search_Product ID").send_keys("WS-C2960X-24P(D|S)-L")
+        self.browser.find_element_by_id("column_search_Product ID").send_keys("WS-C2960X-24PD-L")
         table = self.browser.find_element_by_id('product_table')
         self.assertIn(expected_table_content, table.text)
         for r in table_rows:
@@ -322,11 +321,10 @@ class BrowseAllProducts(DestructiveProductDbFunctionalTest):
         self.browser.find_element_by_id("column_search_Product ID").clear()
 
         # search description by column
-        self.browser.find_element_by_id("column_search_Description").send_keys("(1|10)G SFP")
+        self.browser.find_element_by_id("column_search_Description").send_keys("10G SFP")
         table = self.browser.find_element_by_id('product_table')
         self.assertIn(expected_table_content, table.text)
-        for r in table_rows:
-            self.assertIn(r, table.text)
+        self.assertIn(table_rows[0], table.text)
         self.browser.find_element_by_id("column_search_Description").clear()
 
         # search description by column

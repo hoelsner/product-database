@@ -421,6 +421,13 @@ class UserProfile(models.Model):
         on_delete=models.SET_DEFAULT
     )
 
+    regex_search = models.BooleanField(
+        default=False,
+        verbose_name="use regex search",
+        help_text="Use regular expression in any search field (fallback to simple search if no valid "
+                  "regular expression is used)"
+    )
+
     def __str__(self):
         return "User Profile for %s" % self.user.username
 

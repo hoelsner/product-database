@@ -1,0 +1,11 @@
+{% if user.is_authenticated %}
+    <p>
+        {% if request.user.profile.regex_search %}
+            You are using <strong>regular expression based search feature</strong>. If you like to change to a basic version (like search), please change it in
+            your <a href="{% url 'productdb:edit-user_profile' %}?back_to={{ request.path|urlencode }}"><i class="fa fa-wrench"></i>&nbsp;User Profile</a>.
+        {% else %}
+            You are using <strong>the like based search feature</strong>. If you like to change to a more advanced version (regular expressions), please change it in
+            your <a href="{% url 'productdb:edit-user_profile' %}?back_to={{ request.path|urlencode }}"><i class="fa fa-wrench"></i>&nbsp;User Profile</a>.
+        {% endif %}
+    </p>
+{% endif %}

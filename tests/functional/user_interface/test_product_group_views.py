@@ -87,7 +87,7 @@ class ProductDatabaseHomepageView(DestructiveProductDbFunctionalTest):
             'WS-C2960X-24TD-L',
         ]
 
-        self.browser.find_element_by_id("column_search_Description").send_keys("GigE.*2 x")
+        self.browser.find_element_by_id("column_search_Description").send_keys("2 x")
         table = self.browser.find_element_by_id('product_table')
         self.assertIn(expected_table_content, table.text)
         for r in table_rows:
