@@ -56,6 +56,15 @@
       recurse=yes
       mode=0775
     become: true
+  - name: create directory for ssl files
+    file:
+      path=/var/www/productdb/ssl
+      state=directory
+      owner={{ site_user }}
+      group={{ site_group }}
+      recurse=yes
+      mode=0775
+    become: true
   - name: create directory for log files
     file:
       path=/var/www/productdb/logs
@@ -154,6 +163,27 @@
     command: node_modules/.bin/grunt clean
     args:
       chdir: /var/www/productdb/source
+
+  #
+  # configure SSL certificates (enable HTTPs)
+  - name: create self signed SSL certs
+    command: 'openssl req -new -nodes -x509 -subj "/C={{ cert_country }}/ST={{ cert_state }}/L={{ cert_location }}/O={{ cert_organization }}/CN={{ ansible_fqdn }}" -days 3650 -keyout /var/www/productdb/ssl/server.key -out /var/www/productdb/ssl/server.crt -extensions v3_ca'
+    args:
+      creates: /var/www/productdb/ssl/server.crt
+    when: selfsigned_certs
+
+  - name: copy local SSL certificate file
+    copy:
+      src={{ ssl_certificate_file }}
+      dest=/var/www/productdb/ssl/server.crt
+      force=yes
+    when: not selfsigned_certs
+  - name: copy local SSL key certificate file
+    copy:
+      src={{ ssl_certificate_key_file }}
+      dest=/var/www/productdb/ssl/server.key
+      force=yes
+    when: not selfsigned_certs
 
   #
   # configure NGINX
@@ -439,6 +469,11 @@
       dest: /home/{{ site_user }}/.bash_profile
       regexp: ^export PDB_CONFIG_FILE=product_database.server.config
       line: export PDB_CONFIG_FILE==product_database.server.config
+  - name: add config file in bash profile
+    lineinfile:
+      dest: /home/{{ site_user }}/.bash_profile
+      regexp: ^export PDB_HTTPS_ONLY=1
+      line: export PDB_HTTPS_ONLY=1
 
   #
   # add LDAP configuration if required
@@ -490,9 +525,9 @@
       PDB_DATABASE_HOST: "{{ db_host }}"
       PDB_DATABASE_PORT: "{{ db_port }}"
     with_items:
-      - "default_users.yaml"
       - "default_vendors.yaml"
       - "default_text_blocks.yaml"
+      - "default_users.yaml"
     when: initial_provisioning.stat.exists == False
 
   - name: execute systemctl daemon-reload

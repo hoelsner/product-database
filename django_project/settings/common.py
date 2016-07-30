@@ -123,3 +123,9 @@ if not os.path.exists(DATA_DIRECTORY):
     os.makedirs(DATA_DIRECTORY, exist_ok=True)
 
 ADD_REVERSION_ADMIN = True
+
+# Force HTTPs (should be used in production)
+if os.getenv("PDB_HTTPS_ONLY", False):
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')

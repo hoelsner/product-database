@@ -25,6 +25,19 @@
 
     enable_ldap: false
 
+    # SSL certificate configuration
+    selfsigned_certs: true
+
+    # parameters for the self-signed certificate (if used)
+    cert_country: ""
+    cert_state: ""
+    cert_location: ""
+    cert_organization: ""
+
+    # required, if a custom certificate should be used
+    #   ssl_certificate_file: "server.crt"
+    #   ssl_certificate_key_file: "server.key"
+
     # only required if enable_ldap is set to true
     ldap_server_url: ""
     ldap_bind_dn: ""

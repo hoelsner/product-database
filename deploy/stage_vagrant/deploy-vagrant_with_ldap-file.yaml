@@ -17,6 +17,12 @@
     gunicorn_worker: 2
     celery_concurrency: 2
 
+    selfsigned_certs: true
+    cert_country: ""
+    cert_state: "Vagrant"
+    cert_location: "Vagrant"
+    cert_organization: "Vagrant"
+
     enable_ldap: true
 
   tasks:
