@@ -1,0 +1,15 @@
+[report]
+exclude_lines =
+    def __repr__
+    if self.debug:
+[run]
+omit =
+  *apps.py,
+  *migrations/*,
+  *settings*,
+  *tests/*,
+  deploy,
+  tests,
+  *urls.py,
+  *wsgi.py,
+  manage.py

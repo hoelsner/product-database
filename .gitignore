@@ -43,3 +43,5 @@ deploy/stage_vagrant/ldap-parameters.yaml
 staging_inventory
 *.crt
 *.key
+htmlcov
+.coverage
