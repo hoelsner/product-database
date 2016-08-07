@@ -81,10 +81,12 @@
                             {% endif %}
                         </td>
                         <td>
-                            {% if share_link %}
-                                {{ product.product_group.name }}
-                            {% else %}
-                                <a href="{% url 'productdb:detail-product_group' product_group_id=product.product_group.id %}?back_to={{ request.get_full_path|urlencode }}">{{ product.product_group.name }}</a>
+                            {% if product.product_group %}
+                                {% if share_link %}
+                                    {{ product.product_group.name }}
+                                {% else %}
+                                    <a href="{% url 'productdb:detail-product_group' product_group_id=product.product_group.id %}?back_to={{ request.get_full_path|urlencode }}">{{ product.product_group.name }}</a>
+                                {% endif %}
                             {% endif %}
                         </td>
                         <td>{{ product.description }}</td>
@@ -107,7 +109,11 @@
                         <td>{{ product.end_of_service_contract_renewal|date:"SHORT_DATE_FORMAT" }}</td>
                         <td>{{ product.end_of_sec_vuln_supp_date|date:"SHORT_DATE_FORMAT" }}</td>
                         <td>{{ product.end_of_support_date|date:"SHORT_DATE_FORMAT" }}</td>
-                        <td><a href="{{ product.eol_reference_url }}">{{ product.eol_reference_number|default:"Link" }}</a></td>
+                        <td>
+                            {% if product.eol_reference_url %}
+                                <a href="{{ product.eol_reference_url }}">{{ product.eol_reference_number|default:"Link" }}</a>
+                            {% endif %}
+                        </td>
                     </tr>
                 {% endfor %}
             </tbody>
