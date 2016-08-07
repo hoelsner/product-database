@@ -95,13 +95,13 @@ class ProductGroupApiEndpointTest(BaseApiUnitTest):
         response = self.client.post(apiurl.PRODUCT_GROUP_API_ENDPOINT, apicall_data, format='json')
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.json())
-        self.assertEqual(ProductGroup.objects.all().count(), 1)
+        self.assertEqual(ProductGroup.objects.all().count(), len(self.TEST_DATA) + 1)
 
     def test_verify_delete_of_product_group_through_api(self):
         pg = ProductGroup.objects.create(name="DeleteTest")
 
         self.client.login(username=self.ADMIN_USERNAME, password=self.ADMIN_PASSWORD)
-        print(apiurl.PRODUCT_GROUP_DETAIL_API_ENDPOINT % pg.id)
+
         response = self.client.delete(apiurl.PRODUCT_GROUP_DETAIL_API_ENDPOINT % pg.id)
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
@@ -111,12 +111,15 @@ class ProductGroupApiEndpointTest(BaseApiUnitTest):
         test API filter through API using the ID value of the object
         """
         self.client.login(username=self.ADMIN_USERNAME, password=self.ADMIN_PASSWORD)
+        pg, _ = ProductGroup.objects.get_or_create(name="test1")
 
-        response = self.client.get(apiurl.PRODUCT_GROUP_API_ENDPOINT + "?id=1")
+        response = self.client.get(apiurl.PRODUCT_GROUP_API_ENDPOINT + "?id=%d" % pg.id)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         data = response.json()
+
         self.assertTrue("data" in data)
+        self.assertTrue(data["pagination"]["total_records"] != 0)
         self.assertEqual("test1", data["data"][0]["name"])
 
     def test_product_group_filter_by_name(self):

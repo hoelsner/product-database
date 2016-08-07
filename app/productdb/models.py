@@ -100,11 +100,16 @@ class ProductGroup(models.Model):
         super(ProductGroup, self).save(*args, **kwargs)
 
     def clean(self):
-        #  the vendor can only be changed if no products are associated to it
-        if self.get_all_products():  # not None if no Products are found
-            raise ValidationError({
-                "vendor": ValidationError("cannot set new vendor as long as there are products associated to ir")
-            })
+        # verify that all associated Products have the same Vendor as the product list
+        associated_products = self.get_all_products()
+
+        # if no products are associated to the group, no check is required
+        if associated_products:
+            products_with_different_vendor = [False for product in self.get_all_products() if product.vendor != self.vendor]
+            if len(products_with_different_vendor) != 0:
+                raise ValidationError({
+                    "vendor": ValidationError("cannot set new vendor as long as there are products associated to ir")
+                })
 
     def __str__(self):
         return self.name

@@ -87,9 +87,6 @@ class ProductGroupDataModelTest(TestCase):
             _ = ProductGroup.objects.create(name="test", vendor=v1)
 
     def test_change_vendor_to_another_vendor_than_the_associated_products(self):
-        """
-        The change of the vendor as long as there are products associated to it should not be possible
-        """
         v1 = Vendor.objects.get(id=1)
         v2 = Vendor.objects.get(id=2)
         pg = ProductGroup.objects.create(name="test", vendor=v1)
@@ -106,6 +103,15 @@ class ProductGroupDataModelTest(TestCase):
 
         # set new vendor on the product group (now it works)
         pg.vendor = v2
+        pg.save()
+
+    def test_change_product_group_name(self):
+        v1 = Vendor.objects.get(id=1)
+        pg = ProductGroup.objects.create(name="test", vendor=v1)
+        Product.objects.create(product_id="test product 1", vendor=v1, product_group=pg)
+
+        # no validation error should be thrown
+        pg.name = "New Name"
         pg.save()
 
 

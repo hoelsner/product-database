@@ -55,6 +55,7 @@ class ProductDatabaseHomepageView(DestructiveProductDbFunctionalTest):
         ]
 
         self.browser.find_element_by_id("column_search_Name").send_keys("yst")
+        time.sleep(2)
         table = self.browser.find_element_by_id('product_group_table')
         self.assertIn(expected_table_content, table.text)
         for r in table_rows:

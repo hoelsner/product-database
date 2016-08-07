@@ -288,7 +288,7 @@ class UserProfileTest(DestructiveProductDbFunctionalTest):
 
         # try to search for the product
         self.browser.find_element_by_id("column_search_Product ID").send_keys(search_term)
-        time.sleep(2)
+        time.sleep(4)
 
         self.assertIn(
             "No matching records found",
@@ -316,7 +316,7 @@ class UserProfileTest(DestructiveProductDbFunctionalTest):
         )
 
         self.browser.find_element_by_id("column_search_Product ID").send_keys(search_term)
-        time.sleep(2)
+        time.sleep(4)
 
         self.assertIn(
             "WS-C2960X-24TS",
