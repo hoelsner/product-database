@@ -113,32 +113,36 @@ You need to run the following command within the local code repository:
 After a successful provisioning process, the Product Database runs inside the VM and is available on
 **http://localhost:16000**.
 
-# Cisco APIs within the Product Database
+# Cisco EoX APIs within the Product Database
 
-This version is capable to synchronize the local database with the Cisco EoX API. For more information about the Cisco
-APIs see [http://apiconsole.cisco.com](http://apiconsole.cisco.com) for further details, Cisco Partner access only.
-Further details and descriptions of this APIs are outlined at http://apiconsole.cisco.com. Please note the Terms &
-Conditions of this Service
+This version is capable to synchronize the local database with the Cisco EoX API. More information about the API is 
+available at [http://apiconsole.cisco.com](http://apiconsole.cisco.com) (Cisco Partner access only). Please note the 
+Terms & Conditions of this Service
 ([http://www.cisco.com/web/siteassets/legal/terms_condition.html](http://www.cisco.com/web/siteassets/legal/terms_condition.html)).
 
-To use the Product Database with the Cisco API console, you need to enter the client credentials on the settings page.
-To run the test cases, please have a look at the development notes below.
+To use the Product Database with the Cisco API console, you need to enter your client credentials on the settings page. These 
+credentials can be created in the Cisco API administration. 
 
-These credentials can be created in the Cisco API administration. **Currently, the access permission to the
- Cisco EoX V5 API is required**
+**Currently, the access permission to the Cisco EoX V5 API is required**
+ 
+If you have questions about the API access, please take a look on the following entry in the 
+[Cisco Support Forums](https://supportforums.cisco.com/community/5456/partner-support-service) (Cisco CCO account required).
 
 # Development Notes
 
-Before running the test cases, you need access to the Cisco API console. Copy the file `conf/product_database.sample.config`
-and rename it to `product_database.cisco_api_test.config`. Within this ini-like configuration file, add the your access
-credentials within the `cisco_api` section on the keys `client_id` and `client_secret`.
+You need to install the requirement files `requirements.txt` and the `requirements_dev.txt` for development. I recommend 
+to create a new **virtualenv** for these dependencies. The test cases from this projects uses py.test and selenium. 
 
-I recommend to create a new **virtualenv** for development purpose. You can install the requirements using `pip` from the
-`requirements.txt` and the `requirements_dev.txt` files.
+Before you're able to execute the test cases, you need access to the [Cisco Support APIs](http://apiconsole.cisco.com). 
+After you created your account, you need to create your client credentials and save them in a file named 
+`.cisco_api_credentials` in the root directory with the following format:
 
-All unit-tests can be executed using the module at `app.all_tests`. There are also some functional tests part of
-this repository. They can be executed using the module `tests.functional_tests.all_functional_tests`. Futhermore, you
-can run all tests using the module `tests.full_test_set`.
+```
+{
+    "client_id": "yourclientid",
+    "client_secret": "yourclientsecret"
+}
+```
 
 Every test case requires a local postgres database connection using the following parameters:
 
@@ -146,9 +150,7 @@ Every test case requires a local postgres database connection using the followin
 * username `productdb`
 * running at `localhost` port `5432`
 
-Before you can start any test, you need to set the `DJANGO_SETTINGS_MODULE` variable:
+There are two additional options available when executing the test cases:
 
-```
-$ export DJANGO_SETTINGS_MODULE=django_project.settings
-$ python3 -m unittest app.all_tests
-```
+* the parameter `--online` will add test cases that use the online Cisco API (otherwise the test cases are mocked)
+* the parameter `--selenium` will add the selenium test cases (Firefox required)

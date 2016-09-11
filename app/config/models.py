@@ -76,10 +76,12 @@ class NotificationMessage(models.Model):
             detailed_message=detailed_message
         )
 
-    def __str__(self):
-        return self.title
+    def save(self, *args, **kwargs):
+        # clean the object before save
+        self.full_clean()
+        super(NotificationMessage, self).save(*args, **kwargs)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.title
 
     class Meta:
@@ -104,4 +106,11 @@ class TextBlock(models.Model):
         max_length=16384,
         verbose_name="HTML content",
         help_text="content of the text block (HTML possible)",
+        null=True,
+        blank=True
     )
+
+    def save(self, *args, **kwargs):
+        # clean the object before save
+        self.full_clean()
+        super(TextBlock, self).save(*args, **kwargs)

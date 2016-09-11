@@ -1,0 +1,157 @@
+{
+    "PaginationResponseRecord": {
+        "PageIndex": 1,
+        "LastIndex": 1,
+        "TotalRecords": 3,
+        "PageRecords": 3
+    },
+    "EOXRecord": [
+        {
+            "EOLProductID": "WS-C2950G-48-EI-WS",
+            "LinkToProductBulletinURL": "http://www.cisco.com/en/US/products/hw/tsd_products_support_end-of-sale_and_end-of-life_products_list.html",
+            "EndOfSvcAttachDate": {
+                "value": "2010-12-31",
+                "dateFormat": "YYYY-MM-DD"
+            },
+            "ProductIDDescription": "C2950 48 10100 with 2 GBIC slots Enhanced Image REFURBISHED",
+            "EndOfSWMaintenanceReleases": {
+                "value": " ",
+                "dateFormat": "YYYY-MM-DD"
+            },
+            "EOXInputValue": "WS-C2950* ",
+            "UpdatedTimeStamp": {
+                "value": "2015-08-23",
+                "dateFormat": "YYYY-MM-DD"
+            },
+            "EndOfServiceContractRenewal": {
+                "value": "2010-12-31",
+                "dateFormat": "YYYY-MM-DD"
+            },
+            "EOXInputType": "ShowEOXByPids",
+            "EndOfSaleDate": {
+                "value": "2010-12-31",
+                "dateFormat": "YYYY-MM-DD"
+            },
+            "EndOfRoutineFailureAnalysisDate": {
+                "value": " ",
+                "dateFormat": "YYYY-MM-DD"
+            },
+            "EOXMigrationDetails": {
+                "MigrationProductInfoURL": " ",
+                "MigrationInformation": " ",
+                "MigrationProductName": "No Replacement Product",
+                "MigrationOption": "No Replacement Available",
+                "MigrationStrategy": " ",
+                "PIDActiveFlag": "Y  ",
+                "MigrationProductId": "WS-C2960G-48TC-L"
+            },
+            "EOXExternalAnnouncementDate": {
+                "value": "2010-07-02",
+                "dateFormat": "YYYY-MM-DD"
+            },
+            "LastDateOfSupport": {
+                "value": "2011-12-31",
+                "dateFormat": "YYYY-MM-DD"
+            },
+            "ProductBulletinNumber": "RFEOL1094"
+        },
+        {
+            "EOLProductID": "WS-C2950T-48-SI-WS",
+            "LinkToProductBulletinURL": "http://www.cisco.com/en/US/products/hw/tsd_products_support_end-of-sale_and_end-of-life_products_list.html",
+            "EndOfSvcAttachDate": {
+                "value": "2010-12-31",
+                "dateFormat": "YYYY-MM-DD"
+            },
+            "ProductIDDescription": "48 10/100 and 2 10/100/1000BASE-T pts, Std Image REFURBISHED",
+            "EndOfSWMaintenanceReleases": {
+                "value": " ",
+                "dateFormat": "YYYY-MM-DD"
+            },
+            "EOXInputValue": "WS-C2950* ",
+            "UpdatedTimeStamp": {
+                "value": "2015-08-23",
+                "dateFormat": "YYYY-MM-DD"
+            },
+            "EndOfServiceContractRenewal": {
+                "value": "2010-12-31",
+                "dateFormat": "YYYY-MM-DD"
+            },
+            "EOXInputType": "ShowEOXByPids",
+            "EndOfSaleDate": {
+                "value": "2010-12-31",
+                "dateFormat": "YYYY-MM-DD"
+            },
+            "EndOfRoutineFailureAnalysisDate": {
+                "value": " ",
+                "dateFormat": "YYYY-MM-DD"
+            },
+            "EOXMigrationDetails": {
+                "MigrationProductInfoURL": " ",
+                "MigrationInformation": "Cat2960 48 10/100 + 2 1000BT LAN Base Image REMANUFACTURED",
+                "MigrationProductName": "Refurbished- ",
+                "MigrationOption": "Enter PID(s)",
+                "MigrationStrategy": " ",
+                "PIDActiveFlag": "Y  ",
+                "MigrationProductId": "WS-C2960-48TT-L-RF"
+            },
+            "EOXExternalAnnouncementDate": {
+                "value": "2010-07-02",
+                "dateFormat": "YYYY-MM-DD"
+            },
+            "LastDateOfSupport": {
+                "value": "2011-12-31",
+                "dateFormat": "YYYY-MM-DD"
+            },
+            "ProductBulletinNumber": "RFEOL1094"
+        },
+        {
+            "EOLProductID": "WS-C2950G-24-EI",
+            "LinkToProductBulletinURL": "http://www.cisco.com/en/US/products/hw/switches/ps628/prod_eol_notice0900aecd804658c9.html",
+            "EndOfSvcAttachDate": {
+                "value": "2007-12-31",
+                "dateFormat": "YYYY-MM-DD"
+            },
+            "ProductIDDescription": "Catalyst 2950, 24 10/100 with 2GBIC slots, Enhanced Image",
+            "EndOfSWMaintenanceReleases": {
+                "value": " ",
+                "dateFormat": "YYYY-MM-DD"
+            },
+            "EOXInputValue": "WS-C2950* ",
+            "UpdatedTimeStamp": {
+                "value": "2015-08-23",
+                "dateFormat": "YYYY-MM-DD"
+            },
+            "EndOfServiceContractRenewal": {
+                "value": "2011-03-31",
+                "dateFormat": "YYYY-MM-DD"
+            },
+            "EOXInputType": "ShowEOXByPids",
+            "EndOfSaleDate": {
+                "value": "2006-12-31",
+                "dateFormat": "YYYY-MM-DD"
+            },
+            "EndOfRoutineFailureAnalysisDate": {
+                "value": "2007-12-31",
+                "dateFormat": "YYYY-MM-DD"
+            },
+            "EOXMigrationDetails": {
+                "MigrationProductInfoURL": " ",
+                "MigrationInformation": "^Catalyst 2960 24 10/100/1000, 4 T/SFP LAN Base Image",
+                "MigrationProductName": " ",
+                "MigrationOption": "Enter PID(s)",
+                "MigrationStrategy": " ",
+                "PIDActiveFlag": "Y  ",
+                "MigrationProductId": "WS-C2960G-24TC-L"
+            },
+            "EOXExternalAnnouncementDate": {
+                "value": "2006-04-17",
+                "dateFormat": "YYYY-MM-DD"
+            },
+            "LastDateOfSupport": {
+                "value": "2011-12-31",
+                "dateFormat": "YYYY-MM-DD"
+            },
+            "ProductBulletinNumber": "EOL1094"
+        }
+    ]
+}

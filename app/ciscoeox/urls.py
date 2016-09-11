@@ -1,5 +1,5 @@
 """
-Cisco API URL configuration
+Cisco EoX API URL configuration (namespace "cisco_api")
 """
 from django.conf.urls import url
 from app.ciscoeox import views

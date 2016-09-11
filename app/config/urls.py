@@ -1,5 +1,5 @@
 """
-Product Database config URLs
+Product Database Config URL configuration (namespace "productdb_config")
 """
 from django.conf.urls import url
 from app.config import views

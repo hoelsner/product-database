@@ -102,7 +102,7 @@
                             <ul class="dropdown-menu" role="menu">
                                 {% if perms.productdb.change_product %}
                                     <li role="presentation">
-                                        <a href="{% url 'productdb:import_products' %}">
+                                        <a id="navbar_admin_import_products" href="{% url 'productdb:import_products' %}">
                                             <i class="fa fa-file-excel-o"></i>&nbsp;&nbsp;
                                             Import Products
                                         </a>

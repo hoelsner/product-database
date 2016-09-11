@@ -2,9 +2,6 @@ from __future__ import absolute_import
 
 import logging
 import os
-import random
-
-import time
 from celery import Celery, states
 from django.conf import settings
 from django.core.cache import cache
@@ -32,7 +29,7 @@ def get_meta_data_for_task(task_id):
     try:
         meta_data = cache.get("task_meta_%s" % task_id, {})
 
-    except Exception:
+    except Exception:  # catch any exception
         logging.debug("no meta information for task '%s' found" % task_id, exc_info=True)
         meta_data = {}
     return meta_data
@@ -46,13 +43,3 @@ def set_meta_data_for_task(task_id, title, redirect_to=None, auto_redirect=True)
     if redirect_to:
         meta_data["redirect_to"] = redirect_to
     cache.set("task_meta_%s" % task_id, meta_data, 60 * 60 * 8)
-
-
-@app.task
-def add(x, y):
-    """
-    Simple debug function
-    """
-    delay = random.randint(1, 60)
-    time.sleep(delay)
-    return x + y

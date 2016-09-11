@@ -4,8 +4,8 @@ import app.productdb.models
 
 
 def validate_json(value):
-    """
-    a simple JSON validator for the model
+    """a simple JSON validator
+
     :param value:
     :return:
     """
@@ -31,7 +31,6 @@ def validate_product_list_string(value):
             app.productdb.models.Product.objects.get(product_id=value)
 
         except:
-            print("missing product %s" % value)
             missing_products.append(value)
 
     if len(missing_products) != 0:

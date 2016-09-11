@@ -1,9 +1,7 @@
 import logging
-
 from django.contrib.auth.models import User
-
 from app.config.models import NotificationMessage
-from app.productdb.excel_import import ImportProductsExcelFile, InvalidImportFormatException
+from app.productdb.excel_import import ImportProductsExcelFile, InvalidImportFormatException, InvalidExcelFileFormat
 from app.productdb.models import JobFile
 from django_project.celery import app, TaskState
 
@@ -86,18 +84,22 @@ def import_price_list(self, job_file_id, create_notification_on_server=True, upd
             "status_message": detail_msg
         }
 
-    except InvalidImportFormatException as ex:
+    except (InvalidImportFormatException, InvalidExcelFileFormat) as ex:
         msg = "import failed, invalid file format (%s)" % ex
         logger.error(msg, ex)
         result = {
             "error_message": msg
         }
 
-    except Exception as ex:
+    except Exception as ex:  # catch any exception
         msg = "Unexpected exception occurred while importing product list (%s)" % ex
         logger.error(msg, ex)
         result = {
             "error_message": msg
         }
+
+    # if the task was executed eager, set state to SUCCESS (required for testing)
+    if self.request.is_eager:
+        self.update_state(state=TaskState.SUCCESS, meta=result)
 
     return result

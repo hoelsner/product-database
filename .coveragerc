@@ -2,13 +2,19 @@
 exclude_lines =
     def __repr__
     if self.debug:
+    if settings.DEBUG:
+    .* logger.debug\(.*
+    if self.request.is_eager:
+    .* # catch any exception
 [run]
 omit =
   *apps.py,
   *migrations/*,
-  *settings*,
+  django_project/settings*,
+  *_old_tes/*,
   *tests/*,
   deploy,
+  conftest.py,
   tests,
   *urls.py,
   *wsgi.py,

@@ -11,8 +11,8 @@ from djcelery.models import WorkerState
 from app.config import AppSettings
 from app.config.forms import SettingsForm, NotificationMessageForm
 from app.config.models import NotificationMessage, TextBlock
-from app.config.utils import test_cisco_eox_api_access
-from django_project.utils import login_required_if_login_only_mode
+from app.config import utils
+from app.productdb.utils import login_required_if_login_only_mode
 
 
 @login_required()
@@ -53,7 +53,7 @@ def status(request):
 
     if is_cisco_api_enabled:
         # test access (once every 30 minutes)
-        cisco_eox_api_test_successful = cache.get("CISCO_EOC_API_TEST", False)
+        cisco_eox_api_test_successful = cache.get("CISCO_EOX_API_TEST", False)
 
         # defaults, overwritten if an exception is thrown
         cisco_eox_api_available = True
@@ -61,10 +61,10 @@ def status(request):
 
         if not cisco_eox_api_test_successful:
             try:
-                test_cisco_eox_api_access(client_id=app_config.get_cisco_api_client_id(),
-                                          client_secret=app_config.get_cisco_api_client_secret(),
-                                          drop_credentials=False)
-                cache.set("CISCO_EOC_API_TEST", True, 60 * 30)
+                result = utils.check_cisco_eox_api_access(client_id=app_config.get_cisco_api_client_id(),
+                                                          client_secret=app_config.get_cisco_api_client_secret(),
+                                                          drop_credentials=False)
+                cache.set("CISCO_EOX_API_TEST", result, 60 * 30)
 
             except Exception as ex:
                 cisco_eox_api_available = True
@@ -164,19 +164,17 @@ def change_configuration(request):
                 app_config.set_cisco_api_client_secret(client_secret)
 
                 if client_id != "PlsChgMe":
-                    if settings.DEMO_MODE:
-                        messages.success(request, "Successfully connected to the Cisco EoX API (Demo Mode)")
+                    result = utils.check_cisco_eox_api_access(
+                        form.cleaned_data["cisco_api_client_id"],
+                        form.cleaned_data["cisco_api_client_secret"]
+                    )
+
+                    if result:
+                        messages.success(request, "Successfully connected to the Cisco EoX API")
+
                     else:
-                        result, message = test_cisco_eox_api_access(
-                            form.cleaned_data["cisco_api_client_id"],
-                            form.cleaned_data["cisco_api_client_secret"]
-                        )
-
-                        if result:
-                            messages.success(request, "Successfully connected to the Cisco EoX API")
-
-                        else:
-                            messages.error(request, "Cannot contact the Cisco EoX API: %s" % message)
+                        messages.error(request, "Cannot contact the Cisco EoX API. Please contact your "
+                                                "Administrator")
 
                 else:
                     messages.info(

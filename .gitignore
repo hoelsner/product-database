@@ -45,3 +45,8 @@ staging_inventory
 *.key
 htmlcov
 .coverage
+coverage_report.html
+/assets
+/.cache
+/tmp
+.cisco_api_credentials

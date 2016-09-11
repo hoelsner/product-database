@@ -11,16 +11,12 @@ logger = logging.getLogger(__name__)
 
 
 class InvalidExcelFileFormat(Exception):
-    """
-    Exception thrown if there is an issue with the low level file format
-    """
+    """Exception thrown if there is an issue with the low level file format"""
     pass
 
 
 class InvalidImportFormatException(Exception):
-    """
-    Exception thrown if the format of the Excel file for the import is invalid
-    """
+    """Exception thrown if the format of the Excel file for the import is invalid"""
     pass
 
 
@@ -87,7 +83,9 @@ class ImportProductsExcelFile:
         keys = [x.lower() for x in set(dframe.keys())]
 
         if len(required_keys.intersection(keys)) != len(required_keys):
-            raise InvalidImportFormatException("required keys not found in Excel file")
+            req_key_str = ", ".join(sorted(required_keys))
+            raise InvalidImportFormatException("not all required keys are found in the Excel file, required keys "
+                                               "are: %s" % req_key_str)
 
         self.valid_file = True
 
@@ -191,14 +189,20 @@ class ImportProductsExcelFile:
                         if type(row[row_key]) == float:
                             new_price = row[row_key]
 
+                        elif type(row[row_key]) == int:
+                            new_price = float(row[row_key])
+
                         elif type(row[row_key]) == str:
                             price = row[row_key].split(" ")
                             if len(price) == 1:
+                                # only a number
                                 new_price = float(row[row_key])
 
                             elif len(price) == 2:
+                                # contains a number and a currency
                                 try:
                                     new_price = float(price[0])
+
                                 except:
                                     raise Exception("cannot convert price information to float")
 
@@ -234,7 +238,7 @@ class ImportProductsExcelFile:
                                 raise Exception("cannot set currency unknown value %s" % row[row_key].upper())
 
                     # apply the new list price and currency if required
-                    if new_price:
+                    if new_price is not None:
                         if p.list_price != new_price:
                             p.list_price = new_price
                             changed = True

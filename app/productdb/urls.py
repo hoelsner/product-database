@@ -1,5 +1,5 @@
 """
-Product Database URL configuration
+Product Database URL configuration (namespace "productdb")
 """
 from django.conf.urls import include, url
 from django.views.generic.base import RedirectView
@@ -15,7 +15,7 @@ router.register(r'productgroups', api_views.ProductGroupViewSet, base_name="prod
 
 # namespace: productdb
 urlpatterns = [
-    # API related links
+    # API related URLs
     url(r'^api-docs/', include('rest_framework_swagger.urls', namespace="apidocs")),
     url(r'^api/v0/', include(router.urls)),
     url(r'^api/$', RedirectView.as_view(url="v0/", permanent=False), name="api_redirect"),
@@ -55,15 +55,15 @@ urlpatterns = [
     url(r'^productgroup/(?P<product_group_id>\d+)/$', views.detail_product_group, name='detail-product_group'),
 
     url(r'^productlists/$', views.list_product_lists, name='list-product_lists'),
-    url(r'^productlists/$', views.detail_product_list, name='detail-product_list'),
-    url(r'^productlists/(?P<product_list_id>\d+)/$', views.detail_product_list, name='detail-product_list'),
-    url(r'^productlists/add', views.add_product_list, name="add-product_list"),
-    url(r'^productlists/edit/$', views.edit_product_list, name='edit-product_list'),
-    url(r'^productlists/edit/(?P<product_list_id>\d+)/$', views.edit_product_list, name='edit-product_list'),
-    url(r'^productlists/delete/$', views.delete_product_list, name='delete-product_list'),
-    url(r'^productlists/delete/(?P<product_list_id>\d+)/$', views.delete_product_list, name='delete-product_list'),
+    url(r'^productlist/$', views.detail_product_list, name='detail-product_list'),
+    url(r'^productlist/(?P<product_list_id>\d+)/$', views.detail_product_list, name='detail-product_list'),
+    url(r'^productlist/add', views.add_product_list, name="add-product_list"),
+    url(r'^productlist/edit/$', views.edit_product_list, name='edit-product_list'),
+    url(r'^productlist/edit/(?P<product_list_id>\d+)/$', views.edit_product_list, name='edit-product_list'),
+    url(r'^productlist/delete/$', views.delete_product_list, name='delete-product_list'),
+    url(r'^productlist/delete/(?P<product_list_id>\d+)/$', views.delete_product_list, name='delete-product_list'),
 
-    url(r'^share/productlists/(?P<product_list_id>\d+)/$', views.share_product_list, name='share-product_list'),
+    url(r'^share/productlist/(?P<product_list_id>\d+)/$', views.share_product_list, name='share-product_list'),
 
     url(r'^products/$', views.browse_all_products, name='all_products'),
     url(r'^product/$', views.view_product_details, name='product-list'),

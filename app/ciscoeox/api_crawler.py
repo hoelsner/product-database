@@ -59,7 +59,7 @@ def update_local_db_based_on_record(eox_record, create_missing=False):
     if create_missing:
         product, created = Product.objects.get_or_create(product_id=pid)
         if created:
-            logger.info("Product '%s' was not in database and is created" % pid)
+            logger.debug("Product '%s' was not in database and is created" % pid)
             product.product_id = pid
             product.description = eox_record['ProductIDDescription']
             # it is a Cisco API and the vendors are read-only within the database
@@ -67,10 +67,11 @@ def update_local_db_based_on_record(eox_record, create_missing=False):
             result_record["created"] = True
     else:
         try:
+            created = False
             product = Product.objects.get(product_id=pid)
 
         except Exception:
-            logger.debug("product not found in database: %s" % pid, exc_info=True)
+            logger.info("product not found in database: %s" % pid, exc_info=True)
             result_record["created"] = False
             return result_record
 
@@ -78,7 +79,7 @@ def update_local_db_based_on_record(eox_record, create_missing=False):
     try:
         update = True
         if product.eox_update_time_stamp is None:
-            logger.info("Update product %s because of missing timestamps" % pid)
+            logger.debug("Update product %s because of missing timestamps" % pid)
             result_record["updated"] = True
 
         else:
@@ -93,7 +94,7 @@ def update_local_db_based_on_record(eox_record, create_missing=False):
                 update = False
 
             else:
-                logger.info("Product %s update required" % pid)
+                logger.debug("Product %s update required" % pid)
                 result_record["updated"] = True
 
         if update:
@@ -135,6 +136,10 @@ def update_local_db_based_on_record(eox_record, create_missing=False):
                 reversion.set_comment("Updated by the Cisco EoX API crawler")
 
     except Exception as ex:
+        if created:
+            # remove the new (incomplete) entry from the database
+            product.delete()
+
         logger.error("update of product '%s' failed." % pid, exc_info=True)
         logger.debug("DataSet with exception\n%s" % json.dumps(eox_record, indent=4))
         result_record["message"] = "Update failed: %s" % str(ex)
@@ -147,7 +152,8 @@ def update_cisco_eox_database(api_query):
     """
     synchronizes the local database with the Cisco EoX API using the specified query
     :param api_query: single query that is send to the Cisco EoX API
-    :return:
+    :raises CiscoApiCallFailed: exception raised if Cisco EoX API call failed
+    :return: list of dictionary that describe the updates to the database
     """
     if type(api_query) is not str:
         raise ValueError("api_query must be a string value")
@@ -185,6 +191,7 @@ def update_cisco_eox_database(api_query):
 
         while current_page <= max_pages:
             logger.info("Executing API query '%s' on page '%d" % (api_query, current_page))
+            # will raise a CiscoApiCallFailed exception on error
             eoxapi.query_product(product_id=api_query, page=current_page)
             if current_page == 1:
                 result_pages = eoxapi.amount_of_pages()
@@ -192,48 +199,44 @@ def update_cisco_eox_database(api_query):
 
             records = eoxapi.get_eox_records()
 
-            # check for errors
-            if eoxapi.has_error(records[0]):
-                logger.info("Query '%s' returns no valid values: %s" % (api_query,
-                                                                        eoxapi.get_error_description(records[0])))
-            else:
-                # check that the query has valid results
-                if eoxapi.get_valid_record_count() > 0:
-                    # processing records
-                    for record in records:
-                        result_record = {}
-                        pid = record['EOLProductID']
-                        result_record["PID"] = pid
-                        result_record["created"] = False
-                        result_record["updated"] = False
-                        result_record["message"] = None
-                        logger.info("processing product '%s'..." % pid)
+            # check that the query has valid results
+            if eoxapi.get_page_record_count() > 0:
+                # processing records
+                for record in records:
+                    result_record = {}
+                    pid = record['EOLProductID']
+                    result_record["PID"] = pid
+                    result_record["created"] = False
+                    result_record["updated"] = False
+                    result_record["message"] = None
+                    logger.info("processing product '%s'..." % pid)
 
-                        pid_in_database = product_id_in_database(pid)
+                    pid_in_database = product_id_in_database(pid)
 
-                        # check if the product ID is blacklisted by a regular expression
-                        pid_blacklisted = False
-                        for regex in blacklist:
+                    # check if the product ID is blacklisted by a regular expression
+                    pid_blacklisted = False
+                    for regex in blacklist:
+                        try:
                             if re.search(regex, pid, re.I):
                                 pid_blacklisted = True
                                 break
+                        except:
+                            # silently ignore the issue, invalid regular expressions are handled by the settings form
+                            logger.info("invalid regular expression: %s" % regex)
 
-                        # ignore if the product id is not in the database
-                        if pid_blacklisted and not pid_in_database:
-                            logger.info("Product '%s' blacklisted... no further processing" % pid)
-                            result_record.update({
-                                "blacklist": True
-                            })
+                    # ignore if the product id is not in the database
+                    if pid_blacklisted and not pid_in_database:
+                        logger.info("Product '%s' blacklisted... no further processing" % pid)
+                        result_record.update({
+                            "blacklist": True
+                        })
 
-                        else:
-                            res = update_local_db_based_on_record(record, create_missing)
-                            res["blacklist"] = False
-                            result_record.update(res)
+                    else:
+                        res = update_local_db_based_on_record(record, create_missing)
+                        res["blacklist"] = False
+                        result_record.update(res)
 
-                        results.append(result_record)
-
-                else:
-                    logger.warn("Query '%s' returns no valid values" % api_query)
+                    results.append(result_record)
 
             if current_page == result_pages:
                 break
@@ -254,7 +257,7 @@ def update_cisco_eox_database(api_query):
             ]
 
     except ConnectionFailedException:
-        logger.error("connection for query failed: %s" % api_query, exc_info=True)
+        logger.error("Query failed, server not reachable: %s" % api_query, exc_info=True)
         raise
 
     except CiscoApiCallFailed:

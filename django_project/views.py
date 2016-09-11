@@ -6,12 +6,15 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import password_change
 from django.core.urlresolvers import reverse
+from django.http import HttpResponseForbidden
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect, render, render_to_response
 from djcelery.views import JsonResponse, HttpResponse
 
 from app.config.settings import AppSettings
+from app.productdb.utils import login_required_if_login_only_mode
 from django_project.celery import app as celery, TaskState, get_meta_data_for_task
+from django_project import context_processors
 
 logger = logging.getLogger(__name__)
 
@@ -49,21 +52,27 @@ def custom_csrf_failure_page(request, reason=""):
 
 @login_required
 def custom_password_change(request):
-    """
-    custom change password form
-    """
-    return password_change(request,
-                           template_name='django_project/change_password.html',
-                           extra_context={},
-                           post_change_redirect="custom_password_change_done")
+    """custom change password form"""
+    # check if the request comes from an LDAP account, if so, raise a PermissionDenied exception
+    if context_processors.is_ldap_authenticated_user(request)["IS_LDAP_ACCOUNT"]:
+        return HttpResponseForbidden("You're not allowed to change your password in this application")
+
+    else:
+        return password_change(request,
+                               template_name='django_project/change_password.html',
+                               extra_context={},
+                               post_change_redirect="custom_password_change_done")
 
 
 @login_required
 def custom_password_change_done(request):
-    """
-    thank you page with link to homepage
-    """
-    return render(request, "django_project/password_change_done.html", context={})
+    """thank you page with link to homepage"""
+    # check if the request comes from an LDAP account, if so, raise a PermissionDenied exception
+    if context_processors.is_ldap_authenticated_user(request)["IS_LDAP_ACCOUNT"]:
+        return HttpResponseForbidden("You're not allowed to change your password in this application")
+
+    else:
+        return render(request, "django_project/password_change_done.html", context={})
 
 
 def login_user(request):
@@ -82,6 +91,9 @@ def login_user(request):
     if request.GET:
         context["next"] = request.GET['next']
 
+    else:
+        context["next"] = None
+
     if request.method == 'POST':
         # authenticate user
         username = request.POST['username']
@@ -91,7 +103,7 @@ def login_user(request):
             if user.is_active:
                 login(request, user)
 
-                if "next" in context.keys():
+                if context["next"] and not context["next"].startswith("/productdb/login"):
                     return HttpResponseRedirect(context["next"])
 
                 else:
@@ -113,13 +125,15 @@ def logout_user(request):
     """
     if request.user.is_authenticated():
         logout(request)
+
     return redirect(reverse("login"))
 
 
 def task_progress_view(request, task_id):
-    """
-    Progress view for an asynchronous task
-    """
+    """Progress view for an asynchronous task"""
+    if login_required_if_login_only_mode(request):
+        return redirect('%s?next=%s' % (settings.LOGIN_URL, request.path))
+
     default_title = "Please wait..."
     redirect_default = reverse("productdb:home")
     meta_data = get_meta_data_for_task(task_id)
@@ -147,11 +161,8 @@ def task_progress_view(request, task_id):
 
 
 def task_status_ajax(request, task_id):
-    """
-    returns a JSON representation of the task state
-    """
-    if settings.DEBUG:
-        # show results for task in debug mode
+    """returns a JSON representation of the task state"""
+    if settings.DEBUG:  # show results for task in debug mode
         valid_request = True
     else:
         valid_request = request.is_ajax()
@@ -196,7 +207,7 @@ def task_status_ajax(request, task_id):
                 "error_message": "A server process (redis) is not running, please contact the administrator"
             }
 
-        except Exception:
+        except Exception:  # catch any exception
             logger.error("cannot get task update", exc_info=True)
             response = {
                 "state": "failed",

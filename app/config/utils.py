@@ -3,7 +3,7 @@ from app.ciscoeox.base_api import CiscoHelloApi, CiscoEoxApi
 CISCO_EOX_API_TASK_NAME = "Cisco EoX API crawler"
 
 
-def test_cisco_hello_api_access(client_id, client_secret, drop_credentials=True):
+def check_cisco_hello_api_access(client_id, client_secret, drop_credentials=True):
     """
     test the Cisco Hello API access
     """
@@ -25,7 +25,7 @@ def test_cisco_hello_api_access(client_id, client_secret, drop_credentials=True)
         return False
 
 
-def test_cisco_eox_api_access(client_id, client_secret, drop_credentials=True):
+def check_cisco_eox_api_access(client_id, client_secret, drop_credentials=True):
     """
     test the Cisco EoX V5 API access
     """
@@ -41,7 +41,7 @@ def test_cisco_eox_api_access(client_id, client_secret, drop_credentials=True):
 
         base_api.query_product("WS-C2960-24T")
 
-        return True, ""
+        return True
 
     except Exception as ex:
-        return False, str(ex)
+        return False

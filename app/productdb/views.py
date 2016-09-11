@@ -1,9 +1,7 @@
 import logging
-
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.decorators import permission_required
-from django.core.exceptions import PermissionDenied
 from django.core.urlresolvers import reverse
 from django.db.models import Q
 from django.http import Http404
@@ -12,7 +10,6 @@ from django.template.defaultfilters import safe
 from django.utils.html import escape
 from django.utils.timezone import timedelta, datetime, get_current_timezone
 from django.contrib import messages
-
 from app.config.models import NotificationMessage, TextBlock
 from app.productdb import utils as app_util
 from app.productdb.forms import ImportProductsFileUploadForm, ProductListForm, UserProfileForm
@@ -20,15 +17,13 @@ from app.productdb.models import Product, JobFile, ProductGroup, ProductList, Us
 from app.productdb.models import Vendor
 import app.productdb.tasks as tasks
 from django_project.celery import set_meta_data_for_task
-
-from django_project.utils import login_required_if_login_only_mode
+from app.productdb.utils import login_required_if_login_only_mode
 
 logger = logging.getLogger(__name__)
 
 
 def home(request):
     """view for the homepage of the Product DB
-
     :param request:
     :return:
     """
@@ -71,7 +66,6 @@ def home(request):
 
 def about_view(request):
     """about view
-
     :param request:
     :return:
     """
@@ -83,7 +77,6 @@ def about_view(request):
 
 def browse_vendor_products(request):
     """Browse vendor specific products in the database
-
     :param request:
     :return:
     """
@@ -93,21 +86,16 @@ def browse_vendor_products(request):
     context = {
         "vendors": Vendor.objects.all()
     }
-    selected_vendor = ""
+    selected_vendor = 1  # use ID 1 by default
 
     if request.method == "POST":
-        selected_vendor = request.POST['vendor_selection']
+        vendor_id_str = [str(e) for e in context["vendors"].values_list("id", flat=True)]
+        if request.POST['vendor_selection'] in vendor_id_str:
+            selected_vendor = request.POST['vendor_selection']
+
     else:
         if request.user.is_authenticated():
-            default_vendor = request.user.profile.preferred_vendor.name
-
-        else:
-            default_vendor = "Cisco Systems"
-
-        for vendor in context['vendors']:
-            if vendor.name == default_vendor:
-                selected_vendor = vendor.id
-                break
+            selected_vendor = request.user.profile.preferred_vendor.id
 
     context['vendor_selection'] = selected_vendor
 
@@ -116,7 +104,6 @@ def browse_vendor_products(request):
 
 def browse_all_products(request):
     """Browse all products in the database
-
     :param request:
     :return:
     """
@@ -127,9 +114,7 @@ def browse_all_products(request):
 
 
 def list_product_groups(request):
-    """
-    browse all product groups in the database
-    """
+    """browse all product groups in the database"""
     if login_required_if_login_only_mode(request):
         return redirect('%s?next=%s' % (settings.LOGIN_URL, request.path))
 
@@ -137,9 +122,7 @@ def list_product_groups(request):
 
 
 def list_product_lists(request):
-    """
-    browse all product lists in the database
-    """
+    """browse all product lists in the database"""
     if login_required_if_login_only_mode(request):
         return redirect('%s?next=%s' % (settings.LOGIN_URL, request.path))
 
@@ -151,9 +134,7 @@ def list_product_lists(request):
 
 
 def detail_product_group(request, product_group_id=None):
-    """
-    detail view for a product group
-    """
+    """detail view for a product group"""
     if login_required_if_login_only_mode(request):
         return redirect('%s?next=%s' % (settings.LOGIN_URL, request.path))
 
@@ -176,8 +157,7 @@ def detail_product_group(request, product_group_id=None):
 
 
 def share_product_list(request, product_list_id):
-    """
-    public share link that doesn't require an authentication to view the Product List
+    """public share link that doesn't require an authentication to view the Product List
     :param request:
     :param product_list_id:
     :return:
@@ -186,8 +166,7 @@ def share_product_list(request, product_list_id):
 
 
 def detail_product_list(request, product_list_id=None, share_link=False):
-    """
-    detail view for a product list
+    """detail view for a product list
     :param request:
     :param product_list_id:
     :param share_link: will use a template that only shows the login link in the header
@@ -197,10 +176,6 @@ def detail_product_list(request, product_list_id=None, share_link=False):
         return redirect('%s?next=%s' % (settings.LOGIN_URL, request.path))
 
     if not product_list_id:
-        # view 404 if a share_link page should be rendered
-        if share_link:
-            raise Http404("Product List not found")
-
         # if product_id is set to none, redirect to the all products view
         return redirect(reverse("productdb:list-product_lists"))
 
@@ -211,6 +186,10 @@ def detail_product_list(request, product_list_id=None, share_link=False):
         except:
             raise Http404("Product List with ID %s not found in database" % product_list_id)
 
+    share_link_username = ""
+    if request.user.is_authenticated():
+        share_link_username = request.user.first_name
+
     # build share by email link content
     share_link_url = request.get_raw_uri().split("/productdb/")[0] + \
                      reverse("productdb:share-product_list", kwargs={"product_list_id": product_list_id})
@@ -220,23 +199,23 @@ def detail_product_list(request, product_list_id=None, share_link=False):
                          escape("Hi,%%0D%%0Dplease take a look on the %s Product List:%%0D%%0D"
                                 "%s%%0D%%0DThank you.%%0D%%0DKind Regards,%%0D%s" % (pl.name,
                                                                                      share_link_url,
-                                                                                     "Henry"))
+                                                                                     share_link_username))
 
     context = {
         "product_list": pl,
-        "export_description": pl.description.splitlines()[0] if len(pl.description.splitlines()) != 0 else "",
         "share_link_content": share_link_content,
         "share_link": False if request.user.is_authenticated() else share_link,
         "back_to": request.GET.get("back_to") if request.GET.get("back_to") else reverse("productdb:list-product_lists")
     }
 
+    if pl.description:
+        context["export_description"] = pl.description.splitlines()[0] if len(pl.description.splitlines()) != 0 else ""
+
     return render(request, "productdb/product_list/detail-product_list.html", context=context)
 
 
 def view_product_details(request, product_id=None):
-    """
-    view product details
-    """
+    """view product details"""
     if login_required_if_login_only_mode(request):
         return redirect('%s?next=%s' % (settings.LOGIN_URL, request.path))
 
@@ -260,7 +239,6 @@ def view_product_details(request, product_id=None):
 
 def bulk_eol_check(request):
     """view that executes and handles the Bulk EoL check function
-
     :param request:
     :return:
     """
@@ -300,7 +278,7 @@ def bulk_eol_check(request):
 
                 # don't add duplicates to query result, create statistical element
                 if element.product_id not in result_stats.keys():
-                    query_result.append(app_util.normalize_date(element))
+                    query_result.append(app_util.convert_product_to_dict(element))
                     result_stats[element.product_id] = dict()
                     result_stats[element.product_id]['count'] = 1
                     result_stats[element.product_id]['product'] = element
@@ -456,30 +434,21 @@ def delete_product_list(request, product_list_id=None):
 @login_required()
 @permission_required('productdb.change_product', raise_exception=True)
 def import_products(request):
-    """
-    import of products using Excel
+    """import of products using Excel
     :param request:
     :return:
     """
     context = {}
     if request.method == "POST":
-        form = ImportProductsFileUploadForm(request.POST, request.FILES)
+        form = ImportProductsFileUploadForm(request.user, request.POST, request.FILES)
         if form.is_valid():
             # file is valid, save and execute the import job
             job_file = JobFile(file=request.FILES['excel_file'])
             job_file.save()
 
-            if request.user.is_superuser:
-                # only the superuser is allowed to add a server notification message
-                create_notification = not form.cleaned_data["suppress_notification"]
-
-            else:
-                # all other users are not allowed to add a server notification
-                create_notification = False
-
             task = tasks.import_price_list.delay(
                 job_file_id=job_file.id,
-                create_notification_on_server=create_notification,
+                create_notification_on_server=not form.cleaned_data["suppress_notification"],
                 update_only=form.cleaned_data["update_existing_products_only"],
                 user_for_revision=request.user.username
             )
@@ -493,9 +462,7 @@ def import_products(request):
             return redirect(reverse("task_in_progress", kwargs={"task_id": task.id}))
 
     else:
-        form = ImportProductsFileUploadForm(initial={"suppress_notification": True})
-        if not request.user.is_superuser:
-            form.fields["suppress_notification"].disabled = True
+        form = ImportProductsFileUploadForm(request.user)
 
     context['form'] = form
 
@@ -504,14 +471,11 @@ def import_products(request):
 
 @login_required()
 def edit_user_profile(request):
-    if not request.user.is_authenticated():
-        raise PermissionDenied
-
     up, _ = UserProfile.objects.get_or_create(user=request.user)
     back_to = request.GET.get("back_to") if request.GET.get("back_to") else reverse("productdb:home")
 
     if request.method == "POST":
-        form = UserProfileForm(request.POST, instance=up)
+        form = UserProfileForm(request.user, request.POST, instance=up)
 
         if form.is_valid():
             form.save()
@@ -521,10 +485,10 @@ def edit_user_profile(request):
 
             messages.add_message(request, messages.INFO, "User Profile successful updated")
 
-            return redirect(back_to) if back_to else redirect(reverse("productdb:home"))
+            return redirect(back_to)
 
     else:
-        form = UserProfileForm(instance=up, initial={"email": request.user.email})
+        form = UserProfileForm(request.user, instance=up)
 
     context = {
         "form": form,

@@ -4,10 +4,12 @@ import app.ciscoeox.api_crawler as cisco_eox_api_crawler
 from app.ciscoeox.exception import CredentialsNotFoundException, CiscoApiCallFailed
 from app.config import AppSettings
 from app.config.models import NotificationMessage
-from app.config.utils import test_cisco_eox_api_access
+from app.config.utils import check_cisco_eox_api_access
 from django_project.celery import app as app, TaskState
 
 logger = logging.getLogger(__name__)
+
+NOTIFICATION_MESSAGE_TITLE = "Synchronization with Cisco EoX API"
 
 
 @app.task(
@@ -30,10 +32,7 @@ def execute_task_to_synchronize_cisco_eox_states(self, ignore_periodic_sync_flag
     app_config.read_file()
     run_task = app_config.is_cisco_eox_api_auto_sync_enabled()
 
-    if ignore_periodic_sync_flag:
-        run_task = True
-
-    if run_task:
+    if run_task or ignore_periodic_sync_flag:
         logger.info("start sync with Cisco EoX API...")
         self.update_state(state=TaskState.PROCESSING, meta={
             "status_message": "sync with Cisco EoX API..."
@@ -54,33 +53,41 @@ def execute_task_to_synchronize_cisco_eox_states(self, ignore_periodic_sync_flag
                 "status_message": "No Cisco EoX API queries configured."
             }
 
-        # update the local database with the Cisco EoX API
-        else:
-            # test Cisco EoX API access
-            success, _ = test_cisco_eox_api_access(
-                app_config.get_cisco_api_client_id(),
-                app_config.get_cisco_api_client_secret(),
-                False
+            NotificationMessage.objects.create(
+                title=NOTIFICATION_MESSAGE_TITLE,
+                type=NotificationMessage.MESSAGE_WARNING,
+                summary_message="There are no Cisco EoX API queries configured. Nothing to do.",
+                detailed_message="There are no Cisco EoX API queries configured. Please configure at least on EoX API "
+                                 "query in the settings or disable the periodic synchronization."
             )
 
-            if not success:
-                msg = "Cannot access the Cisco API. Please ensure that the server is connected to the internet " \
-                      "and that the authentication settings are valid."
-                logger.error(msg, exc_info=True)
-
-                NotificationMessage.objects.create(
-                    title="Synchronization with Cisco EoX API",
-                    type=NotificationMessage.MESSAGE_ERROR,
-                    summary_message=msg,
-                    detailed_message="The synchronization with the Cisco EoX API was not started."
+        # update the local database with the Cisco EoX API
+        else:
+            try:
+                # test Cisco EoX API access
+                success = check_cisco_eox_api_access(
+                    app_config.get_cisco_api_client_id(),
+                    app_config.get_cisco_api_client_secret(),
+                    False
                 )
 
-                result = {
-                    "error_message": msg
-                }
+                if not success:
+                    msg = "Cannot access the Cisco API. Please ensure that the server is connected to the internet " \
+                          "and that the authentication settings are valid."
+                    logger.error(msg, exc_info=True)
 
-            else:
-                try:
+                    NotificationMessage.objects.create(
+                        title=NOTIFICATION_MESSAGE_TITLE,
+                        type=NotificationMessage.MESSAGE_ERROR,
+                        summary_message=msg,
+                        detailed_message="The synchronization with the Cisco EoX API was not started."
+                    )
+
+                    result = {
+                        "error_message": msg
+                    }
+
+                else:
                     # execute all queries from the configuration and collect the results
                     notify_metrics = {
                         "queries": {}
@@ -150,28 +157,19 @@ def execute_task_to_synchronize_cisco_eox_states(self, ignore_periodic_sync_flag
                                     detailed_html += "<li>create the Product <code>%s</code> in the database" % (
                                         qres["PID"]
                                     )
-                                    if msg != "":
-                                        detailed_html += "(%s)</li>" % msg
-                                    else:
-                                        detailed_html += "</li>"
+                                    detailed_html += " (%s)</li>" % msg if msg != "" else "</li>"
 
                                 elif qres["updated"]:
-                                    detailed_html += "<li>update the Product data for <code>%s</code></li>" % (
+                                    detailed_html += "<li>update the Product data for <code>%s</code>" % (
                                         qres["PID"]
                                     )
-                                    if msg != "":
-                                        detailed_html += "(%s)</li>" % msg
-                                    else:
-                                        detailed_html += "</li>"
+                                    detailed_html += " (%s)</li>" % msg if msg != "" else "</li>"
 
                                 elif qres["blacklist"]:
-                                    detailed_html += "<li>Product data for <code>%s</code> ignored</li>" % (
+                                    detailed_html += "<li>Product data for <code>%s</code> ignored" % (
                                         qres["PID"]
                                     )
-                                    if msg != "":
-                                        detailed_html += "(%s)</li>" % msg
-                                    else:
-                                        detailed_html += "</li>"
+                                    detailed_html += " (%s)</li>" % msg if msg != "" else "</li>"
 
                             detailed_html += "</ul>"
 
@@ -200,7 +198,7 @@ def execute_task_to_synchronize_cisco_eox_states(self, ignore_periodic_sync_flag
                     )
 
                     NotificationMessage.objects.create(
-                        title="Synchronization with Cisco EoX API",
+                        title=NOTIFICATION_MESSAGE_TITLE,
                         type=NotificationMessage.MESSAGE_SUCCESS,
                         summary_message=summary_html,
                         detailed_message=detailed_html
@@ -216,35 +214,35 @@ def execute_task_to_synchronize_cisco_eox_states(self, ignore_periodic_sync_flag
                             "status_message": detailed_html
                         })
 
-                except CredentialsNotFoundException as ex:
-                    msg = "Invalid credentials for Cisco EoX API or insufficient access rights (%s)" % str(ex)
-                    logger.error(msg, exc_info=True)
+            except CredentialsNotFoundException as ex:
+                msg = "Invalid credentials for Cisco EoX API or insufficient access rights (%s)" % str(ex)
+                logger.error(msg, exc_info=True)
 
-                    NotificationMessage.objects.create(
-                        title="Synchronization with Cisco EoX API",
-                        type=NotificationMessage.MESSAGE_ERROR,
-                        summary_message=msg,
-                        detailed_message="The synchronization was performed partially."
-                    )
+                NotificationMessage.objects.create(
+                    title=NOTIFICATION_MESSAGE_TITLE,
+                    type=NotificationMessage.MESSAGE_ERROR,
+                    summary_message=msg,
+                    detailed_message="The synchronization was performed partially."
+                )
 
-                    result = {
-                        "error_message": msg
-                    }
+                result = {
+                    "error_message": msg
+                }
 
-                except CiscoApiCallFailed as ex:
-                    msg = "Cisco EoX API call failed (%s)" % str(ex)
-                    logger.error(msg, exc_info=True)
+            except CiscoApiCallFailed as ex:
+                msg = "Cisco EoX API call failed (%s)" % str(ex)
+                logger.error(msg, exc_info=True)
 
-                    NotificationMessage.objects.create(
-                        title="Synchronization with Cisco EoX API",
-                        type=NotificationMessage.MESSAGE_ERROR,
-                        summary_message=msg,
-                        detailed_message="The synchronization was performed partially."
-                    )
+                NotificationMessage.objects.create(
+                    title=NOTIFICATION_MESSAGE_TITLE,
+                    type=NotificationMessage.MESSAGE_ERROR,
+                    summary_message=msg,
+                    detailed_message="The synchronization was performed partially."
+                )
 
-                    result = {
-                        "error_message": msg
-                    }
+                result = {
+                    "error_message": msg
+                }
 
     else:
         result = {

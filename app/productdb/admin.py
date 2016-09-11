@@ -4,6 +4,8 @@ from django.contrib.auth.models import User
 from reversion_compare.admin import CompareVersionAdmin
 from app.productdb.models import Product, Vendor, ProductGroup, ProductList
 from app.productdb.models import UserProfile
+from django.contrib.auth.models import Permission
+admin.site.register(Permission)
 
 
 class UserProfileInline(admin.StackedInline):
@@ -26,6 +28,7 @@ class ProductAdmin(CompareVersionAdmin, admin.ModelAdmin):
         'description',
         'tags',
         'vendor',
+        'current_lifecycle_states',
     )
 
     search_fields = (
@@ -33,7 +36,18 @@ class ProductAdmin(CompareVersionAdmin, admin.ModelAdmin):
         'description',
         'tags',
         'vendor__name',
+        'current_lifecycle_states',
     )
+
+    readonly_fields = (
+        'current_lifecycle_states',
+    )
+
+    def current_lifecycle_states(self, obj):
+        val = obj.current_lifecycle_states
+        if val:
+            return "<br>".join(obj.current_lifecycle_states)
+        return ""
 
     history_latest_first = True
     ignore_duplicate_revisions = True

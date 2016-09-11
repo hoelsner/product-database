@@ -36,15 +36,6 @@ class BaseCiscoApiConsole:
             "current_access_token": self.current_access_token
         }
 
-    def load_client_credentials(self):
-        logger.debug("load client credentials from configuration")
-        app_settings = AppSettings()
-        app_settings.read_file()
-
-        # load client credentials
-        self.client_id = app_settings.get_cisco_api_client_id()
-        self.client_secret = app_settings.get_cisco_api_client_secret()
-
     def __save_cached_temp_token__(self):
         logger.debug("save token to cache")
 
@@ -58,7 +49,7 @@ class BaseCiscoApiConsole:
             timeout=self.token_expire_datetime.timestamp()
         )
 
-        logger.info("temporary token saved")
+        logger.debug("temporary token saved")
 
     def __load_cached_temp_token__(self):
         logger.debug("load cached temp token")
@@ -76,9 +67,36 @@ class BaseCiscoApiConsole:
             )
             return True
 
-        except:
-            logger.info("cannot load cached token: register new token")
+        except:  # catch any exception
+            logger.debug("cannot load cached token: register new token")
             return False
+
+    def __check_response_for_errors__(self, respone):
+        """check for common errors on the API endpoints"""
+        if respone.status_code == 401:
+            logger.error("cannot claim access token, Invalid client or client credentials")
+            raise InvalidClientCredentialsException("Invalid client or client credentials")
+
+        if respone.text == "<h1>Not Authorized</h1>":
+            logger.error("cannot claim access token, authorization failed")
+            raise AuthorizationFailedException("User authorization failed")
+
+        elif respone.text == "<h1>Developer Inactive</h1>":
+            logger.error("cannot claim access token, developer inactive")
+            raise AuthorizationFailedException("Insufficient Permissions on API endpoint")
+
+        elif respone.text == "<h1>Gateway Timeout</h1>":
+            logger.error("cannot claim access token, Gateway timeout")
+            raise AuthorizationFailedException("API endpoint temporary unreachable")
+
+    def load_client_credentials(self):
+        logger.debug("load client credentials from configuration")
+        app_settings = AppSettings()
+        app_settings.read_file()
+
+        # load client credentials
+        self.client_id = app_settings.get_cisco_api_client_id()
+        self.client_secret = app_settings.get_cisco_api_client_secret()
 
     def get_client_credentials(self):
         if self.client_id is None:
@@ -90,7 +108,6 @@ class BaseCiscoApiConsole:
         }
 
     def create_temporary_access_token(self, force_new_token=False):
-        logger.debug("create new temporary token")
         if self.client_id is None:
             raise CredentialsNotFoundException("Client credentials not defined/found")
 
@@ -100,65 +117,60 @@ class BaseCiscoApiConsole:
             "grant_type": "client_credentials"
         }
 
-        # check if previous token expired
-        if self.__is_cached_token_valid__():
-            logger.info("cached token valid, continue with it")
-
-        else:
-            logger.info("cached token invalid or not existing (force:%s)" % force_new_token)
-            try:
-                result = requests.post(self.AUTHENTICATION_URL, params=authz_header)
-
-            except Exception as ex:
-                logger.error("cannot contact authentication server at %s" % self.AUTHENTICATION_URL, exc_info=True)
-                raise ConnectionFailedException("cannot contact authentication server") from ex
-
-            if result.status_code == 401:
-                # unauthorized
-                logger.error("cannot claim access token, Invalid client or client credentials")
-                raise InvalidClientCredentialsException("Invalid client or client credentials")
-
-            if result.text.find("Not Authorized") != -1:
-                logger.error("cannot claim access token, authorization failed")
-                raise AuthorizationFailedException("Not Authorized")
+        # try to load the cached token
+        if not self.__load_cached_temp_token__():
+            # check if previous token expired
+            if self.__is_cached_token_valid__():
+                logger.debug("cached token valid, continue with it")
 
             else:
+                logger.debug("cached token invalid or not existing (force:%s)" % force_new_token)
+                try:
+                    response = requests.post(self.AUTHENTICATION_URL, params=authz_header)
+
+                except Exception as ex:
+                    logger.error("cannot contact authentication server at %s" % self.AUTHENTICATION_URL, exc_info=True)
+                    raise ConnectionFailedException("cannot contact authentication server") from ex
+
+                self.__check_response_for_errors__(response)
+                try:
+                    jdata = response.json()
+
+                except:
+                    logger.error("unexpected response from API endpoint (malformed JSON content)")
+                    raise CiscoApiCallFailed("unexpected content from API endpoint")
+
                 cache.delete(self.AUTH_TOKEN_CACHE_KEY)
-                self.current_access_token = json.loads(result.text)
+                self.current_access_token = jdata
                 self.__new_token_created__ = True
 
-            # set expire date
-            expire_offset = datetime.timedelta(seconds=self.current_access_token['expires_in'])
-            self.token_expire_datetime = datetime.datetime.now() + expire_offset
+                # set expire date
+                expire_offset = datetime.timedelta(seconds=self.current_access_token['expires_in'])
+                self.token_expire_datetime = datetime.datetime.now() + expire_offset
 
-        self.http_auth_header = {
-            # we will just work with JSON results
-            "Accept": "application/json",
-            "Authorization": "%s %s" % (self.current_access_token['token_type'],
-                                        self.current_access_token['access_token']),
-        }
+            self.http_auth_header = {
+                # we will just work with JSON results
+                "Accept": "application/json",
+                "Authorization": "%s %s" % (self.current_access_token['token_type'],
+                                            self.current_access_token['access_token']),
+            }
 
         # dump token to temp file
         self.__save_cached_temp_token__()
 
     def drop_cached_token(self):
-        try:
-            cache.delete(self.AUTH_TOKEN_CACHE_KEY)
-
-        except Exception as ex:
-            logger.error("cannot delete cache value: %s" % str(ex), exc_info=True)
-            pass
-
+        cache.delete(self.AUTH_TOKEN_CACHE_KEY)
         self.current_access_token = None
         self.http_auth_header = None
 
     def __is_cached_token_valid__(self):
+        result = False
         if self.token_expire_datetime is not None:
             logger.debug("check cached token state: %s <= %s" % (datetime.datetime.now(),
                                                                  self.token_expire_datetime))
-            return datetime.datetime.now() <= self.token_expire_datetime
+            result = datetime.datetime.now() <= self.token_expire_datetime
 
-        return False
+        return result if result else False
 
     def is_ready_for_use(self):
         """
@@ -166,22 +178,37 @@ class BaseCiscoApiConsole:
         :return:
         """
         if self.client_id is None:
-            raise CredentialsNotFoundException("credentials not loaded")
+            return False
 
         if self.http_auth_header is None:
             # check that a valid token exists, renew if required
             if not self.__load_cached_temp_token__():
                 self.create_temporary_access_token(force_new_token=True)
-            else:
-                if not self.__is_cached_token_valid__():
-                    logger.info("access token expired, claim new one")
-                    self.create_temporary_access_token(force_new_token=True)
 
         elif not self.__is_cached_token_valid__():
-            logger.info("access token expired, claim new one")
+            logger.debug("access token expired, claim new one")
             self.create_temporary_access_token(force_new_token=True)
 
         return True
+
+    def get_request(self, url):
+        try:
+            response = requests.get(url, headers=self.http_auth_header)
+
+        except Exception as ex:
+            logger.error("cannot contact API endpoint at %s" % url, exc_info=True)
+            raise ConnectionFailedException("cannot contact API endpoint at %s" % url) from ex
+
+        self.__check_response_for_errors__(response)
+        try:
+            jdata = response.json()
+
+        except:
+            logger.debug(response.text)
+            logger.error("unexpected response from API endpoint (malformed JSON content)")
+            raise CiscoApiCallFailed("unexpected content from API endpoint")
+
+        return jdata
 
 
 class CiscoHelloApi(BaseCiscoApiConsole):
@@ -191,21 +218,9 @@ class CiscoHelloApi(BaseCiscoApiConsole):
     HELLO_API_URL = "https://api.cisco.com/hello"
 
     def hello_api_call(self):
-        logger.debug("call to Hello API endpoint")
         if self.is_ready_for_use():
-            try:
-                print(self.http_auth_header)
-                result = requests.get(self.HELLO_API_URL, headers=self.http_auth_header)
+            return self.get_request(self.HELLO_API_URL)
 
-            except Exception as ex:
-                logger.error("cannot contact API endpoint at %s" % self.HELLO_API_URL, exc_info=True)
-                raise ConnectionFailedException("cannot contact API endpoint at %s" % self.HELLO_API_URL) from ex
-
-            if result.text.find("Not Authorized") != -1:
-                logger.debug("call not authorized: %s" % result.text)
-                raise AuthorizationFailedException("Not Authorized")
-
-            return result.json()
         raise CiscoApiCallFailed("Client not ready (credentials or token missing)")
 
 
@@ -229,34 +244,17 @@ class CiscoEoxApi(BaseCiscoApiConsole):
         logger.debug("call to Cisco EoX API endpoint with '%s'" % product_id)
         if self.is_ready_for_use():
             url = self.EOX_API_URL % (page, product_id)
-            try:
-                result = requests.get(url, headers=self.http_auth_header)
-
-            except Exception as ex:
-                logger.error("cannot contact API endpoint at %s" % url, exc_info=True)
-                raise ConnectionFailedException(
-                    "Query \"%s\": Cannot contact API endpoint at %s" % (product_id, url)
-                ) from ex
-
-            if result.text.find("Not Authorized") != -1:
-                logger.debug("call not authorized: %s" % result.text)
-                raise AuthorizationFailedException("Query %s: Not Authorized, invalid credentials" % product_id)
-
-            elif result.text.find("Developer Inactive") != -1:
-                logger.debug("call not authorized: %s" % result.text)
-                raise AuthorizationFailedException(
-                    "Query \"%s\": Invalid Permission, check your application mapping in "
-                    "the API configuration" % product_id
-                )
-
-            self.last_json_result = result.json()
+            self.last_json_result = self.get_request(url)
             self.last_page_call = page
 
             # check for API error
             if self.has_api_error():
-                msg = "Query \"%s\": Cisco EoX API error occurred: %s" % (product_id, self.get_api_error_message())
-                logger.fatal(msg)
-                raise CiscoApiCallFailed(msg)
+                # if the API error message only states that no EoX information are available, just return nothing
+                if not self.get_api_error_message().startswith("EOX information does not exist for the following "
+                                                               "product ID(s):"):
+                    msg = "Cisco EoX API error: %s" % self.get_api_error_message()
+                    logger.fatal(msg)
+                    raise CiscoApiCallFailed(msg)
 
             return self.last_json_result
 
@@ -273,7 +271,7 @@ class CiscoEoxApi(BaseCiscoApiConsole):
             return 0
 
         if int(self.last_json_result['PaginationResponseRecord']['TotalRecords']) == 1:
-            return self.get_valid_record_count()
+            return self.get_page_record_count()
 
         return int(self.last_json_result['PaginationResponseRecord']['TotalRecords'])
 
@@ -283,9 +281,10 @@ class CiscoEoxApi(BaseCiscoApiConsole):
 
         return int(self.last_json_result['PaginationResponseRecord']['PageIndex'])
 
-    def get_valid_record_count(self):
+    def get_page_record_count(self):
         if self.last_json_result is None:
             return 0
+
         if len(self.last_json_result['EOXRecord']) == 1:
             if "EOXError" in self.last_json_result['EOXRecord'][0].keys():
                 return 0
@@ -294,14 +293,14 @@ class CiscoEoxApi(BaseCiscoApiConsole):
                 return 1
 
         else:
-            return self.amount_of_total_records()
+            return len(self.last_json_result['EOXRecord'])
 
     def has_api_error(self):
         """
         identifies API errors
         :return:
         """
-        if "EOXError" in self.last_json_result.keys():
+        if self.has_error(self.last_json_result["EOXRecord"][0]):
             return True
 
         return False
@@ -311,9 +310,9 @@ class CiscoEoxApi(BaseCiscoApiConsole):
         returns API error message, if existing in the last query
         :return:
         """
-        if "EOXError" in self.last_json_result.keys():
-            msg = "%s (%s)" % (self.last_json_result['EOXError']['ErrorDescription'],
-                               self.last_json_result['EOXError']['ErrorID'])
+        if self.has_error(self.last_json_result["EOXRecord"][0]):
+            msg = "%s (%s)" % (self.get_error_description(self.last_json_result["EOXRecord"][0]),
+                               self.last_json_result["EOXRecord"][0]['EOXError']['ErrorID'])
             return msg
 
         return "no error"

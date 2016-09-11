@@ -1,0 +1,63 @@
+{
+    "PaginationResponseRecord": {
+        "TotalRecords": 1,
+        "PageRecords": 1,
+        "LastIndex": 1,
+        "PageIndex": 1
+    },
+    "EOXRecord": [
+        {
+            "ProductIDDescription": "",
+            "EndOfRoutineFailureAnalysisDate": {
+                "value": "",
+                "dateFormat": null
+            },
+            "EOXMigrationDetails": {
+                "MigrationProductName": "",
+                "PIDActiveFlag": "",
+                "MigrationStrategy": "",
+                "MigrationInformation": "",
+                "MigrationProductId": "",
+                "MigrationOption": "",
+                "MigrationProductInfoURL": ""
+            },
+            "EndOfSaleDate": {
+                "value": "",
+                "dateFormat": null
+            },
+            "EOLProductID": "",
+            "LinkToProductBulletinURL": "",
+            "EOXInputType": "ShowEOXByPids",
+            "EndOfSWMaintenanceReleases": {
+                "value": "",
+                "dateFormat": null
+            },
+            "EOXInputValue": "NOTHING",
+            "ProductBulletinNumber": "",
+            "UpdatedTimeStamp": {
+                "value": "",
+                "dateFormat": null
+            },
+            "EndOfSvcAttachDate": {
+                "value": "",
+                "dateFormat": null
+            },
+            "EOXExternalAnnouncementDate": {
+                "value": "",
+                "dateFormat": null
+            },
+            "EOXError": {
+                "ErrorID": "SSA_ERR_026",
+                "ErrorDescription": "EOX information does not exist for the following product ID(s): NOTHING"
+            },
+            "EndOfServiceContractRenewal": {
+                "value": "",
+                "dateFormat": null
+            },
+            "LastDateOfSupport": {
+                "value": "",
+                "dateFormat": null
+            }
+        }
+    ]
+}

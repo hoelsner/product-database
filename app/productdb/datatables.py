@@ -77,11 +77,13 @@ class VendorProductListJson(BaseDatatableView, ColumnSearchMixin):
 
     }
 
+    # if no vendor is given, we use the "unassigned" vendor
     vendor_id = 0
 
     def get_initial_queryset(self):
-        if self.kwargs['vendor_id']:
-            self.vendor_id = self.kwargs['vendor_id']
+        if "vendor_id" in self.kwargs:
+            if self.kwargs['vendor_id']:
+                self.vendor_id = self.kwargs['vendor_id']
         return Product.objects.filter(vendor__id=self.vendor_id)
 
     def filter_queryset(self, qs):
@@ -105,11 +107,17 @@ class VendorProductListJson(BaseDatatableView, ColumnSearchMixin):
         json_data = []
 
         for item in qs:
+            product_group_id = ""
+            product_group_name = ""
+            if item.product_group:
+                product_group_id = item.product_group.id
+                product_group_name = item.product_group.name
+
             json_data.append({
                 "id": item.id,
                 "product_id": item.product_id,
-                "product_group": item.product_group.name if item.product_group else "",
-                "product_group_id": item.product_group.id if item.product_group else "",
+                "product_group": product_group_name,
+                "product_group_id": product_group_id,
                 "description": item.description,
                 "list_price": item.list_price,
                 "currency": item.currency,
@@ -216,12 +224,8 @@ class ListProductsByGroupJson(BaseDatatableView, ColumnSearchMixin):
     product_group_id = None
 
     def get_initial_queryset(self):
-        if self.kwargs['product_group_id']:
-            self.product_group_id = self.kwargs['product_group_id']
-            return Product.objects.filter(product_group__id=self.product_group_id)
-
-        else:
-            return None
+        self.product_group_id = self.kwargs.get('product_group_id', 0)
+        return Product.objects.filter(product_group__id=self.product_group_id)
 
     def filter_queryset(self, qs):
         # use request parameters to filter queryset
@@ -329,12 +333,18 @@ class ListProductsJson(BaseDatatableView, ColumnSearchMixin):
         json_data = []
 
         for item in qs:
+            product_group_id = ""
+            product_group_name = ""
+            if item.product_group:
+                product_group_id = item.product_group.id
+                product_group_name = item.product_group.name
+
             json_data.append({
                 "id": item.id,
                 "vendor": item.vendor.name,
                 "product_id": item.product_id,
-                "product_group": item.product_group.name if item.product_group else "",
-                "product_group_id": item.product_group.id if item.product_group else "",
+                "product_group": product_group_name,
+                "product_group_id": product_group_id,
                 "description": item.description,
                 "list_price": item.list_price,
                 "currency": item.currency,

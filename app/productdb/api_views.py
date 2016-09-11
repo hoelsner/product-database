@@ -12,7 +12,7 @@ class VendorViewSet(viewsets.ReadOnlyModelViewSet):
     """
     API endpoint for the Vendor objects
     """
-    queryset = Vendor.objects.all()
+    queryset = Vendor.objects.all().order_by("id")
     serializer_class = VendorSerializer
     lookup_field = 'id'
     filter_backends = (
@@ -37,7 +37,7 @@ class ProductGroupViewSet(viewsets.ModelViewSet):
     """
     API endpoint for the ProductGroup objects
     """
-    queryset = ProductGroup.objects.all()
+    queryset = ProductGroup.objects.all().order_by("name")
     serializer_class = ProductGroupSerializer
     lookup_field = 'id'
     filter_backends = (
@@ -59,7 +59,7 @@ class ProductGroupViewSet(viewsets.ModelViewSet):
             query: merge
         """
         result = {
-            "count": Product.objects.count()
+            "count": ProductGroup.objects.count()
         }
         return Response(result)
 

@@ -7,7 +7,7 @@ from django.core.cache import cache
 from django.shortcuts import redirect, render
 
 from app.ciscoeox import tasks
-from app.ciscoeox.api_crawler import update_cisco_eox_database
+from app.ciscoeox import api_crawler
 from app.ciscoeox.exception import ConnectionFailedException, CiscoApiCallFailed
 from app.config import AppSettings
 from django_project.celery import set_meta_data_for_task
@@ -42,15 +42,15 @@ def cisco_eox_query(request):
                     if len(query.split(" ")) == 1:
                         context['query_executed'] = query
                         try:
-                            eox_api_update_records = update_cisco_eox_database(api_query=query)
+                            eox_api_update_records = api_crawler.update_cisco_eox_database(api_query=query)
 
                         except ConnectionFailedException as ex:
-                            eox_api_update_records = ["Cannot contact Cisco API, error message:\n%s" % ex]
+                            eox_api_update_records = {"error": "Cannot contact Cisco API, error message:\n%s" % ex}
 
                         except CiscoApiCallFailed as ex:
-                            eox_api_update_records = [ex]
+                            eox_api_update_records = {"error": "Cisco API call failed: %s" % ex}
 
-                        except Exception as ex:
+                        except Exception as ex:  # catch any exception
                             logger.debug("execution failed due to unexpected exception", exc_info=True)
                             eox_api_update_records = ["execution failed: %s" % ex]
 
@@ -63,7 +63,10 @@ def cisco_eox_query(request):
                     context['eox_api_update_records'] = ["Please specify a valid query"]
 
             else:
-                context['eox_api_update_records'] = "Query not executed, please select the \"execute it now\" checkbox."
+                context['eox_api_update_records'] = "Query not specified."
+
+        else:
+            context['eox_api_update_records'] = "Query not executed, please select the \"execute it now\" checkbox."
 
     return render(request, "ciscoeox/cisco_eox_query.html", context=context)
 
