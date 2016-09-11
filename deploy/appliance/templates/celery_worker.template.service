@@ -5,6 +5,10 @@ After=redis-service.service
 After=prductdb-celerycamera.service
 
 [Service]
+Restart=always
+RestartSec=30
+StartLimitBurst=3
+StartLimitInterval=400
 PIDFile=/var/www/productdb/celery_worker.pid
 Type=forking
 User=__USERNAME__
