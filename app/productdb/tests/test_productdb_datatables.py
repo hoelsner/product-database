@@ -56,8 +56,30 @@ def test_datatables_search_on_vendor_products_endpoint():
     assert "recordsFiltered" in result_json
     assert result_json["recordsFiltered"] == 1
 
+    # call with case-insensitive common search term
+    response = client.get(url + "?" + quote("search[value]") + "=" + quote(test_pid_search_term.lower()))
+    assert response.status_code == status.HTTP_200_OK
+
+    result_json = response.json()
+    assert "data" in result_json
+    assert "draw" in result_json
+    assert "recordsTotal" in result_json
+    assert "recordsFiltered" in result_json
+    assert result_json["recordsFiltered"] == 1
+
     # call with column search term
     response = client.get(url + "?" + quote("columns[0][search][value]") + "=" + quote(test_pid_search_term))
+    assert response.status_code == status.HTTP_200_OK
+
+    result_json = response.json()
+    assert "data" in result_json
+    assert "draw" in result_json
+    assert "recordsTotal" in result_json
+    assert "recordsFiltered" in result_json
+    assert result_json["recordsFiltered"] == 1
+
+    # call with case-insensitive column search term
+    response = client.get(url + "?" + quote("columns[0][search][value]") + "=" + quote(test_pid_search_term.lower()))
     assert response.status_code == status.HTTP_200_OK
 
     result_json = response.json()
@@ -107,8 +129,30 @@ def test_datatables_search_on_vendor_products_view():
     assert "recordsFiltered" in result_json
     assert result_json["recordsFiltered"] == 1
 
+    # call with case-insensitive common search term
+    response = client.get(url + "?" + quote("search[value]") + "=" + quote(test_pid_search_term.lower()))
+    assert response.status_code == status.HTTP_200_OK
+
+    result_json = response.json()
+    assert "data" in result_json
+    assert "draw" in result_json
+    assert "recordsTotal" in result_json
+    assert "recordsFiltered" in result_json
+    assert result_json["recordsFiltered"] == 1
+
     # call with column search term
     response = client.get(url + "?" + quote("columns[0][search][value]") + "=" + quote(test_pid_search_term))
+    assert response.status_code == status.HTTP_200_OK
+
+    result_json = response.json()
+    assert "data" in result_json
+    assert "draw" in result_json
+    assert "recordsTotal" in result_json
+    assert "recordsFiltered" in result_json
+    assert result_json["recordsFiltered"] == 1
+
+    # call with case-insensitive column search term
+    response = client.get(url + "?" + quote("columns[0][search][value]") + "=" + quote(test_pid_search_term.lower()))
     assert response.status_code == status.HTTP_200_OK
 
     result_json = response.json()
@@ -157,8 +201,30 @@ def test_datatables_search_on_list_products_view():
     assert "recordsFiltered" in result_json
     assert result_json["recordsFiltered"] == 1
 
+    # call with case-insensitive common search term
+    response = client.get(url + "?" + quote("search[value]") + "=" + quote(test_pid_search_term.lower()))
+    assert response.status_code == status.HTTP_200_OK
+
+    result_json = response.json()
+    assert "data" in result_json
+    assert "draw" in result_json
+    assert "recordsTotal" in result_json
+    assert "recordsFiltered" in result_json
+    assert result_json["recordsFiltered"] == 1
+
     # call with column search term
     response = client.get(url + "?" + quote("columns[1][search][value]") + "=" + quote(test_pid_search_term))
+    assert response.status_code == status.HTTP_200_OK
+
+    result_json = response.json()
+    assert "data" in result_json
+    assert "draw" in result_json
+    assert "recordsTotal" in result_json
+    assert "recordsFiltered" in result_json
+    assert result_json["recordsFiltered"] == 1
+
+    # call with case-insensitive column search term
+    response = client.get(url + "?" + quote("columns[1][search][value]") + "=" + quote(test_pid_search_term.lower()))
     assert response.status_code == status.HTTP_200_OK
 
     result_json = response.json()
@@ -207,8 +273,30 @@ def test_datatables_search_on_list_product_groups_view():
     assert "recordsFiltered" in result_json
     assert result_json["recordsFiltered"] == 1
 
+    # call with case-insensitive common search term
+    response = client.get(url + "?" + quote("search[value]") + "=" + quote(test_pg_search_term.lower()))
+    assert response.status_code == status.HTTP_200_OK
+
+    result_json = response.json()
+    assert "data" in result_json
+    assert "draw" in result_json
+    assert "recordsTotal" in result_json
+    assert "recordsFiltered" in result_json
+    assert result_json["recordsFiltered"] == 1
+
     # call with column search term
     response = client.get(url + "?" + quote("columns[1][search][value]") + "=" + quote(test_pg_search_term))
+    assert response.status_code == status.HTTP_200_OK
+
+    result_json = response.json()
+    assert "data" in result_json
+    assert "draw" in result_json
+    assert "recordsTotal" in result_json
+    assert "recordsFiltered" in result_json
+    assert result_json["recordsFiltered"] == 1
+
+    # call with case-insensitive column search term
+    response = client.get(url + "?" + quote("columns[1][search][value]") + "=" + quote(test_pg_search_term.lower()))
     assert response.status_code == status.HTTP_200_OK
 
     result_json = response.json()
@@ -258,8 +346,30 @@ def test_datatables_search_on_list_products_by_product_group_view():
     assert "recordsFiltered" in result_json
     assert result_json["recordsFiltered"] == 1
 
+    # call with case-insensitive common search term
+    response = client.get(url + "?" + quote("search[value]") + "=" + quote(test_pid_search_term.lower()))
+    assert response.status_code == status.HTTP_200_OK
+
+    result_json = response.json()
+    assert "data" in result_json
+    assert "draw" in result_json
+    assert "recordsTotal" in result_json
+    assert "recordsFiltered" in result_json
+    assert result_json["recordsFiltered"] == 1
+
     # call with column search term
     response = client.get(url + "?" + quote("columns[0][search][value]") + "=" + quote(test_pid_search_term))
+    assert response.status_code == status.HTTP_200_OK
+
+    result_json = response.json()
+    assert "data" in result_json
+    assert "draw" in result_json
+    assert "recordsTotal" in result_json
+    assert "recordsFiltered" in result_json
+    assert result_json["recordsFiltered"] == 1
+
+    # call with case-insensitive column search term
+    response = client.get(url + "?" + quote("columns[0][search][value]") + "=" + quote(test_pid_search_term.lower()))
     assert response.status_code == status.HTTP_200_OK
 
     result_json = response.json()
@@ -310,8 +420,30 @@ def test_regex_search_on_list_products_view():
     assert "recordsFiltered" in result_json
     assert result_json["recordsFiltered"] == 49
 
+    # call with case-insensitive common search term
+    response = client.get(url + "?" + quote("search[value]") + "=" + quote(r"My Product ID \d+".lower()))
+    assert response.status_code == status.HTTP_200_OK
+
+    result_json = response.json()
+    assert "data" in result_json
+    assert "draw" in result_json
+    assert "recordsTotal" in result_json
+    assert "recordsFiltered" in result_json
+    assert result_json["recordsFiltered"] == 49
+
     # call with column search term
     response = client.get(url + "?" + quote("columns[1][search][value]") + "=" + quote("My Product ID \d+"))
+    assert response.status_code == status.HTTP_200_OK
+
+    result_json = response.json()
+    assert "data" in result_json
+    assert "draw" in result_json
+    assert "recordsTotal" in result_json
+    assert "recordsFiltered" in result_json
+    assert result_json["recordsFiltered"] == 49
+
+    # call with case-insensitive column search term
+    response = client.get(url + "?" + quote("columns[1][search][value]") + "=" + quote("My Product ID \d+".lower()))
     assert response.status_code == status.HTTP_200_OK
 
     result_json = response.json()

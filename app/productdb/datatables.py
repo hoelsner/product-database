@@ -37,7 +37,7 @@ class ColumnSearchMixin:
                 query_set = query_set.filter(**{
                     "%s__%s" % (
                         param["expr"],
-                        "regex" if is_valid_regex(column_search_string) and try_regex else "contains"
+                        "iregex" if is_valid_regex(column_search_string) and try_regex else "icontains"
                     ): column_search_string
                 })
         return query_set
@@ -92,7 +92,7 @@ class VendorProductListJson(BaseDatatableView, ColumnSearchMixin):
 
         if search_string:
             # search in the Product Group name and Vendor name by default
-            operation = "regex" if is_valid_regex(search_string) and try_regex else "contains"
+            operation = "iregex" if is_valid_regex(search_string) and try_regex else "icontains"
             qs = qs.filter(
                 Q(**{"product_id__%s" % operation: search_string}) |
                 Q(**{"description__%s" % operation: search_string})
@@ -167,7 +167,7 @@ class ListProductGroupsJson(BaseDatatableView, ColumnSearchMixin):
 
         if search_string:
             # search in the Product Group name and Vendor name by default
-            operation = "regex" if is_valid_regex(search_string) and try_regex else "contains"
+            operation = "iregex" if is_valid_regex(search_string) and try_regex else "icontains"
             qs = qs.filter(
                 Q(**{"name__%s" % operation: search_string}) |
                 Q(**{"vendor__name__%s" % operation: search_string})
@@ -234,7 +234,7 @@ class ListProductsByGroupJson(BaseDatatableView, ColumnSearchMixin):
 
         if search_string:
             # search in the Product Group name and Vendor name by default
-            operation = "regex" if is_valid_regex(search_string) and try_regex else "contains"
+            operation = "iregex" if is_valid_regex(search_string) and try_regex else "icontains"
             qs = qs.filter(
                 Q(**{"product_id__%s" % operation: search_string}) |
                 Q(**{"description__%s" % operation: search_string})
@@ -318,7 +318,7 @@ class ListProductsJson(BaseDatatableView, ColumnSearchMixin):
 
         if search_string:
             # search in the Product Group name and Vendor name by default
-            operation = "regex" if is_valid_regex(search_string) and try_regex else "contains"
+            operation = "iregex" if is_valid_regex(search_string) and try_regex else "icontains"
             qs = qs.filter(
                 Q(**{"product_id__%s" % operation: search_string}) |
                 Q(**{"description__%s" % operation: search_string})
