@@ -603,6 +603,7 @@ class TestProductDatabaseViews(BaseSeleniumTest):
         assert "PDF" == dt_buttons.find_element_by_link_text("PDF").text
         assert "Copy" == dt_buttons.find_element_by_link_text("Copy").text
         assert "CSV" == dt_buttons.find_element_by_link_text("CSV").text
+        assert "Excel" == dt_buttons.find_element_by_link_text("Excel").text
 
         # the table shows 10 entries from the list (below the table, there is a string "Showing 1 to 10 of \d+ entries"
         dt_wrapper = browser.find_element_by_id("product_table_info")
@@ -740,6 +741,7 @@ class TestProductDatabaseViews(BaseSeleniumTest):
         assert "PDF" == dt_buttons.find_element_by_link_text("PDF").text
         assert "Copy" == dt_buttons.find_element_by_link_text("Copy").text
         assert "CSV" == dt_buttons.find_element_by_link_text("CSV").text
+        assert "Excel" == dt_buttons.find_element_by_link_text("Excel").text
 
         # the table shows 10 entries from the list (below the table, there is a string "Showing 1 to 10 of \d+ entries"
         dt_wrapper = browser.find_element_by_id("product_table_info")

@@ -108,28 +108,35 @@
                 ],
                 buttons: [
                     {
-                        extend: 'copyHtml5',
+                        extend: "copyHtml5",
                         exportOptions: {
-                            columns: ':visible'
+                            columns: ":visible"
                         }
                     },
                     {
-                        extend: 'csvHtml5',
+                        extend: "csvHtml5",
                         title: "export product groups",
-                        fieldSeparator: ';',
+                        fieldSeparator: ";",
                         fieldBoundary: "",
                         exportOptions: {
-                            columns: ':visible'
+                            columns: ":visible"
                         },
-                        extension: '.csv'
+                        extension: ".csv"
                     },
                     {
-                        extend: 'pdfHtml5',
+                        extend: "pdfHtml5",
                         title: "export product groups",
-                        orientation: 'landscape',
-                        pageSize: 'A4',
+                        orientation: "landscape",
+                        pageSize: "A4",
                         exportOptions: {
-                            columns: ':visible'
+                            columns: ":visible"
+                        }
+                    },
+                    {
+                        extend: "excelHtml5",
+                        title: "export products",
+                        exportOptions: {
+                            columns: ":visible"
                         }
                     }
                 ],

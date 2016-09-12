@@ -218,6 +218,13 @@ EoSup      = Last day of support
                         "title": "Bulk EoL check (queries and products which are not found)",
                         "orientation": 'landscape',
                         "pageSize": 'A4'
+                    },
+                    {
+                        extend: "excelHtml5",
+                        title: "Bulk EoL check (detailed lifecycle states)",
+                        exportOptions: {
+                            columns: ":visible"
+                        }
                     }
                 ]
             });
@@ -263,6 +270,13 @@ EoSup      = Last day of support
                         "title": "Bulk EoL check (product summary table)",
                         "orientation": 'landscape',
                         "pageSize": 'A4'
+                    },
+                    {
+                        extend: "excelHtml5",
+                        title: "Bulk EoL check (detailed lifecycle states)",
+                        exportOptions: {
+                            columns: ":visible"
+                        }
                     }
                 ]
             });
@@ -318,18 +332,25 @@ EoSup      = Last day of support
                     {
                         "extend": 'csvHtml5',
                         "title": "Bulk EoL check (detailed lifecycle states)",
-                        "fieldSeparator": ';',
+                        "fieldSeparator": ";",
                         fieldBoundary: "",
                         exportOptions: {
-                            columns: ':visible'
+                            columns: ":visible"
                         },
-                        "extension": '.csv'
+                        "extension": ".csv"
                     },
                     {
-                        "extend": 'pdfHtml5',
+                        "extend": "pdfHtml5",
                         "title": "Bulk EoL check (detailed lifecycle states)",
-                        "orientation": 'landscape',
-                        "pageSize": 'A4'
+                        "orientation": "landscape",
+                        "pageSize": "A4"
+                    },
+                    {
+                        extend: "excelHtml5",
+                        title: "Bulk EoL check (detailed lifecycle states)",
+                        exportOptions: {
+                            columns: ":visible"
+                        }
                     }
                 ]
             });

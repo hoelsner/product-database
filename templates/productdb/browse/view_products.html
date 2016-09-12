@@ -237,11 +237,12 @@
                         "targets": 15,
                         "render": function (data, type, row) {
                             if (row['eol_reference_url'] != null) {
+                                var link_str;
                                 if(row['eol_reference_number'] != null) {
-                                    link_str = row['eol_reference_number']
+                                    link_str = row['eol_reference_number'];
                                 }
                                 else {
-                                    link_str = "Link"
+                                    link_str = "Link";
                                 }
 
                                 return "<a href=\"" + row['eol_reference_url'] +
@@ -258,32 +259,39 @@
                 ],
                 buttons: [
                     {
-                        extend: 'copyHtml5',
+                        extend: "copyHtml5",
                         exportOptions: {
-                            columns: ':visible'
+                            columns: ":visible"
                         }
                     },
                     {
-                        extend: 'csvHtml5',
+                        extend: "csvHtml5",
                         title: "export products",
                         fieldSeparator: ';',
                         fieldBoundary: "",
                         exportOptions: {
-                            columns: ':visible'
+                            columns: ":visible"
                         },
-                        extension: '.csv'
+                        extension: ".csv"
                     },
                     {
-                        extend: 'pdfHtml5',
+                        extend: "pdfHtml5",
                         title: "export products",
                         orientation: 'landscape',
                         pageSize: 'A4',
                         exportOptions: {
-                            columns: ':visible'
+                            columns: ":visible"
                         }
                     },
                     {
-                        extend: 'colvis',
+                        extend: "excelHtml5",
+                        title: "export products",
+                        exportOptions: {
+                            columns: ":visible"
+                        }
+                    },
+                    {
+                        extend: "colvis",
                         id: "tour_show_columns",
                         text: 'show additional columns <i class="fa fa-angle-down"></i>'
                     }

@@ -280,40 +280,40 @@
                 ],
                 buttons: [
                     {
-                        extend: 'copyHtml5',
+                        extend: "copyHtml5",
                         exportOptions: {
-                            columns: ':visible'
+                            columns: ":visible"
                         }
                     },
                     {
-                        extend: 'csvHtml5',
+                        extend: "csvHtml5",
                         title: "product list - {{ product_list.name }}",
-                        fieldSeparator: ';',
+                        fieldSeparator: ";",
                         fieldBoundary: "",
                         exportOptions: {
-                            columns: ':visible'
+                            columns: ":visible"
                         },
-                        extension: '.csv'
+                        extension: ".csv"
                     },
                     {
-                        extend: 'pdfHtml5',
+                        extend: "pdfHtml5",
                         title: "product list - {{ product_list.name }}",
                         message: "{{ export_description }}. last update on {{ product_list.update_date|date:"SHORT_DATE_FORMAT" }} by {{ product_list.update_user }}",
-                        orientation: 'landscape',
-                        pageSize: 'A4',
+                        orientation: "landscape",
+                        pageSize: "A4",
                         exportOptions: {
-                            columns: ':visible'
+                            columns: ":visible"
                         }
                     },
                     {
-                        extend: 'excelHtml5',
+                        extend: "excelHtml5",
                         title: "product list - {{ product_list.name }}",
                         exportOptions: {
-                            columns: ':visible'
-                        },
+                            columns: ":visible"
+                        }
                     },
                     {
-                        extend: 'colvis',
+                        extend: "colvis",
                         id: "tour_show_columns",
                         text: 'show additional columns <i class="fa fa-angle-down"></i>'
                     }
