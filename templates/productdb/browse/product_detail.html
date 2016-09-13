@@ -43,7 +43,7 @@
 
             {% if product.list_price %}
                 <dt>List Price:</dt>
-                <dd>{{ product.list_price }} {{ product.currency }}</dd>
+                <dd>{{ product.list_price|floatformat:2 }} {{ product.currency }}</dd>
             {% endif %}
 
             <dt>Tags:</dt>

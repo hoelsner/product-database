@@ -141,11 +141,9 @@ class Product(models.Model):
         help_text="description"
     )
 
-    list_price = models.DecimalField(
+    list_price = models.FloatField(
         null=True,
         blank=True,
-        decimal_places=2,
-        max_digits=32,
         verbose_name="list price",
         help_text="list price of the element",
         validators=[MinValueValidator(0)]

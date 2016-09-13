@@ -302,6 +302,52 @@ class TestProduct:
                            "same vendor"
         assert exinfo.match(expected_message)
 
+    def test_list_price_values(self):
+        valid_values = [
+            1000,
+            100.00,
+            0,
+            0.00,
+            1.1,
+            0.53,
+            "3.00",
+            "3.50",
+            "5"
+        ]
+
+        invalid_values = [
+            {
+                "value": -4,
+                "exp_error": "list_price': \['Ensure this value is greater than or equal to 0"
+            },
+            {
+                "value": -54.123,
+                "exp_error": "list_price': \['Ensure this value is greater than or equal to 0"
+            },
+            {
+                "value": -23.00,
+                "exp_error": "list_price': \['Ensure this value is greater than or equal to 0"
+            },
+            {
+                "value": "One",
+                "exp_error": "value must be a float"
+            }
+        ]
+
+        p = mixer.blend("productdb.Product", list_price=None)
+        assert p.list_price is None
+
+        for val in valid_values:
+            p.list_price = val
+            p.save()
+
+        for ival in invalid_values:
+            p.list_price = ival["value"]
+            print(p.list_price)
+            with pytest.raises(ValidationError) as exinfo:
+                p.save()
+            assert exinfo.match(ival["exp_error"])
+
 
 class TestProductList:
     """Test ProductList model object"""

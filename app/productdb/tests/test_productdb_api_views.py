@@ -672,7 +672,7 @@ class TestProductAPIEndpoint:
             "data": [
                 {
                     "id": 0,
-                    "list_price": None,
+                    "list_price": "12.32",
                     "description": "",
                     "eol_reference_url": None,
                     "eol_ext_announcement_date": None,
@@ -694,7 +694,7 @@ class TestProductAPIEndpoint:
                 }
             ]
         }
-        p = mixer.blend("productdb.Product")
+        p = mixer.blend("productdb.Product", list_price=12.32)
         expected_result["data"][0]["id"] = p.id
         expected_result["data"][0]["url"] = expected_result["data"][0]["url"] % p.id
         expected_result["data"][0]["product_id"] = p.product_id

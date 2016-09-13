@@ -149,7 +149,7 @@
                         "searchable": false,
                         "render": function ( data, type, row ) {
                             if (data != null) {
-                                return data + ' ' + row['currency'] + '';
+                                return parseFloat(data).toFixed(2) + ' ' + row['currency'] + '';
                             }
                             else {
                                 return ""

@@ -250,6 +250,44 @@ class TestImportProductsExcelFile:
         assert pc.list_price is None, "No list price provided, therefore it should be None"
 
     @pytest.mark.usefixtures("apply_base_import_products_excel_file_mock")
+    def test_import_with_list_price_without_leading_zero(self):
+        """Should ensure that a list price of .xy is saved as 0.xy value, not None/Null value"""
+        global CURRENT_TEST_DATA
+        CURRENT_TEST_DATA = pd.DataFrame(
+            [
+                [
+                    "Product A",
+                    "description of Product A",
+                    ".53",
+                    "USD",
+                    "Cisco Systems",
+                    datetime.datetime(2016, 1, 1),
+                    datetime.datetime(2016, 1, 2),
+                    datetime.datetime(2016, 1, 3),
+                    datetime.datetime(2016, 1, 4),
+                    datetime.datetime(2016, 1, 5),
+                    datetime.datetime(2016, 1, 6),
+                    datetime.datetime(2016, 1, 7),
+                    datetime.datetime(2016, 1, 8),
+                    datetime.datetime(2016, 1, 9),
+                ]
+            ], columns=TEST_DATA_COLUMNS
+        )
+        user = User.objects.get(username="api")
+        product_file = ImportProductsExcelFile(
+            "virtual_file.xlsx",
+            user_for_revision=user
+        )
+        product_file.verify_file()
+        product_file.import_products_to_database()
+        assert Product.objects.count() == 1
+
+        # verify imported data
+        pa = Product.objects.get(product_id="Product A")
+        assert pa.list_price is not None
+        assert pa.list_price == 0.53
+
+    @pytest.mark.usefixtures("apply_base_import_products_excel_file_mock")
     def test_valid_import_with_revision_user(self):
         global CURRENT_TEST_DATA
         CURRENT_TEST_DATA = DEFAULT_TEST_DATA_FRAME

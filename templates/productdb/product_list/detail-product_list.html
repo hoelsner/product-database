@@ -92,7 +92,7 @@
                         <td>{{ product.description }}</td>
                         <td>
                             {% if product.list_price %}
-                                {{ product.list_price }} {{ product.currency }}
+                                {{ product.list_price|floatformat:2 }} {{ product.currency }}
                             {% endif %}
                         </td>
                         <td>{{ product.tags|default:"" }}</td>
