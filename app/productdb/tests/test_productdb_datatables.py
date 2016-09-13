@@ -512,7 +512,7 @@ def test_list_products_by_group_json_datatables_endpoint():
 @pytest.mark.usefixtures("import_default_vendors")
 def test_list_products_json_datatables_endpoint():
     for e in range(1, 25):
-        mixer.blend("productdb.Product")
+        mixer.blend("productdb.Product", list_price=12.34)
 
     url = reverse('productdb:datatables_list_products_view')
 
@@ -525,3 +525,5 @@ def test_list_products_json_datatables_endpoint():
     assert "draw" in result_json
     assert "recordsTotal" in result_json
     assert "recordsFiltered" in result_json
+
+    assert result_json["data"][0]["list_price"] == 12.34

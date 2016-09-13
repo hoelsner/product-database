@@ -1,5 +1,6 @@
+from django.core.exceptions import ObjectDoesNotExist
 from django_datatables_view.base_datatable_view import BaseDatatableView
-from .models import Product, ProductGroup
+from .models import Product, ProductGroup, Vendor
 from django.db.models import Q
 from app.productdb.utils import is_valid_regex
 
@@ -109,9 +110,13 @@ class VendorProductListJson(BaseDatatableView, ColumnSearchMixin):
         for item in qs:
             product_group_id = ""
             product_group_name = ""
-            if item.product_group:
-                product_group_id = item.product_group.id
-                product_group_name = item.product_group.name
+            try:
+                if item.product_group:
+                    product_group_id = item.product_group.id
+                    product_group_name = item.product_group.name
+
+            except ObjectDoesNotExist:
+                pass
 
             json_data.append({
                 "id": item.id,
@@ -335,13 +340,25 @@ class ListProductsJson(BaseDatatableView, ColumnSearchMixin):
         for item in qs:
             product_group_id = ""
             product_group_name = ""
-            if item.product_group:
-                product_group_id = item.product_group.id
-                product_group_name = item.product_group.name
+            try:
+                if item.product_group:
+                    product_group_id = item.product_group.id
+                    product_group_name = item.product_group.name
+
+            except ObjectDoesNotExist:
+                pass
+
+            vendor_name = ""
+            try:
+                if item.vendor:
+                    vendor_name = item.vendor.name
+
+            except ObjectDoesNotExist:
+                pass
 
             json_data.append({
                 "id": item.id,
-                "vendor": item.vendor.name,
+                "vendor": vendor_name,
                 "product_id": item.product_id,
                 "product_group": product_group_name,
                 "product_group_id": product_group_id,

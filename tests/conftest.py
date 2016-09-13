@@ -6,6 +6,7 @@ import json
 import shutil
 import pytest
 import requests
+import time
 from requests.auth import HTTPBasicAuth
 from selenium.webdriver import Firefox
 from selenium.webdriver import FirefoxProfile
@@ -39,7 +40,8 @@ def browser(request):
     b.implicitly_wait(10)
     b.maximize_window()
     request.addfinalizer(lambda *args: b.quit())
-    return b
+    yield b
+    time.sleep(10)
 
 
 @pytest.fixture
