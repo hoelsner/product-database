@@ -17,8 +17,10 @@ class BaseSeleniumTest:
     """some utility functions for the selenium test cases"""
     ADMIN_USERNAME = "pdb_admin"
     ADMIN_PASSWORD = "pdb_admin"
+    ADMIN_DISPLAY_NAME = "Admin User"
     API_USERNAME = "api"
     API_PASSWORD = "api"
+    API_DISPLAY_NAME = "API User"
 
     # text blocks for page verification
     HOMEPAGE_TEXT_FOR_VALIDATION = "This database contains information about network equipment like routers " \

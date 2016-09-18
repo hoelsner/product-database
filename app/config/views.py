@@ -224,7 +224,7 @@ def server_messages_list(request):
         return redirect('%s?next=%s' % (settings.LOGIN_URL, request.path))
 
     context = {
-        "recent_events": NotificationMessage.objects.all()
+        "recent_events": NotificationMessage.objects.all().order_by("-created")
     }
 
     return render(request, "config/notification-list.html", context=context)

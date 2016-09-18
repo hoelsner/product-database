@@ -28,7 +28,7 @@ if LDAP_ENABLE:
 
     # Populate the Django user from the LDAP directory.
     AUTH_LDAP_USER_ATTR_MAP = {
-        "last_name": "sn",
+        "last_name": "displayName",
         "email": "mail"
     }
 

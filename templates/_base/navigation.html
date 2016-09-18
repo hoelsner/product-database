@@ -143,7 +143,7 @@
                     {% endif %}
                     <li class="dropdown">
                         <a class="dropdown-toggle" data-toggle="dropdown" aria-expanded="false" href="#" id="navbar_loggedin">
-                            <span class="hidden-sm">&nbsp;&nbsp;Logged in as </span><i class="fa fa-user"></i><strong>&nbsp;{{ user.username }}</strong>&nbsp;<span class="caret"></span>
+                            <span class="hidden-sm">&nbsp;&nbsp;Logged in as </span><i class="fa fa-user"></i><strong>&nbsp;{% if user.first_name %}{{ user.first_name }} {% endif %}{{ user.last_name|default:user.username }}</strong>&nbsp;<span class="caret"></span>
                         </a>
                         <ul class="dropdown-menu" role="menu">
                             {% if not IS_LDAP_ACCOUNT %}

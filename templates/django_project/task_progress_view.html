@@ -127,6 +127,7 @@
             var progress_sign = $("#progress_sign");
             progress_sign.removeClass("fa-spin");
             progress_sign.addClass("text-danger");
+            document.title = "Task failed!";
             $("#fail_message").text(html_message);
             $("#fail_dialog").modal();
         }
@@ -138,6 +139,7 @@
                 console.log("poll");
                 // update UI
                 if (data['state'] == 'success') {
+                    document.title = "Task finished";
                     if ('error_message' in data) {
                         // show fail message and view a button to continue
                         fail_process(data["error_message"]);

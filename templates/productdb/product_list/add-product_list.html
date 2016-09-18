@@ -22,7 +22,7 @@
         {% bootstrap_messages %}
         <form method="post" class="form">
             {% csrf_token %}
-            {% bootstrap_form form show_help=False%}
+            {% bootstrap_form form show_help=True %}
             {% buttons %}
                 <button type="submit" class="btn btn-block btn-success" id="submit">
                     Add Product List

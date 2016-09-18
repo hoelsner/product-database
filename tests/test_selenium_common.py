@@ -89,7 +89,7 @@ class TestCommonFunctions(BaseSeleniumTest):
         assert test_pl_name in body
         assert test_pl_description in body
         assert test_pl_product_list_id in body
-        assert "maintained by %s" % self.ADMIN_USERNAME in body
+        assert "maintained by %s" % self.ADMIN_DISPLAY_NAME in body
         assert "%s</a>" % test_pl_product_list_id not in body, \
             "Link to Product Details should not be available"
 
@@ -372,7 +372,7 @@ class TestProductLists(BaseSeleniumTest):
         assert test_pl_name in body
         assert test_pl_description in body
         assert test_pl_product_list_id in body
-        assert "maintained by %s" % self.ADMIN_USERNAME in body
+        assert "maintained by %s" % self.ADMIN_DISPLAY_NAME in body
         assert browser.find_element_by_link_text(test_pl_product_list_id) is not None, \
             "Link to Product Details should be available"
 
@@ -426,7 +426,7 @@ class TestProductLists(BaseSeleniumTest):
         assert test_pl_name in body
         assert test_pl_description in body
         assert test_pl_product_list_id in body
-        assert "maintained by %s" % self.ADMIN_USERNAME in body
+        assert "maintained by %s" % self.ADMIN_DISPLAY_NAME in body
         with pytest.raises(NoSuchElementException):
             browser.find_element_by_link_text(test_pl_product_list_id)
 

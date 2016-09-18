@@ -26,11 +26,11 @@ class UserProfileForm(forms.ModelForm):
 class ProductListForm(forms.ModelForm):
     class Meta:
         model = ProductList
-        fields = ['name', 'description', 'string_product_list']
+        fields = ["name", "description", "string_product_list"]
         widgets = {
-            'name': forms.TextInput(attrs={'placeholder': 'Name'}),
-            'description': forms.Textarea(attrs={'placeholder': 'Enter description here'}),
-            'string_product_list': forms.Textarea(attrs={'placeholder': 'e.g. WS-C2960-24T-S;WS-C2960-48T-S'})
+            "name": forms.TextInput(attrs={"placeholder": "Name"}),
+            "description": forms.Textarea(attrs={"placeholder": "Enter description here"}),
+            "string_product_list": forms.Textarea(attrs={"placeholder": "e.g. WS-C2960-24T-S;WS-C2960-48T-S"})
         }
 
 

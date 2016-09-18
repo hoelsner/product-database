@@ -197,7 +197,7 @@ def detail_product_list(request, product_list_id=None, share_link=False):
                          escape(pl.name + " - Product List") + \
                          "&body=" + \
                          escape("Hi,%%0D%%0Dplease take a look on the %s Product List:%%0D%%0D"
-                                "%s%%0D%%0DThank you.%%0D%%0DKind Regards,%%0D%s" % (pl.name,
+                                "%s%%0D%%0DThank you.%%0D%%0DKind regards,%%0D%s" % (pl.name,
                                                                                      share_link_url,
                                                                                      share_link_username))
 
@@ -205,6 +205,7 @@ def detail_product_list(request, product_list_id=None, share_link=False):
         "product_list": pl,
         "share_link_content": share_link_content,
         "share_link": False if request.user.is_authenticated() else share_link,
+        "share_link_url": share_link_url,
         "back_to": request.GET.get("back_to") if request.GET.get("back_to") else reverse("productdb:list-product_lists")
     }
 

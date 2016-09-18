@@ -40,13 +40,20 @@
             Last update on <strong>{{ product_list.update_date|date:"SHORT_DATE_FORMAT" }}</strong>, maintained by
             <strong>
                 {% if product_list.update_user.email %}
-                    <a href="mailto:{{ product_list.update_user.email }}?Subject={{ product_list|escape }}%20Product%20List"><i class="fa fa-user"></i> {{ product_list.update_user }}</a>
+                    <a href="mailto:{{ product_list.update_user.email }}?Subject={{ product_list|escape }}%20Product%20List"><i class="fa fa-user"></i> {% if product_list.update_user.first_name %}{{ product_list.update_user.first_name }} {% endif %}{{ product_list.update_user.last_name|default:product_list.update_user.username }}</a>
                 {% else %}
-                    <i class="fa fa-user"></i> {{ product_list.update_user }}
+                    <i class="fa fa-user"></i> {% if product_list.update_user.first_name %}{{ product_list.update_user.first_name }} {% endif %}{{ product_list.update_user.last_name|default:product_list.update_user.username }}
                 {% endif %}
             </strong>
         </p>
     </div>
+    <p>
+        <small>
+            {% if not share_link %}
+                You can share the product list with the following link <a href="{{ share_link_url }}">{{ share_link_url }}</a> or use the <i class="fa fa-envelope" aria-hidden="true"></i> button in the page title.
+            {% endif %}
+        </small>
+    </p>
     <div class="col-md-12">
         <table id="product_table" class="table table-striped table-hover table-responsive" cellspacing="0" width="100%">
             <thead>
