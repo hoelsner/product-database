@@ -383,6 +383,34 @@ class TestUpdateCiscoEoxDatabase:
 
         assert Product.objects.count() == 0, "No products are created, because the creation mode is disabled by default"
 
+    def test_offline_valid_update_cisco_eox_database_with_multiple_urls_in_result(self, monkeypatch):
+        # mock the underlying GET request
+        def mock_response():
+            r = Response()
+            r.status_code = 200
+            with open("app/ciscoeox/tests/data/cisco_eox_response_page_1_of_1.json") as f:
+                raw_data = f.read()
+            jdata = json.loads(raw_data)
+
+            jdata["EOXRecord"][0]["EOLProductID"] = "TEST_PID"
+            jdata["EOXRecord"][0]["LinkToProductBulletinURL"] = "http://somewhere.com/index.html ," \
+                                                                "https://other.com/index.html"
+            r._content = json.dumps(jdata).encode("utf-8")
+            return r
+
+        monkeypatch.setattr(requests, "get", lambda x, headers: mock_response())
+
+        global AUTO_CREATE_NEW_PRODUCTS
+        AUTO_CREATE_NEW_PRODUCTS = True
+        result = api_crawler.update_cisco_eox_database("WS-C2950G-48-EI-WS")
+
+        assert len(result) == 3, "Three products should be seen in the API response"
+        assert Product.objects.count() == 3, "Three products should be imported to the database"
+
+        p = Product.objects.get(product_id="TEST_PID")
+        assert p.eol_reference_url == "http://somewhere.com/index.html", "only the first entry is stored in the " \
+                                                                         "database"
+
     def test_offline_no_result_update_cisco_eox_database_with_create_flag(self, monkeypatch):
         # mock the underlying GET request
         def mock_response():

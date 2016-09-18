@@ -127,7 +127,9 @@ def update_local_db_based_on_record(eox_record, create_missing=False):
 
             # save string values from Cisco EoX API record
             if "LinkToProductBulletinURL" in eox_record.keys():
-                product.eol_reference_url = eox_record.get('LinkToProductBulletinURL', "")
+                raw_data = eox_record.get('LinkToProductBulletinURL', "")
+                product.eol_reference_url = raw_data if "," not in raw_data else raw_data.split(",")[0].strip()
+
                 if ("ProductBulletinNumber" in eox_record.keys()) and (product.eol_reference_url != ""):
                     product.eol_reference_number = eox_record.get('ProductBulletinNumber', "EoL bulletin")
 
