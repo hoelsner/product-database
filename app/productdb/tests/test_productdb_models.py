@@ -458,3 +458,11 @@ class TestUserProfile:
         assert str(u.profile) == "User Profile for My test user", "Unexpected string representation of the User Profile"
         assert u.profile.regex_search is False, "the advanced search operation should be disabled by default"
         assert u.profile.preferred_vendor == Vendor.objects.get(id=1), "Default vendor should be defined"
+
+    @pytest.mark.usefixtures("import_default_vendors")
+    def test_natural_key_serialization(self):
+        u = User.objects.create(username="test_user")
+        assert UserProfile.objects.count() == 1, "A User Profile object should be created automatically"
+        up = UserProfile.objects.get_by_natural_key(u.username)
+        assert up is not None
+        assert up.natural_key() == "test_user"

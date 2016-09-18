@@ -405,8 +405,14 @@ class ProductList(models.Model):
         ordering = ('name',)
 
 
+class UserProfileManager(models.Manager):
+    def get_by_natural_key(self, username):
+        return self.get(user=User.objects.get(username=username))
+
+
 class UserProfile(models.Model):
-    user = models.OneToOneField(User, related_name='profile')
+    objects = UserProfileManager()
+    user = models.OneToOneField(User, related_name='profile', unique=True)
 
     preferred_vendor = models.ForeignKey(
         Vendor,
@@ -424,6 +430,9 @@ class UserProfile(models.Model):
         help_text="Use regular expression in any search field (fallback to simple search if no valid "
                   "regular expression is used)"
     )
+
+    def natural_key(self):
+        return self.user.username
 
     def __str__(self):
         return "User Profile for %s" % self.user.username
