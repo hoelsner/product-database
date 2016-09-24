@@ -8,7 +8,7 @@ from django.core.cache import cache
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.urlresolvers import reverse
 from django.test import Client
-from app.config import AppSettings
+from app.config.settings import AppSettings
 from app.config.models import NotificationMessage
 from app.productdb import tasks
 from app.productdb.excel_import import ImportProductsExcelFile
@@ -180,11 +180,9 @@ class TestImportPriceListTask:
 @pytest.mark.usefixtures("redis_server_required")
 def test_trigger_manual_cisco_eox_synchronization():
     app_config = AppSettings()
-    app_config.read_file()
 
     app_config.set_cisco_api_enabled(True)
     app_config.set_periodic_sync_enabled(True)
-    app_config.write_file()
 
     # schedule Cisco EoX API update
     url = reverse('cisco_api:start_cisco_eox_api_sync_now')

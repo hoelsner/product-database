@@ -36,7 +36,6 @@ class ProductAdmin(CompareVersionAdmin, admin.ModelAdmin):
         'description',
         'tags',
         'vendor__name',
-        'current_lifecycle_states',
     )
 
     readonly_fields = (

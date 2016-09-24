@@ -53,6 +53,18 @@ class BaseCiscoApiConsoleSettings:
             return "dummy_secret"
 
 
+def mock_access_token_generation():
+    temp_auth_token = {}
+    temp_auth_token['http_auth_header'] = "mock header"
+    temp_auth_token['expire_datetime'] = datetime.datetime(year=2050, month=1, day=1).isoformat()
+
+    cache.set(
+        CiscoHelloApi.AUTH_TOKEN_CACHE_KEY,
+        json.dumps(temp_auth_token),
+        timeout=datetime.datetime(year=2050, month=1, day=1).timestamp()
+    )
+
+
 @pytest.fixture
 def use_test_api_configuration(monkeypatch):
     monkeypatch.setattr(base_api, "AppSettings", BaseCiscoApiConsoleSettings)
@@ -115,6 +127,7 @@ class TestCiscoHelloApi:
         # try to drop it again (nothing should happen)
         cisco_hello_api.drop_cached_token()
 
+    @pytest.mark.usefixtures("use_test_api_configuration")
     @online
     def test_read_from_cached_token(self):
         cisco_hello_api_one = CiscoHelloApi()
@@ -267,6 +280,7 @@ class TestCiscoHelloApi:
         monkeypatch.setattr(requests, "get", lambda x, headers: get_endpoint_result())
 
         cisco_hello_api = CiscoHelloApi()
+        monkeypatch.setattr(cisco_hello_api, "create_temporary_access_token", lambda force_new_token=True: mock_access_token_generation())
 
         with pytest.raises(CiscoApiCallFailed) as exinfo:
             cisco_hello_api.hello_api_call()
@@ -288,6 +302,7 @@ class TestCiscoHelloApi:
         monkeypatch.setattr(requests, "get", lambda x, headers: get_endpoint_result())
 
         cisco_hello_api = CiscoHelloApi()
+        monkeypatch.setattr(cisco_hello_api, "create_temporary_access_token", lambda force_new_token=True: mock_access_token_generation())
         cisco_hello_api.load_client_credentials()
         cisco_hello_api.create_temporary_access_token()
 
@@ -302,6 +317,7 @@ class TestCiscoHelloApi:
         monkeypatch.setattr(requests, "get", lambda x, headers: get_endpoint_result())
 
         cisco_hello_api = CiscoHelloApi()
+        monkeypatch.setattr(cisco_hello_api, "create_temporary_access_token", lambda force_new_token=True: mock_access_token_generation())
         cisco_hello_api.load_client_credentials()
         cisco_hello_api.create_temporary_access_token()
 
@@ -418,6 +434,7 @@ class TestCiscoEoxApi:
         monkeypatch.setattr(requests, "get", lambda x, headers: mock_response())
 
         cisco_eox_api = CiscoEoxApi()
+        monkeypatch.setattr(cisco_eox_api, "create_temporary_access_token", lambda force_new_token=True: mock_access_token_generation())
         cisco_eox_api.load_client_credentials()
         cisco_eox_api.create_temporary_access_token()
 
@@ -460,6 +477,7 @@ class TestCiscoEoxApi:
         monkeypatch.setattr(requests, "get", lambda x, headers: mock_response_page_1())
 
         cisco_eox_api = CiscoEoxApi()
+        monkeypatch.setattr(cisco_eox_api, "create_temporary_access_token", lambda force_new_token=True: mock_access_token_generation())
         cisco_eox_api.load_client_credentials()
         cisco_eox_api.create_temporary_access_token()
 
@@ -538,6 +556,7 @@ class TestCiscoEoxApi:
         monkeypatch.setattr(requests, "get", lambda x, headers: mock_response())
 
         cisco_eox_api = CiscoEoxApi()
+        monkeypatch.setattr(cisco_eox_api, "create_temporary_access_token", lambda force_new_token=True: mock_access_token_generation())
 
         with pytest.raises(CiscoApiCallFailed):
             cisco_eox_api.query_product("NOTHING", 1)

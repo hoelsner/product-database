@@ -7,11 +7,6 @@ from app.config.tests import CONFIG_FILE_PATH
 
 
 @pytest.fixture
-def set_test_app_config_file_setting(settings):
-    settings.APP_CONFIG_FILE = CONFIG_FILE_PATH
-
-
-@pytest.fixture
 def enable_login_only_mode(monkeypatch):
     """patch the login_required_if_long_only_mode function, which will enable the login only mode"""
     monkeypatch.setattr(views, "login_required_if_login_only_mode", lambda request: True)

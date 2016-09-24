@@ -10,74 +10,30 @@ from app.ciscoeox import api_crawler
 from app.ciscoeox import tasks
 from app.ciscoeox.exception import CiscoApiCallFailed, CredentialsNotFoundException
 from app.config.models import NotificationMessage
+from app.config.settings import AppSettings
 from app.productdb.models import Product
 from django_project.celery import TaskState
 
 pytestmark = pytest.mark.django_db
 
-CISCO_API_ENABLED = True
-PRODUCT_BLACKLIST_REGEX = ""
-CISCO_EOX_API_QUERIES = ""
-AUTO_CREATE_NEW_PRODUCTS = True
-CISCO_EOX_API_AUTO_SYNC_ENABLED = False
-
-
-class BaseCiscoApiConsoleSettings:
-    """
-    Mock object that provides the Cisco API credentials used for online tests. If no credentials are found, dummy
-    values are used. The source file for the Test API credentials are read from the ".cisco_api_credentials" file,
-    which should have the following format:
-
-    {
-        "id": "",
-        "secret": ""
-    }
-
-    """
-    CREDENTIALS_FILE = ".cisco_api_credentials"
-
-    def read_file(self):
-        pass
-
-    def load_client_credentials(self):
-        pass
-
-    def is_cisco_api_enabled(self):
-        return CISCO_API_ENABLED
-
-    def get_product_blacklist_regex(self):
-        return PRODUCT_BLACKLIST_REGEX
-
-    def is_auto_create_new_products(self):
-        return AUTO_CREATE_NEW_PRODUCTS
-
-    def get_cisco_eox_api_queries(self):
-        return CISCO_EOX_API_QUERIES
-
-    def is_cisco_eox_api_auto_sync_enabled(self):
-        return CISCO_EOX_API_AUTO_SYNC_ENABLED
-
-    def get_cisco_api_client_id(self):
-        try:
-            with open(self.CREDENTIALS_FILE) as f:
-                return json.loads(f.read())["client_id"]
-        except:
-            return "dummy_id"
-
-    def get_cisco_api_client_secret(self):
-        try:
-            with open(self.CREDENTIALS_FILE) as f:
-                return json.loads(f.read())["client_secret"]
-        except:
-            return "dummy_secret"
+CREDENTIALS_FILE = ".cisco_api_credentials"
 
 
 @pytest.fixture
-def use_test_api_configuration(monkeypatch):
-    monkeypatch.setattr(tasks, "AppSettings", BaseCiscoApiConsoleSettings)
-    monkeypatch.setattr(api_crawler, "AppSettings", BaseCiscoApiConsoleSettings)
+def use_test_api_configuration():
+    app = AppSettings()
+    with open(CREDENTIALS_FILE) as f:
+        content = json.loads(f.read())
+    app.set_cisco_api_enabled(True)
+    app.set_product_blacklist_regex("")
+    app.set_cisco_eox_api_queries("")
+    app.set_auto_create_new_products(True)
+    app.set_periodic_sync_enabled(False)
+    app.set_cisco_api_client_id(content.get("client_id", "dummy_id"))
+    app.set_cisco_api_client_id(content.get("client_secret", "dummy_secret"))
 
 
+@pytest.mark.usefixtures("mock_cisco_api_authentication_server")
 @pytest.mark.usefixtures("use_test_api_configuration")
 @pytest.mark.usefixtures("set_celery_always_eager")
 @pytest.mark.usefixtures("redis_server_required")
@@ -98,12 +54,9 @@ class TestExecuteTaskToSynchronizeCiscoEoxStateTask:
         self.mock_api_call(monkeypatch)
 
         # try to execute it, while no auto-sync is enabled
-        global CISCO_API_ENABLED
-        global CISCO_EOX_API_AUTO_SYNC_ENABLED
-        global CISCO_EOX_API_QUERIES
-        CISCO_API_ENABLED = True
-        CISCO_EOX_API_AUTO_SYNC_ENABLED = False
-        CISCO_EOX_API_QUERIES = "WS-C2960-*"
+        app = AppSettings()
+        app.set_periodic_sync_enabled(False)
+        app.set_cisco_eox_api_queries("WS-C2960-*")
 
         task = tasks.execute_task_to_synchronize_cisco_eox_states.delay(ignore_periodic_sync_flag=True)
         expected_result = '<div style="text-align:left;"><h3>Query: WS-C2960-*</h3>The following products are ' \
@@ -120,7 +73,6 @@ class TestExecuteTaskToSynchronizeCiscoEoxStateTask:
         assert Product.objects.count() == 3, "Three products are part of the update"
 
         # test no changes required
-        CISCO_API_ENABLED = True
         task = tasks.execute_task_to_synchronize_cisco_eox_states.delay(ignore_periodic_sync_flag=True)
         expected_result = '<div style="text-align:left;"><h3>Query: WS-C2960-*</h3>No changes required.</div>'
 
@@ -152,14 +104,10 @@ class TestExecuteTaskToSynchronizeCiscoEoxStateTask:
         self.mock_api_call(monkeypatch)
 
         # try to execute it, while no auto-sync is enabled
-        global CISCO_API_ENABLED
-        global CISCO_EOX_API_AUTO_SYNC_ENABLED
-        global PRODUCT_BLACKLIST_REGEX
-        global CISCO_EOX_API_QUERIES
-        CISCO_API_ENABLED = True
-        CISCO_EOX_API_AUTO_SYNC_ENABLED = False
-        PRODUCT_BLACKLIST_REGEX = "WS-C2950G-24-EI"
-        CISCO_EOX_API_QUERIES = "WS-C2960-*"
+        app = AppSettings()
+        app.set_periodic_sync_enabled(False)
+        app.set_cisco_eox_api_queries("WS-C2960-*")
+        app.set_product_blacklist_regex("WS-C2950G-24-EI")
 
         task = tasks.execute_task_to_synchronize_cisco_eox_states.delay(ignore_periodic_sync_flag=True)
         expected_result = '<div style="text-align:left;"><h3>Query: WS-C2960-*</h3>The following products are ' \
@@ -179,14 +127,10 @@ class TestExecuteTaskToSynchronizeCiscoEoxStateTask:
         self.mock_api_call(monkeypatch)
 
         # try to execute it, while no auto-sync is enabled
-        global CISCO_API_ENABLED
-        global CISCO_EOX_API_AUTO_SYNC_ENABLED
-        global PRODUCT_BLACKLIST_REGEX
-        global CISCO_EOX_API_QUERIES
-        CISCO_API_ENABLED = True
-        CISCO_EOX_API_AUTO_SYNC_ENABLED = False
-        PRODUCT_BLACKLIST_REGEX = "WS-C2950G-48-EI-WS;WS-C2950G-24-EI"
-        CISCO_EOX_API_QUERIES = "WS-C2960-*"
+        app = AppSettings()
+        app.set_periodic_sync_enabled(False)
+        app.set_cisco_eox_api_queries("WS-C2960-*")
+        app.set_product_blacklist_regex("WS-C2950G-48-EI-WS;WS-C2950G-24-EI")
 
         task = tasks.execute_task_to_synchronize_cisco_eox_states.delay(ignore_periodic_sync_flag=True)
         expected_result = '<div style="text-align:left;"><h3>Query: WS-C2960-*</h3>The following products are ' \
@@ -206,12 +150,9 @@ class TestExecuteTaskToSynchronizeCiscoEoxStateTask:
         self.mock_api_call(monkeypatch)
 
         # test automatic trigger
-        global CISCO_API_ENABLED
-        global CISCO_EOX_API_AUTO_SYNC_ENABLED
-        global CISCO_EOX_API_QUERIES
-        CISCO_API_ENABLED = True
-        CISCO_EOX_API_AUTO_SYNC_ENABLED = True
-        CISCO_EOX_API_QUERIES = ""
+        app = AppSettings()
+        app.set_periodic_sync_enabled(True)
+        app.set_cisco_eox_api_queries("")
 
         task = tasks.execute_task_to_synchronize_cisco_eox_states.delay()
 
@@ -229,12 +170,9 @@ class TestExecuteTaskToSynchronizeCiscoEoxStateTask:
         monkeypatch.setattr(api_crawler, "update_cisco_eox_database", lambda query: mock_response())
 
         # test automatic trigger
-        global CISCO_API_ENABLED
-        global CISCO_EOX_API_AUTO_SYNC_ENABLED
-        global CISCO_EOX_API_QUERIES
-        CISCO_API_ENABLED = True
-        CISCO_EOX_API_AUTO_SYNC_ENABLED = True
-        CISCO_EOX_API_QUERIES = "yxcz"
+        app = AppSettings()
+        app.set_periodic_sync_enabled(True)
+        app.set_cisco_eox_api_queries("yxcz")
 
         task = tasks.execute_task_to_synchronize_cisco_eox_states.delay()
 
@@ -253,12 +191,9 @@ class TestExecuteTaskToSynchronizeCiscoEoxStateTask:
         monkeypatch.setattr(api_crawler, "update_cisco_eox_database", lambda query: mock_response())
 
         # test automatic trigger
-        global CISCO_API_ENABLED
-        global CISCO_EOX_API_AUTO_SYNC_ENABLED
-        global CISCO_EOX_API_QUERIES
-        CISCO_API_ENABLED = True
-        CISCO_EOX_API_AUTO_SYNC_ENABLED = True
-        CISCO_EOX_API_QUERIES = "yxcz"
+        app = AppSettings()
+        app.set_periodic_sync_enabled(True)
+        app.set_cisco_eox_api_queries("yxcz")
 
         task = tasks.execute_task_to_synchronize_cisco_eox_states.delay()
 
@@ -278,12 +213,9 @@ class TestExecuteTaskToSynchronizeCiscoEoxStateTask:
         monkeypatch.setattr(requests, "get", lambda x, headers: mock_response())
 
         # test automatic trigger
-        global CISCO_API_ENABLED
-        global CISCO_EOX_API_AUTO_SYNC_ENABLED
-        global CISCO_EOX_API_QUERIES
-        CISCO_API_ENABLED = True
-        CISCO_EOX_API_AUTO_SYNC_ENABLED = True
-        CISCO_EOX_API_QUERIES = "yxcz"
+        app = AppSettings()
+        app.set_periodic_sync_enabled(True)
+        app.set_cisco_eox_api_queries("yxcz")
 
         task = tasks.execute_task_to_synchronize_cisco_eox_states.delay()
 
@@ -300,11 +232,8 @@ class TestExecuteTaskToSynchronizeCiscoEoxStateTask:
         self.mock_api_call(monkeypatch)
 
         # test automatic trigger
-        global CISCO_API_ENABLED
-        global CISCO_EOX_API_AUTO_SYNC_ENABLED
-        CISCO_API_ENABLED = True
-        CISCO_EOX_API_AUTO_SYNC_ENABLED = False
-
+        app = AppSettings()
+        app.set_periodic_sync_enabled(False)
         task = tasks.execute_task_to_synchronize_cisco_eox_states.delay()
 
         assert task is not None
@@ -312,7 +241,7 @@ class TestExecuteTaskToSynchronizeCiscoEoxStateTask:
         assert task.state == TaskState.SUCCESS
         assert task.info.get("status_message") == "task not enabled"
 
-        CISCO_EOX_API_AUTO_SYNC_ENABLED = True
+        app.set_periodic_sync_enabled(True)
 
         task = tasks.execute_task_to_synchronize_cisco_eox_states.delay()
 

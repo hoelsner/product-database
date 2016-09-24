@@ -12,7 +12,7 @@ from app.ciscoeox import api_crawler
 from app.ciscoeox import tasks
 from app.ciscoeox import views
 from app.ciscoeox.exception import CiscoApiCallFailed, ConnectionFailedException
-from app.config import AppSettings
+from app.config.settings import AppSettings
 from django_project.celery import get_meta_data_for_task
 
 pytestmark = pytest.mark.django_db
@@ -71,7 +71,6 @@ class TestCiscoEoxQueryView:
         def mock_connection_failed_exception():
             raise ConnectionFailedException()
 
-        monkeypatch.setattr(AppSettings, "read_file", lambda self: None)
         monkeypatch.setattr(AppSettings, "is_cisco_api_enabled", lambda self: True)
         monkeypatch.setattr(api_crawler, "update_cisco_eox_database",
                             lambda api_query: mock_api_call_failed())
@@ -115,7 +114,6 @@ class TestCiscoEoxQueryView:
                 "message": "No product update required"
             }
         ]
-        monkeypatch.setattr(AppSettings, "read_file", lambda self: None)
         monkeypatch.setattr(AppSettings, "is_cisco_api_enabled", lambda self: True)
         monkeypatch.setattr(api_crawler, "update_cisco_eox_database", lambda api_query: result)
 

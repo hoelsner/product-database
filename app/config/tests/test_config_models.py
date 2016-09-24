@@ -5,6 +5,7 @@ import pytest
 from django.core.exceptions import ValidationError
 from mixer.backend.django import mixer
 from app.config import models
+from app.config.models import ConfigOption
 
 pytestmark = pytest.mark.django_db
 
@@ -88,3 +89,21 @@ class TestTextBlockModel:
             mixer.blend("config.TextBlock", name="MyName")
 
         assert exinfo.match("name\': \[\'Text block with this Name already exists.")
+
+
+class TestConfigOptionModel:
+    def test_model(self):
+        co = mixer.blend("config.ConfigOption")
+        assert co.key is not None
+        assert co.value is None
+
+        co = ConfigOption.objects.create(key="test", value="test")
+        assert co.key is not None
+        assert co.value is not None
+        assert str(co) == "test", "Should be the key value"
+
+        # test unique constraint
+        with pytest.raises(ValidationError) as exinfo:
+            ConfigOption.objects.create(key="test")
+
+        assert exinfo.match("key': \['Config option with this Key already exists")

@@ -9,62 +9,11 @@ from mixer.backend.django import mixer
 from requests import Response
 from app.ciscoeox import api_crawler
 from app.ciscoeox.exception import CiscoApiCallFailed, ConnectionFailedException
+from app.config.settings import AppSettings
 from app.productdb.models import Vendor, Product
 
 pytestmark = pytest.mark.django_db
-CISCO_API_ENABLED = True
-PRODUCT_BLACKLIST_REGEX = ""
-AUTO_CREATE_NEW_PRODUCTS = False
 HIT_COUNT = 0
-
-
-class BaseCiscoApiConsoleSettings:
-    """
-    Mock object that provides the Cisco API credentials used for online tests. If no credentials are found, dummy
-    values are used. The source file for the Test API credentials are read from the ".cisco_api_credentials" file,
-    which should have the following format:
-
-    {
-        "id": "",
-        "secret": ""
-    }
-
-    """
-    CREDENTIALS_FILE = ".cisco_api_credentials"
-
-    def read_file(self):
-        pass
-
-    def load_client_credentials(self):
-        pass
-
-    def is_cisco_api_enabled(self):
-        return CISCO_API_ENABLED
-
-    def get_product_blacklist_regex(self):
-        return PRODUCT_BLACKLIST_REGEX
-
-    def is_auto_create_new_products(self):
-        return AUTO_CREATE_NEW_PRODUCTS
-
-    def get_cisco_api_client_id(self):
-        try:
-            with open(self.CREDENTIALS_FILE) as f:
-                return json.loads(f.read())["client_id"]
-        except:
-            return "dummy_id"
-
-    def get_cisco_api_client_secret(self):
-        try:
-            with open(self.CREDENTIALS_FILE) as f:
-                return json.loads(f.read())["client_secret"]
-        except:
-            return "dummy_secret"
-
-
-@pytest.fixture
-def use_test_api_configuration(monkeypatch):
-    monkeypatch.setattr(api_crawler, "AppSettings", BaseCiscoApiConsoleSettings)
 
 
 valid_eox_record = {
@@ -306,15 +255,36 @@ def test_update_local_db_based_on_record():
     assert p.end_of_service_contract_renewal == datetime.date(2016, 10, 4), "Should be the value prior the update"
 
 
-@pytest.mark.usefixtures("use_test_api_configuration")
+@pytest.fixture
+def enable_cisco_api():
+    app = AppSettings()
+    app.set_cisco_api_enabled(True)
+
+
+@pytest.fixture
+def enabled_autocreate_new_products():
+    app = AppSettings()
+    app.set_auto_create_new_products(True)
+
+
+@pytest.fixture
+def disable_cisco_api():
+    app = AppSettings()
+    app.set_cisco_api_enabled(False)
+
+
+@pytest.mark.usefixtures("load_test_cisco_api_credentials")
 @pytest.mark.usefixtures("import_default_vendors")
 class TestUpdateCiscoEoxDatabase:
+    @pytest.mark.usefixtures("enable_cisco_api")
     def test_invalid_cisco_eox_database_query(self):
         with pytest.raises(ValueError) as exinfo:
             api_crawler.update_cisco_eox_database(None)
 
         assert exinfo.match("api_query must be a string value")
 
+    @pytest.mark.usefixtures("mock_cisco_api_authentication_server")
+    @pytest.mark.usefixtures("enable_cisco_api")
     def test_cisco_eox_database_query_with_server_error(self, monkeypatch):
         def raise_error():
             raise Exception("Server is down")
@@ -326,17 +296,15 @@ class TestUpdateCiscoEoxDatabase:
 
         assert exinfo.match("cannot contact API endpoint at")
 
+    @pytest.mark.usefixtures("disable_cisco_api")
     def test_cisco_eox_database_query_with_disabled_cisco_eox_api(self):
-        global CISCO_API_ENABLED
-        CISCO_API_ENABLED = False
-
         with pytest.raises(CiscoApiCallFailed) as exinfo:
             api_crawler.update_cisco_eox_database("MyQuery")
 
         assert exinfo.match("Cisco API access not enabled")
 
-        CISCO_API_ENABLED = True
-
+    @pytest.mark.usefixtures("mock_cisco_api_authentication_server")
+    @pytest.mark.usefixtures("enable_cisco_api")
     def test_offline_invalid_update_cisco_eox_database_with_default_settings(self, monkeypatch):
         # mock the underlying GET request
         def mock_response():
@@ -353,6 +321,8 @@ class TestUpdateCiscoEoxDatabase:
 
         assert exinfo.match("Cisco EoX API error: Some unknown error occurred during the API access \(YXCABC\)")
 
+    @pytest.mark.usefixtures("mock_cisco_api_authentication_server")
+    @pytest.mark.usefixtures("enable_cisco_api")
     def test_offline_valid_update_cisco_eox_database_with_default_settings(self, monkeypatch):
         # mock the underlying GET request
         def mock_response():
@@ -383,6 +353,9 @@ class TestUpdateCiscoEoxDatabase:
 
         assert Product.objects.count() == 0, "No products are created, because the creation mode is disabled by default"
 
+    @pytest.mark.usefixtures("mock_cisco_api_authentication_server")
+    @pytest.mark.usefixtures("enabled_autocreate_new_products")
+    @pytest.mark.usefixtures("enable_cisco_api")
     def test_offline_valid_update_cisco_eox_database_with_multiple_urls_in_result(self, monkeypatch):
         # mock the underlying GET request
         def mock_response():
@@ -400,8 +373,6 @@ class TestUpdateCiscoEoxDatabase:
 
         monkeypatch.setattr(requests, "get", lambda x, headers: mock_response())
 
-        global AUTO_CREATE_NEW_PRODUCTS
-        AUTO_CREATE_NEW_PRODUCTS = True
         result = api_crawler.update_cisco_eox_database("WS-C2950G-48-EI-WS")
 
         assert len(result) == 3, "Three products should be seen in the API response"
@@ -411,6 +382,9 @@ class TestUpdateCiscoEoxDatabase:
         assert p.eol_reference_url == "http://somewhere.com/index.html", "only the first entry is stored in the " \
                                                                          "database"
 
+    @pytest.mark.usefixtures("mock_cisco_api_authentication_server")
+    @pytest.mark.usefixtures("enabled_autocreate_new_products")
+    @pytest.mark.usefixtures("enable_cisco_api")
     def test_offline_no_result_update_cisco_eox_database_with_create_flag(self, monkeypatch):
         # mock the underlying GET request
         def mock_response():
@@ -422,8 +396,6 @@ class TestUpdateCiscoEoxDatabase:
 
         monkeypatch.setattr(requests, "get", lambda x, headers: mock_response())
 
-        global AUTO_CREATE_NEW_PRODUCTS
-        AUTO_CREATE_NEW_PRODUCTS = True
         result = api_crawler.update_cisco_eox_database("WS-C2950G-48-EI-WS")
 
         assert len(result) == 1, "Three products should be imported"
@@ -441,8 +413,9 @@ class TestUpdateCiscoEoxDatabase:
 
         assert Product.objects.count() == 0, "No products are created, because the creation mode is disabled by default"
 
-        AUTO_CREATE_NEW_PRODUCTS = False
-
+    @pytest.mark.usefixtures("mock_cisco_api_authentication_server")
+    @pytest.mark.usefixtures("enabled_autocreate_new_products")
+    @pytest.mark.usefixtures("enable_cisco_api")
     def test_offline_valid_update_cisco_eox_database_with_create_flag(self, monkeypatch):
         # mock the underlying GET request
         def mock_response():
@@ -454,8 +427,6 @@ class TestUpdateCiscoEoxDatabase:
 
         monkeypatch.setattr(requests, "get", lambda x, headers: mock_response())
 
-        global AUTO_CREATE_NEW_PRODUCTS
-        AUTO_CREATE_NEW_PRODUCTS = True
         result = api_crawler.update_cisco_eox_database("WS-C2950G-48-EI-WS")
 
         assert len(result) == 3, "Three products should be imported"
@@ -493,8 +464,9 @@ class TestUpdateCiscoEoxDatabase:
 
         assert len(result) == 3, "Nothing should change"
 
-        AUTO_CREATE_NEW_PRODUCTS = False
-
+    @pytest.mark.usefixtures("mock_cisco_api_authentication_server")
+    @pytest.mark.usefixtures("enabled_autocreate_new_products")
+    @pytest.mark.usefixtures("enable_cisco_api")
     def test_offline_valid_update_cisco_eox_database_with_create_flag_and_multipage_result(self, monkeypatch):
         # mock the underlying GET request
         def mock_response():
@@ -513,8 +485,6 @@ class TestUpdateCiscoEoxDatabase:
 
         monkeypatch.setattr(requests, "get", lambda x, headers: mock_response())
 
-        global AUTO_CREATE_NEW_PRODUCTS
-        AUTO_CREATE_NEW_PRODUCTS = True
         result = api_crawler.update_cisco_eox_database("WS-C2950G-48-EI-WS")
 
         assert len(result) == 3, "Three products should be imported"
@@ -533,8 +503,10 @@ class TestUpdateCiscoEoxDatabase:
             assert e["message"] is None
 
         assert Product.objects.count() == 3, "No products are created, because the creation mode is disabled by default"
-        AUTO_CREATE_NEW_PRODUCTS = False
 
+    @pytest.mark.usefixtures("mock_cisco_api_authentication_server")
+    @pytest.mark.usefixtures("enabled_autocreate_new_products")
+    @pytest.mark.usefixtures("enable_cisco_api")
     def test_offline_valid_update_cisco_eox_database_with_create_flag_and_blacklist(self, monkeypatch):
         # mock the underlying GET request
         def mock_response():
@@ -546,10 +518,8 @@ class TestUpdateCiscoEoxDatabase:
 
         monkeypatch.setattr(requests, "get", lambda x, headers: mock_response())
 
-        global AUTO_CREATE_NEW_PRODUCTS
-        global PRODUCT_BLACKLIST_REGEX
-        AUTO_CREATE_NEW_PRODUCTS = True
-        PRODUCT_BLACKLIST_REGEX = "WS-C2950G-48-EI-WS"
+        app = AppSettings()
+        app.set_product_blacklist_regex("WS-C2950G-48-EI-WS")
         result = api_crawler.update_cisco_eox_database("WS-C2950G-48-EI-WS")
 
         assert len(result) == 3, "Three products should be imported"
@@ -575,9 +545,10 @@ class TestUpdateCiscoEoxDatabase:
                 assert e["message"] is None
 
         assert Product.objects.count() == 2, "No products are created, because the creation mode is disabled by default"
-        AUTO_CREATE_NEW_PRODUCTS = False
-        PRODUCT_BLACKLIST_REGEX = ""
 
+    @pytest.mark.usefixtures("mock_cisco_api_authentication_server")
+    @pytest.mark.usefixtures("enabled_autocreate_new_products")
+    @pytest.mark.usefixtures("enable_cisco_api")
     def test_offline_valid_update_cisco_eox_database_with_create_flag_and_regex_blacklist(self, monkeypatch):
         # mock the underlying GET request
         def mock_response():
@@ -589,10 +560,8 @@ class TestUpdateCiscoEoxDatabase:
 
         monkeypatch.setattr(requests, "get", lambda x, headers: mock_response())
 
-        global AUTO_CREATE_NEW_PRODUCTS
-        global PRODUCT_BLACKLIST_REGEX
-        AUTO_CREATE_NEW_PRODUCTS = True
-        PRODUCT_BLACKLIST_REGEX = ".*-C2950G-48-EI-WS$"
+        app = AppSettings()
+        app.set_product_blacklist_regex(".*-C2950G-48-EI-WS$")
         result = api_crawler.update_cisco_eox_database("WS-C2950G-48-EI-WS")
 
         assert len(result) == 3, "Three products should be imported"
@@ -618,9 +587,10 @@ class TestUpdateCiscoEoxDatabase:
                 assert e["message"] is None
 
         assert Product.objects.count() == 2, "No products are created, because the creation mode is disabled by default"
-        AUTO_CREATE_NEW_PRODUCTS = False
-        PRODUCT_BLACKLIST_REGEX = ""
 
+    @pytest.mark.usefixtures("mock_cisco_api_authentication_server")
+    @pytest.mark.usefixtures("enabled_autocreate_new_products")
+    @pytest.mark.usefixtures("enable_cisco_api")
     def test_offline_valid_update_cisco_eox_database_with_create_flag_and_invalid_blacklist(self, monkeypatch):
         # mock the underlying GET request
         def mock_response():
@@ -632,10 +602,8 @@ class TestUpdateCiscoEoxDatabase:
 
         monkeypatch.setattr(requests, "get", lambda x, headers: mock_response())
 
-        global AUTO_CREATE_NEW_PRODUCTS
-        global PRODUCT_BLACKLIST_REGEX
-        AUTO_CREATE_NEW_PRODUCTS = True
-        PRODUCT_BLACKLIST_REGEX = "*-WS$"
+        app = AppSettings()
+        app.set_product_blacklist_regex("*-WS$")
         result = api_crawler.update_cisco_eox_database("WS-C2950G-48-EI-WS")
 
         assert len(result) == 3, "Three products should be imported"
@@ -662,9 +630,10 @@ class TestUpdateCiscoEoxDatabase:
                 assert e["message"] is None
 
         assert Product.objects.count() == 3, "No products are created, because the creation mode is disabled by default"
-        AUTO_CREATE_NEW_PRODUCTS = False
-        PRODUCT_BLACKLIST_REGEX = ""
 
+    @pytest.mark.usefixtures("mock_cisco_api_authentication_server")
+    @pytest.mark.usefixtures("enabled_autocreate_new_products")
+    @pytest.mark.usefixtures("enable_cisco_api")
     def test_offline_valid_update_cisco_eox_database_with_create_flag_and_multiple_blacklist(self, monkeypatch):
         # mock the underlying GET request
         def mock_response():
@@ -676,10 +645,8 @@ class TestUpdateCiscoEoxDatabase:
 
         monkeypatch.setattr(requests, "get", lambda x, headers: mock_response())
 
-        global AUTO_CREATE_NEW_PRODUCTS
-        global PRODUCT_BLACKLIST_REGEX
-        AUTO_CREATE_NEW_PRODUCTS = True
-        PRODUCT_BLACKLIST_REGEX = "WS-C2950G-48-EI-WS;WS-C2950G-24-EI"
+        app = AppSettings()
+        app.set_product_blacklist_regex("WS-C2950G-48-EI-WS;WS-C2950G-24-EI")
         result = api_crawler.update_cisco_eox_database("WS-C2950G-48-EI-WS")
 
         assert len(result) == 3, "Three products should be imported"
@@ -705,5 +672,3 @@ class TestUpdateCiscoEoxDatabase:
                 assert e["message"] is None
 
         assert Product.objects.count() == 1, "No products are created, because the creation mode is disabled by default"
-        AUTO_CREATE_NEW_PRODUCTS = False
-        PRODUCT_BLACKLIST_REGEX = ""

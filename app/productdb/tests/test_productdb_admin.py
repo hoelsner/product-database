@@ -27,6 +27,16 @@ class TestProductAdmin:
 
         assert result == expected, "should return a HTML representation of the current lifecycle states"
 
+    def test_search_fields(self):
+        for fieldname in admin.ProductAdmin.search_fields:
+            query = "%s__icontains" % fieldname
+            kwargs = {
+                query: "reinout"
+            }
+            print("Test search field: %s" % fieldname)
+            site = AdminSite()
+            assert admin.ProductAdmin(models.Product, site).model.objects.filter(**kwargs).count() == 0
+
     @pytest.mark.usefixtures("import_default_vendors")
     def test_current_lifecycle_state_with_none_value(self):
         site = AdminSite()

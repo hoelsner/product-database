@@ -13,69 +13,10 @@ from mixer.backend.django import mixer
 from app.config import views
 from app.config.models import NotificationMessage
 from app.config import utils
+from app.config.settings import AppSettings
 
 pytestmark = pytest.mark.django_db
-APP_SETTING_CISCO_API_ENABLED = True
 MOCK_WORKER_STATE = True
-
-
-class AppSettingsMock:
-    def read_file(self):
-        pass
-
-    def load_client_credentials(self):
-        pass
-
-    def is_cisco_api_enabled(self):
-        return APP_SETTING_CISCO_API_ENABLED
-
-    def get_cisco_api_client_id(self):
-        return "client_id"
-
-    def get_cisco_api_client_secret(self):
-        return "client_secret"
-
-    def is_login_only_mode(self):
-        return True
-
-    def is_cisco_eox_api_auto_sync_enabled(self):
-        return True
-
-    def get_cisco_eox_api_queries(self):
-        return ""
-
-    def get_product_blacklist_regex(self):
-        return ""
-
-    def is_auto_create_new_products(self):
-        return True
-
-    def set_login_only_mode(self, *args, **kwargs):
-        pass
-
-    def set_cisco_api_enabled(self, *args, **kwargs):
-        pass
-
-    def set_cisco_api_client_id(self, *args, **kwargs):
-        pass
-
-    def set_cisco_api_client_secret(self, *args, **kwargs):
-        pass
-
-    def set_cisco_eox_api_auto_sync_enabled(self, *args, **kwargs):
-        pass
-
-    def set_auto_create_new_products(self, *args, **kwargs):
-        pass
-
-    def set_cisco_eox_api_queries(self, *args, **kwargs):
-        pass
-
-    def set_product_blacklist_regex(self, *args, **kwargs):
-        pass
-
-    def write_file(self):
-        pass
 
 
 class MockWorker:
@@ -103,14 +44,30 @@ def patch_contrib_messages(request):
 
 @pytest.fixture
 def mock_cisco_eox_api_access_available(monkeypatch):
-    monkeypatch.setattr(views, "AppSettings", AppSettingsMock)
+    app = AppSettings()
+    app.set_cisco_api_enabled(True)
+    app.set_cisco_api_client_id("client_id")
+    app.set_cisco_api_client_id("client_secret")
+    app.set_periodic_sync_enabled(True)
+    app.set_cisco_eox_api_queries("")
+    app.set_product_blacklist_regex("")
+    app.set_auto_create_new_products(True)
+
     monkeypatch.setattr(utils, "check_cisco_eox_api_access",
                         lambda client_id, client_secret, drop_credentials=False: True)
 
 
 @pytest.fixture
 def mock_cisco_eox_api_access_broken(monkeypatch):
-    monkeypatch.setattr(views, "AppSettings", AppSettingsMock)
+    app = AppSettings()
+    app.set_cisco_api_enabled(True)
+    app.set_cisco_api_client_id("client_id")
+    app.set_cisco_api_client_id("client_secret")
+    app.set_periodic_sync_enabled(True)
+    app.set_cisco_eox_api_queries("")
+    app.set_product_blacklist_regex("")
+    app.set_auto_create_new_products(True)
+
     monkeypatch.setattr(utils, "check_cisco_eox_api_access",
                         lambda client_id, client_secret, drop_credentials=False: False)
 
@@ -120,9 +77,23 @@ def mock_cisco_eox_api_access_exception(monkeypatch):
     def raise_exception():
         raise Exception("totally broken")
 
-    monkeypatch.setattr(views, "AppSettings", AppSettingsMock)
+    app = AppSettings()
+    app.set_cisco_api_enabled(True)
+    app.set_cisco_api_client_id("client_id")
+    app.set_cisco_api_client_id("client_secret")
+    app.set_periodic_sync_enabled(True)
+    app.set_cisco_eox_api_queries("")
+    app.set_product_blacklist_regex("")
+    app.set_auto_create_new_products(True)
+
     monkeypatch.setattr(utils, "check_cisco_eox_api_access",
                         lambda client_id, client_secret, drop_credentials: raise_exception())
+
+
+@pytest.fixture
+def mock_cisco_eox_api_access_disabled():
+    app = AppSettings()
+    app.set_cisco_api_enabled(False)
 
 
 class TestAddNotificationView:
@@ -380,6 +351,21 @@ class TestChangeConfiguration:
         assert response.status_code == 302
         assert response.url == "/productdb/config/change/"
 
+        # test with invalid post value
+        data = {
+            "cisco_api_enabled": "on",
+            "cisco_api_client_id": "client_id",
+            "eox_api_blacklist": "("
+        }
+        request = RequestFactory().post(url, data=data)
+        request.user = user
+        msgs = patch_contrib_messages(request)
+
+        response = views.change_configuration(request)
+
+        assert response.status_code == 200
+        assert msgs.added_new
+
         data = {
             "cisco_api_client_id": "my changed client ID",
             "cisco_api_client_secret": "my changed client secret",
@@ -393,12 +379,9 @@ class TestChangeConfiguration:
         assert response.status_code == 302
         assert response.url == "/productdb/config/change/"
 
-    @pytest.mark.usefixtures("mock_cisco_eox_api_access_available")
+    @pytest.mark.usefixtures("mock_cisco_eox_api_access_disabled")
     @pytest.mark.usefixtures("import_default_text_blocks")
     def test_post_with_inactive_api(self):
-        global APP_SETTING_CISCO_API_ENABLED
-        APP_SETTING_CISCO_API_ENABLED = False
-
         # require super user permissions
         user = mixer.blend("auth.User", is_superuser=True)
         url = reverse(self.URL_NAME)
@@ -429,12 +412,9 @@ class TestChangeConfiguration:
         assert response.url == "/productdb/config/change/"
         assert msgs.added_new
 
-    @pytest.mark.usefixtures("mock_cisco_eox_api_access_broken")
+    @pytest.mark.usefixtures("mock_cisco_eox_api_access_disabled")
     @pytest.mark.usefixtures("import_default_text_blocks")
     def test_post_with_broken_api(self):
-        global APP_SETTING_CISCO_API_ENABLED
-        APP_SETTING_CISCO_API_ENABLED = False
-
         # require super user permissions
         user = mixer.blend("auth.User", is_superuser=True)
         url = reverse(self.URL_NAME)
