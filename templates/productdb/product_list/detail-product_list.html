@@ -88,13 +88,7 @@
                             {% endif %}
                         </td>
                         <td>
-                            {% if product.product_group %}
-                                {% if share_link %}
-                                    {{ product.product_group.name }}
-                                {% else %}
-                                    <a href="{% url 'productdb:detail-product_group' product_group_id=product.product_group.id %}?back_to={{ request.get_full_path|urlencode }}">{{ product.product_group.name }}</a>
-                                {% endif %}
-                            {% endif %}
+                            {{ product.product_group.name }}
                         </td>
                         <td>{{ product.description }}</td>
                         <td>
