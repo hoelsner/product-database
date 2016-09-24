@@ -1,6 +1,6 @@
 import re
 from django.core.cache import cache
-from app.config import AppSettings
+from app.config.settings import AppSettings
 
 DEFAULT_DATE_FORMAT = "%Y/%m/%d"
 
@@ -72,7 +72,6 @@ def login_required_if_login_only_mode(request):
     if not login_only_mode:
         # key not in cache
         app_settings = AppSettings()
-        app_settings.read_file()
         login_only_mode = app_settings.is_login_only_mode()
 
         # add setting to cache

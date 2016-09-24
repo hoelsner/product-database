@@ -6,7 +6,7 @@ from django.db import transaction
 from django.utils.datetime_safe import datetime
 from app.ciscoeox.exception import ConnectionFailedException, CiscoApiCallFailed
 from app.ciscoeox.base_api import CiscoEoxApi
-from app.config import AppSettings
+from app.config.settings import AppSettings
 from app.productdb.models import Product, Vendor
 
 logger = logging.getLogger(__name__)
@@ -162,7 +162,6 @@ def update_cisco_eox_database(api_query):
 
     # load application settings and check, that the API is enabled
     app_settings = AppSettings()
-    app_settings.read_file()
 
     if not app_settings.is_cisco_api_enabled():
         msg = "Cisco API access not enabled"

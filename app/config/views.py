@@ -8,7 +8,7 @@ from django.shortcuts import resolve_url, redirect, render
 from django.utils.safestring import mark_safe
 from djcelery.models import WorkerState
 
-from app.config import AppSettings
+from app.config.settings import AppSettings
 from app.config.forms import SettingsForm, NotificationMessageForm
 from app.config.models import NotificationMessage, TextBlock
 from app.config import utils
@@ -44,7 +44,6 @@ def status(request):
     Status page for the Product Database
     """
     app_config = AppSettings()
-    app_config.read_file()
 
     is_cisco_api_enabled = app_config.is_cisco_api_enabled()
     context = {
@@ -118,7 +117,6 @@ def change_configuration(request):
     """
     # read settings from configuration file
     app_config = AppSettings()
-    app_config.read_file()
 
     # read settings from database
     hp_content_after, _ = TextBlock.objects.get_or_create(
@@ -148,7 +146,7 @@ def change_configuration(request):
                 app_config.set_cisco_api_enabled(api_enabled)
                 app_config.set_cisco_api_client_id("PlsChgMe")
                 app_config.set_cisco_api_client_secret("PlsChgMe")
-                app_config.set_cisco_eox_api_auto_sync_enabled(False)
+                app_config.set_periodic_sync_enabled(False)
                 app_config.set_auto_create_new_products(False)
                 app_config.set_cisco_eox_api_queries("")
                 app_config.set_product_blacklist_regex("")
@@ -182,12 +180,10 @@ def change_configuration(request):
                         "Please configure your Cisco API credentials within the Cisco API settings tab."
                     )
 
-                app_config.set_cisco_eox_api_auto_sync_enabled(form.cleaned_data["eox_api_auto_sync_enabled"])
+                app_config.set_periodic_sync_enabled(form.cleaned_data["eox_api_auto_sync_enabled"])
                 app_config.set_auto_create_new_products(form.cleaned_data["eox_auto_sync_auto_create_elements"])
                 app_config.set_cisco_eox_api_queries(form.cleaned_data["eox_api_queries"])
                 app_config.set_product_blacklist_regex(form.cleaned_data["eox_api_blacklist"])
-
-            app_config.write_file()
 
             # expire cached settings
             cache.delete("LOGIN_ONLY_MODE_SETTING")
@@ -195,13 +191,16 @@ def change_configuration(request):
             messages.success(request, "Settings saved successfully")
             return redirect(resolve_url("productdb_config:change_settings"))
 
+        else:
+            messages.error(request, "Invalid configuration option detected, please check it below.")
+
     else:
         form = SettingsForm()
         form.fields['cisco_api_enabled'].initial = app_config.is_cisco_api_enabled()
         form.fields['login_only_mode'].initial = app_config.is_login_only_mode()
         form.fields['cisco_api_client_id'].initial = app_config.get_cisco_api_client_id()
         form.fields['cisco_api_client_secret'].initial = app_config.get_cisco_api_client_secret()
-        form.fields['eox_api_auto_sync_enabled'].initial = app_config.is_cisco_eox_api_auto_sync_enabled()
+        form.fields['eox_api_auto_sync_enabled'].initial = app_config.is_periodic_sync_enabled()
         form.fields['eox_auto_sync_auto_create_elements'].initial = app_config.is_auto_create_new_products()
         form.fields['eox_api_queries'].initial = app_config.get_cisco_eox_api_queries()
         form.fields['eox_api_blacklist'].initial = app_config.get_product_blacklist_regex()
@@ -211,7 +210,7 @@ def change_configuration(request):
     context = {
         "form": form,
         "is_cisco_api_enabled": app_config.is_cisco_api_enabled(),
-        "is_cisco_eox_api_auto_sync_enabled": app_config.is_cisco_eox_api_auto_sync_enabled()
+        "is_cisco_eox_api_auto_sync_enabled": app_config.is_periodic_sync_enabled()
     }
     return render(request, "config/change_configuration.html", context=context)
 

@@ -81,7 +81,6 @@ def login_user(request):
     :return:
     """
     app_config = AppSettings()
-    app_config.read_file()
     context = {
         "login_only_mode": app_config.is_login_only_mode()
     }

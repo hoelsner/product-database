@@ -2,6 +2,7 @@ import logging
 import re
 from django import forms
 from django.core.exceptions import ValidationError
+from django.forms import PasswordInput
 
 from app.config.models import NotificationMessage
 
@@ -20,52 +21,71 @@ class SettingsForm(forms.Form):
     """
     login_only_mode = forms.BooleanField(
         initial=False,
-        required=False
+        required=False,
+        label="<strong>login always required</strong>"
     )
 
     homepage_text_before = forms.CharField(
         widget=forms.Textarea(attrs={'class': "form-control code"}),
-        required=False
+        required=False,
+        label="Text before favorite actions:"
     )
 
     homepage_text_after = forms.CharField(
         widget=forms.Textarea(attrs={'class': "form-control code"}),
-        required=False
+        required=False,
+        label="Text after favorite actions:"
     )
 
     cisco_api_enabled = forms.BooleanField(
         initial=False,
-        required=False
+        required=False,
+        label="<strong>enable Cisco API</strong>"
     )
 
     cisco_api_client_id = forms.CharField(
         widget=forms.TextInput(attrs={'class': "form-control"}),
-        required=False
+        required=False,
+        label="Client ID:",
     )
 
     cisco_api_client_secret = forms.CharField(
-        widget=forms.TextInput(attrs={'class': "form-control"}),
-        required=False
+        required=False,
+        label="Client Secret:"
     )
 
     eox_auto_sync_auto_create_elements = forms.BooleanField(
         initial=False,
-        required=False
+        required=False,
+        label="<strong>auto-create new products</strong>",
+        help_text="If enabled, a new products will be create (if not already existing) if an EoL message is found. "
+                  "Otherwise, these entries are ignored."
     )
 
     eox_api_auto_sync_enabled = forms.BooleanField(
         initial=False,
-        required=False
+        required=False,
+        label="<strong>Periodic synchronization of the Cisco EoX states</strong>",
+        help_text="This synchronization tasks utilizes the Cisco EoX API and will automatically update the lifecycle "
+                  "state of the products from the configured queries. It is executed by default <strong>on every "
+                  "Friday at 3:00 a.m.</strong>."
     )
 
     eox_api_queries = forms.CharField(
         widget=forms.Textarea(attrs={'class': "form-control"}),
-        required=False
+        required=False,
+        label="Cisco EoX API queries:",
+        help_text="EoX queries are executed line by line. Please note, that every query must contain at least three "
+                  "characters. A Wildcard sign (*) is also allowed."
     )
 
     eox_api_blacklist = forms.CharField(
         widget=forms.Textarea(attrs={'class': "form-control"}),
-        required=False
+        required=False,
+        label="blacklist for products:",
+        help_text="Regular expressions separated by semicolon (;) or word wrap. If a PID matches the regular "
+                  "expression, it won't be created in the database. This option is only required, if "
+                  "<strong>auto-create new products</strong>-option is enabled."
     )
 
     def _get_eox_api_blacklist_as_list(self):

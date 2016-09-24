@@ -4,7 +4,7 @@ import logging
 import requests
 from django.core.cache import cache
 from app.ciscoeox.exception import *
-from app.config import AppSettings
+from app.config.settings import AppSettings
 
 logger = logging.getLogger(__name__)
 
@@ -92,7 +92,6 @@ class BaseCiscoApiConsole:
     def load_client_credentials(self):
         logger.debug("load client credentials from configuration")
         app_settings = AppSettings()
-        app_settings.read_file()
 
         # load client credentials
         self.client_id = app_settings.get_cisco_api_client_id()

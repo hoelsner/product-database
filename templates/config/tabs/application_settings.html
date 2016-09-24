@@ -1,3 +1,4 @@
+{% load bootstrap3 %}
 <div class="panel panel-default">
     <div class="panel-heading">
         <h3 class="panel-title">Common Settings</h3>
@@ -6,15 +7,7 @@
         <p>
             The following setting enables/disable the public access to the site (except <i>share</i> links).
         </p>
-        {{ form.login_only_mode.errors }}
-        <div class="col-sm-7 col-md-offset-2">
-            <div class="checkbox">
-                <label>
-                    {{ form.login_only_mode }}
-                    <b>login always required</b>
-                </label>
-            </div>
-        </div>
+        {% bootstrap_field form.login_only_mode layout="horizontal" %}
     </div>
 </div>
 <div class="panel panel-default">
@@ -30,15 +23,7 @@
             </a>
             when using this API. The API access is only available for Cisco Partners.
         </p>
-        {{ form.cisco_api_enabled.errors }}
-        <div class="col-sm-7 col-md-offset-2">
-            <div class="checkbox">
-                <label>
-                    {{ form.cisco_api_enabled }}
-                    <b>Enable Cisco API</b>
-                </label>
-            </div>
-        </div>
+        {% bootstrap_field form.cisco_api_enabled layout="horizontal" %}
     </div>
 </div>
 <div class="panel panel-default">
@@ -46,21 +31,7 @@
         <h3 class="panel-title">Custom Homepage Content</h3>
     </div>
     <div class="panel-body">
-        <div class="col-lg-12">
-            <div class="form-group">
-                {{ form.homepage_text_before.errors }}
-                <label class="col-sm-3 control-label" for="{{ form.homepage_text_before.id_for_label }}">Text before favorite actions:</label>
-                <div class="col-sm-9">
-                    {{ form.homepage_text_before }}
-                </div>
-            </div>
-            <div class="form-group">
-                {{ form.homepage_text_after.errors }}
-                <label class="col-sm-3 control-label" for="{{ form.homepage_text_after.id_for_label }}">Text after favorite actions:</label>
-                <div class="col-sm-9">
-                    {{ form.homepage_text_after }}
-                </div>
-            </div>
-        </div>
+        {% bootstrap_field form.homepage_text_before layout="horizontal" %}
+        {% bootstrap_field form.homepage_text_after layout="horizontal" %}
     </div>
 </div>

@@ -2,9 +2,9 @@ import logging
 from django.core.cache import cache
 import app.ciscoeox.api_crawler as cisco_eox_api_crawler
 from app.ciscoeox.exception import CredentialsNotFoundException, CiscoApiCallFailed
-from app.config import AppSettings
+from app.config.settings import AppSettings
 from app.config.models import NotificationMessage
-from app.config.utils import check_cisco_eox_api_access
+from app.config import utils
 from django_project.celery import app as app, TaskState
 
 logger = logging.getLogger(__name__)
@@ -29,8 +29,7 @@ def execute_task_to_synchronize_cisco_eox_states(self, ignore_periodic_sync_flag
     :return:
     """
     app_config = AppSettings()
-    app_config.read_file()
-    run_task = app_config.is_cisco_eox_api_auto_sync_enabled()
+    run_task = app_config.is_periodic_sync_enabled()
 
     if run_task or ignore_periodic_sync_flag:
         logger.info("start sync with Cisco EoX API...")
@@ -65,7 +64,7 @@ def execute_task_to_synchronize_cisco_eox_states(self, ignore_periodic_sync_flag
         else:
             try:
                 # test Cisco EoX API access
-                success = check_cisco_eox_api_access(
+                success = utils.check_cisco_eox_api_access(
                     app_config.get_cisco_api_client_id(),
                     app_config.get_cisco_api_client_secret(),
                     False
@@ -238,6 +237,22 @@ def execute_task_to_synchronize_cisco_eox_states(self, ignore_periodic_sync_flag
                     type=NotificationMessage.MESSAGE_ERROR,
                     summary_message=msg,
                     detailed_message="The synchronization was performed partially."
+                )
+
+                result = {
+                    "error_message": msg
+                }
+            except Exception as ex:
+                msg = "Cannot access the Cisco API. Please ensure that the server is " \
+                      "connected to the internet and that the authentication settings are " \
+                      "valid."
+                logger.error(msg, exc_info=True)
+
+                NotificationMessage.objects.create(
+                    title=NOTIFICATION_MESSAGE_TITLE,
+                    type=NotificationMessage.MESSAGE_ERROR,
+                    summary_message=msg,
+                    detailed_message="%s" % str(ex)
                 )
 
                 result = {

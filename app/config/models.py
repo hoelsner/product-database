@@ -114,3 +114,34 @@ class TextBlock(models.Model):
         # clean the object before save
         self.full_clean()
         super(TextBlock, self).save(*args, **kwargs)
+
+
+class ConfigOption(models.Model):
+    GLOBAL_CISCO_API_ENABLED = "global.cisco_api_enabled"
+    GLOBAL_LOGIN_ONLY_MODE = "global.login_only_mode"
+    CISCO_API_CLIENT_ID = "cisco_api.client_id"
+    CISCO_API_CLIENT_SECRET = "cisco_api.client_secret"
+    CISCO_EOX_CRAWLER_AUTO_SYNC = "cisco_eox.auto_sync"
+    CISCO_EOX_CRAWLER_CREATE_PRODUCTS = "cisco_eox.create_products"
+    CISCO_EOX_CRAWLER_LAST_EXECUTION_TIME = "cisco_eox.last_execution_time"
+    CISCO_EOX_CRAWLER_LAST_EXECUTION_RESULT = "cisco_eox.last_execution_result"
+    CISCO_EOX_API_QUERIES = "cisco_eox.api_queries"
+    CISCO_EOX_PRODUCT_BLACKLIST_REGEX = "cisco_eox.product_blacklist_regex"
+
+    key = models.CharField(
+        max_length=256,
+        unique=True
+    )
+
+    value = models.CharField(
+        max_length=256,
+        null=True,
+        blank=True
+    )
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super(ConfigOption, self).save(*args, **kwargs)
+
+    def __str__(self):
+        return self.key

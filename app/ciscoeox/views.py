@@ -9,7 +9,7 @@ from django.shortcuts import redirect, render
 from app.ciscoeox import tasks
 from app.ciscoeox import api_crawler
 from app.ciscoeox.exception import ConnectionFailedException, CiscoApiCallFailed
-from app.config import AppSettings
+from app.config.settings import AppSettings
 from django_project.celery import set_meta_data_for_task
 
 logger = logging.getLogger(__name__)
@@ -24,8 +24,6 @@ def cisco_eox_query(request):
     :return:
     """
     app_config = AppSettings()
-    app_config.read_file()
-
     cisco_api_enabled = app_config.is_cisco_api_enabled()
 
     context = {
