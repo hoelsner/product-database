@@ -306,7 +306,7 @@ class TestSyncLocalDatabaseWithCiscoEoxApi(BaseSeleniumTest):
 
         # check that there is the External API settings area and activate the use of the Cisco API
         assert "External API Settings" in page_text
-        assert "Enable Cisco API" in page_text
+        assert "enable Cisco API" in page_text
         browser.find_element_by_id("id_cisco_api_enabled").click()
         browser.find_element_by_id("submit").click()
 

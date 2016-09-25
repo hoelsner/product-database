@@ -65,6 +65,21 @@ class TestConfigSettings:
         value = settings.get_cisco_eox_api_queries()
 
         assert value == queries
+        assert settings.get_cisco_eox_api_queries_as_list() == ["test"]
+
+        queries = "test\nother_test"
+        settings.set_cisco_eox_api_queries(queries)
+        value = settings.get_cisco_eox_api_queries()
+
+        assert value == queries
+        assert settings.get_cisco_eox_api_queries_as_list() == ["test", "other_test"]
+
+        queries = "test;xyz\nother_test"
+        settings.set_cisco_eox_api_queries(queries)
+        value = settings.get_cisco_eox_api_queries()
+
+        assert value == queries
+        assert settings.get_cisco_eox_api_queries_as_list() == ["test", "xyz", "other_test"]
 
     def test_product_blacklist_regex_from_config(self):
         settings = AppSettings()

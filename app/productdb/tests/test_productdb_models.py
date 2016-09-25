@@ -348,6 +348,30 @@ class TestProduct:
                 p.save()
             assert exinfo.match(ival["exp_error"])
 
+    def test_product_eol_url_with_whitespace(self):
+        p = mixer.blend("productdb.Product")
+
+        assert p.eol_reference_url is None
+
+        p.eol_reference_url = "http://localhost/valid_url.html"
+        p.save()
+
+        p.refresh_from_db()
+        assert p.eol_reference_url == "http://localhost/valid_url.html"
+
+        p.eol_reference_url = "  http://localhost/valid_url_with_whitespace.html  "
+        p.save()
+
+        p.refresh_from_db()
+        assert p.eol_reference_url == "http://localhost/valid_url_with_whitespace.html"
+
+        p.eol_reference_url = "some random invalid url"
+
+        with pytest.raises(ValidationError) as exinfo:
+            p.save()
+
+        assert exinfo.match("eol_reference_url': \['Enter a valid URL.")
+
 
 class TestProductList:
     """Test ProductList model object"""

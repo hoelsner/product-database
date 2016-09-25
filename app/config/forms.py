@@ -65,7 +65,7 @@ class SettingsForm(forms.Form):
     eox_api_auto_sync_enabled = forms.BooleanField(
         initial=False,
         required=False,
-        label="<strong>Periodic synchronization of the Cisco EoX states</strong>",
+        label="<strong>periodic synchronization of the Cisco EoX states</strong>",
         help_text="This synchronization tasks utilizes the Cisco EoX API and will automatically update the lifecycle "
                   "state of the products from the configured queries. It is executed by default <strong>on every "
                   "Friday at 3:00 a.m.</strong>."

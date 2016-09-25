@@ -1,15 +1,69 @@
 import logging
+import re
+
 from django.core.cache import cache
+from django.db import transaction
+
 import app.ciscoeox.api_crawler as cisco_eox_api_crawler
 from app.ciscoeox.exception import CredentialsNotFoundException, CiscoApiCallFailed
 from app.config.settings import AppSettings
 from app.config.models import NotificationMessage
 from app.config import utils
+from app.productdb.models import Vendor, Product
 from django_project.celery import app as app, TaskState
 
 logger = logging.getLogger(__name__)
 
 NOTIFICATION_MESSAGE_TITLE = "Synchronization with Cisco EoX API"
+
+
+@app.task(name="ciscoeox.populate_product_lc_state_sync_field")
+def cisco_eox_populate_product_lc_state_sync_field():
+    """
+    Periodic job to populate the lc_state_sync field in the Products, which shows that the product lifecycle data are
+    automatically synchronized against the Cisco EoX API in this case
+    :return:
+    """
+    try:
+        cis_vendor = Vendor.objects.get(name__istartswith="Cisco")
+
+    except:
+        # Vendor doesn't exist, no steps required
+        return {"error": "Vendor \"Cisco Systems\" not found in database"}
+
+    cisco_products = Product.objects.filter(vendor=cis_vendor)
+
+    if cisco_products.count() != 0:
+        app_config = AppSettings()
+        queries = app_config.get_cisco_eox_api_queries_as_list()
+
+        # escape the query strings
+        queries = [re.escape(e) for e in queries]
+
+        # convert the wildcard values
+        queries = [e.replace("\\*", ".*") for e in queries]
+        queries = ["^" + e + "$" for e in queries]
+
+        with transaction.atomic():
+            # reset all entries for the vendor
+            pl = Product.objects.filter(vendor=cis_vendor)
+            for p in pl:
+                p.lc_state_sync = False
+                p.save()
+
+            # only set the state sync to true if the periodic synchronization is enabled
+            if app_config.is_periodic_sync_enabled():
+                for query in queries:
+                    pl = Product.objects.filter(product_id__regex=query, vendor=cis_vendor)
+
+                    for p in pl:
+                        p.lc_state_sync = True
+                        p.save()
+
+        return {"status": "Database updated"}
+
+    else:
+        return {"error": "No Products associated to \"Cisco Systems\" found in database"}
 
 
 @app.task(
@@ -38,14 +92,7 @@ def execute_task_to_synchronize_cisco_eox_states(self, ignore_periodic_sync_flag
         })
 
         # read queries from configuration
-        queries_raw_string = app_config.get_cisco_eox_api_queries()
-
-        # clean queries string and remove empty statements
-        # (split lines, if any and split the string by semicolon)
-        queries = []
-        for e in [e.split(";") for e in queries_raw_string.splitlines()]:
-            queries += e
-        queries = [e for e in queries if e != ""]
+        queries = app_config.get_cisco_eox_api_queries_as_list()
 
         if len(queries) == 0:
             result = {

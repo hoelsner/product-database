@@ -150,6 +150,16 @@ class AppSettings:
         co = ConfigOption.objects.get(key=ConfigOption.CISCO_EOX_API_QUERIES)
         return co.value.strip()
 
+    def get_cisco_eox_api_queries_as_list(self):
+        """
+        clean queries string and remove empty statements
+        (split lines, if any and split the string by semicolon)
+        """
+        queries = []
+        for e in [e.split(";") for e in self.get_cisco_eox_api_queries().splitlines()]:
+            queries += e
+        return [e for e in queries if e != ""]
+
     def set_cisco_eox_api_queries(self, value):
         """
         set Cisco EoX API queries

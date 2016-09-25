@@ -254,6 +254,13 @@ class Product(models.Model):
         validators=[]
     )
 
+    lc_state_sync = models.BooleanField(
+        default=False,
+        verbose_name="lifecycle data automatically synchronized",
+        help_text="product is automatically synchronized against the vendor data"  # always false except for Cisco EoX
+                                                                                   # API entries
+    )
+
     @property
     def current_lifecycle_states(self):
         """
@@ -319,6 +326,10 @@ class Product(models.Model):
         return self.product_id
 
     def save(self, *args, **kwargs):
+        # strip URL value
+        if self.eol_reference_url is not None:
+            self.eol_reference_url = self.eol_reference_url.strip()
+
         # clean the object before save
         self.full_clean()
         super(Product, self).save(*args, **kwargs)

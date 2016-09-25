@@ -29,6 +29,7 @@ class ProductAdmin(CompareVersionAdmin, admin.ModelAdmin):
         'tags',
         'vendor',
         'current_lifecycle_states',
+        'lc_state_sync',
     )
 
     search_fields = (
@@ -40,6 +41,7 @@ class ProductAdmin(CompareVersionAdmin, admin.ModelAdmin):
 
     readonly_fields = (
         'current_lifecycle_states',
+        'lc_state_sync',
     )
 
     def current_lifecycle_states(self, obj):

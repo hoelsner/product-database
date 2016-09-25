@@ -50,9 +50,15 @@
             <dd>{{ product.tags|default:"<i>No tags defined</i>" }}</dd>
         </dl>
 
+        <h2>Lifecycle data</h2>
         {% if product.current_lifecycle_states %}
-            <h2>Lifecycle data</h2>
             <div class="panel panel-default">
+                {% if product.lc_state_sync %}
+                    {% bootstrap_alert "The lifecycle states of this product are automatically synchronized." alert_type="info" dismissable=False %}
+                {% else %}
+                    {% bootstrap_alert "The lifecycle states of this product are not automatically synchronized." alert_type="warning" dismissable=False %}
+                {% endif %}
+
                 <div class="panel-body">
                 {% if product.current_lifecycle_states|length > 1 %}
                     <div class="alert alert-warning" role="alert">
@@ -136,6 +142,8 @@
                 {% endif %}
                 </div>
             </div>
+        {% else %}
+            {% bootstrap_alert "No lifecycle data are stored in the database." alert_type="info" dismissable=False %}
         {% endif %}
 
     </div>

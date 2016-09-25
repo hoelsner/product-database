@@ -134,7 +134,7 @@ class ConfigOption(models.Model):
     )
 
     value = models.CharField(
-        max_length=256,
+        max_length=8192,
         null=True,
         blank=True
     )

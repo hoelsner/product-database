@@ -1,6 +1,6 @@
 from django.core.exceptions import ObjectDoesNotExist
 from django_datatables_view.base_datatable_view import BaseDatatableView
-from .models import Product, ProductGroup, Vendor
+from .models import Product, ProductGroup
 from django.db.models import Q
 from app.productdb.utils import is_valid_regex
 
@@ -138,7 +138,8 @@ class VendorProductListJson(BaseDatatableView, ColumnSearchMixin):
                 "end_of_sec_vuln_supp_date": item.end_of_sec_vuln_supp_date,
                 "end_of_support_date": item.end_of_support_date,
                 "eol_reference_number": item.eol_reference_number,
-                "eol_reference_url": item.eol_reference_url
+                "eol_reference_url": item.eol_reference_url,
+                "lc_state_sync": item.lc_state_sync
             })
         return json_data
 
@@ -272,7 +273,8 @@ class ListProductsByGroupJson(BaseDatatableView, ColumnSearchMixin):
                 "end_of_sec_vuln_supp_date": item.end_of_sec_vuln_supp_date,
                 "end_of_support_date": item.end_of_support_date,
                 "eol_reference_number": item.eol_reference_number,
-                "eol_reference_url": item.eol_reference_url
+                "eol_reference_url": item.eol_reference_url,
+                "lc_state_sync": item.lc_state_sync
             })
         return json_data
 
@@ -377,6 +379,7 @@ class ListProductsJson(BaseDatatableView, ColumnSearchMixin):
                 "end_of_sec_vuln_supp_date": item.end_of_sec_vuln_supp_date,
                 "end_of_support_date": item.end_of_support_date,
                 "eol_reference_number": item.eol_reference_number,
-                "eol_reference_url": item.eol_reference_url
+                "eol_reference_url": item.eol_reference_url,
+                "lc_state_sync": item.lc_state_sync
             })
         return json_data

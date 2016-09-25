@@ -5,13 +5,14 @@ import datetime
 import pytest
 import json
 import requests
+from mixer.backend.django import mixer
 from requests import Response
 from app.ciscoeox import api_crawler
 from app.ciscoeox import tasks
 from app.ciscoeox.exception import CiscoApiCallFailed, CredentialsNotFoundException
 from app.config.models import NotificationMessage
 from app.config.settings import AppSettings
-from app.productdb.models import Product
+from app.productdb.models import Product, Vendor
 from django_project.celery import TaskState
 
 pytestmark = pytest.mark.django_db
@@ -249,3 +250,112 @@ class TestExecuteTaskToSynchronizeCiscoEoxStateTask:
         assert task.status == "SUCCESS", task.traceback
         assert task.state == TaskState.SUCCESS
         assert task.info.get("status_message") != "task not enabled"
+
+
+@pytest.mark.usefixtures("set_celery_always_eager")
+@pytest.mark.usefixtures("redis_server_required")
+class TestPopulateProductLifecycleStateSyncTask:
+
+    def test_no_cisco_vendor(self):
+        result = tasks.cisco_eox_populate_product_lc_state_sync_field.delay()
+
+        assert result.status == "SUCCESS"
+        assert result.info == {"error": "Vendor \"Cisco Systems\" not found in database"}
+
+    @pytest.mark.usefixtures("import_default_vendors")
+    def test_no_cisco_products(self):
+        result = tasks.cisco_eox_populate_product_lc_state_sync_field.delay()
+
+        assert result.status == "SUCCESS"
+        assert result.info == {"error": "No Products associated to \"Cisco Systems\" found in database"}
+
+    @pytest.mark.usefixtures("import_default_vendors")
+    def test_populate_flag_on_cisco_products(self):
+        app_config = AppSettings()
+        v = Vendor.objects.get(id=1)
+        mixer.blend("productdb.Product", product_id="est", vendor=v, lc_state_sync=False)
+        mixer.blend("productdb.Product", product_id="Test", vendor=v, lc_state_sync=False)
+        mixer.blend("productdb.Product", product_id="TestA", vendor=v, lc_state_sync=False)
+        mixer.blend("productdb.Product", product_id="TestB", vendor=v, lc_state_sync=False)
+        mixer.blend("productdb.Product", product_id="TestC", vendor=v, lc_state_sync=False)
+        mixer.blend("productdb.Product", product_id="ControlItem", vendor=v, lc_state_sync=False)
+
+        # the following item is part of every query, but is never synced because of the wrong vendor
+        mixer.blend("productdb.Product", product_id="Other ControlItem", lc_state_sync=False)
+
+        app_config.set_cisco_eox_api_queries("")
+        app_config.set_periodic_sync_enabled(True)
+
+        result = tasks.cisco_eox_populate_product_lc_state_sync_field.delay()
+
+        assert result.status == "SUCCESS"
+        assert Product.objects.filter(lc_state_sync=True).count() == 0, "No queries configured"
+
+        app_config.set_cisco_eox_api_queries("Test\nOther ControlItem")
+
+        result = tasks.cisco_eox_populate_product_lc_state_sync_field.delay()
+        filterquery = Product.objects.filter(lc_state_sync=True)
+
+        assert result.status == "SUCCESS"
+        assert list(filterquery.order_by("id").values_list("product_id", flat=True)) == ["Test"]
+
+        app_config.set_cisco_eox_api_queries("Test*\nOther ControlItem")
+
+        result = tasks.cisco_eox_populate_product_lc_state_sync_field.delay()
+        filterquery = Product.objects.filter(lc_state_sync=True)
+        expected_result_list = [
+            "Test",
+            "TestA",
+            "TestB",
+            "TestC",
+        ]
+
+        assert result.status == "SUCCESS"
+        assert list(filterquery.order_by("id").values_list("product_id", flat=True)) == expected_result_list
+
+        app_config.set_cisco_eox_api_queries("*estB\nOther ControlItem")
+
+        result = tasks.cisco_eox_populate_product_lc_state_sync_field.delay()
+        filterquery = Product.objects.filter(lc_state_sync=True)
+        expected_result_list = [
+            "TestB",
+        ]
+
+        assert result.status == "SUCCESS"
+        assert list(filterquery.order_by("id").values_list("product_id", flat=True)) == expected_result_list
+
+        app_config.set_cisco_eox_api_queries("*estB\nOther ControlItem")
+
+        result = tasks.cisco_eox_populate_product_lc_state_sync_field.delay()
+        filterquery = Product.objects.filter(lc_state_sync=True)
+        expected_result_list = [
+            "TestB",
+        ]
+
+        assert result.status == "SUCCESS"
+        assert list(filterquery.order_by("id").values_list("product_id", flat=True)) == expected_result_list
+
+        app_config.set_cisco_eox_api_queries("*es*\nOther ControlItem")
+
+        result = tasks.cisco_eox_populate_product_lc_state_sync_field.delay()
+        filterquery = Product.objects.filter(lc_state_sync=True)
+        expected_result_list = [
+            "est",
+            "Test",
+            "TestA",
+            "TestB",
+            "TestC",
+        ]
+
+        assert result.status == "SUCCESS"
+        assert list(filterquery.order_by("id").values_list("product_id", flat=True)) == expected_result_list
+
+        app_config.set_cisco_eox_api_queries("*es*\nOther ControlItem")
+        app_config.set_periodic_sync_enabled(False)
+
+        result = tasks.cisco_eox_populate_product_lc_state_sync_field.delay()
+        filterquery = Product.objects.filter(lc_state_sync=True)
+
+        assert result.status == "SUCCESS"
+        assert filterquery.count() == 0, "Periodic sync disabled, no value should be true"
+

@@ -1,4 +1,4 @@
-from rest_framework.serializers import HyperlinkedModelSerializer
+from rest_framework.serializers import HyperlinkedModelSerializer, BooleanField
 from rest_framework import serializers
 from rest_framework.serializers import ChoiceField, CharField, DecimalField, PrimaryKeyRelatedField
 from django.core.validators import MinValueValidator
@@ -69,6 +69,13 @@ class ProductSerializer(HyperlinkedModelSerializer):
         validators=[MinValueValidator(0)]
     )
 
+    lc_state_sync = BooleanField(
+        required=False,
+        initial=False,
+        read_only=True,
+        help_text="automatic synchronization of lifecycle states"
+    )
+
     product_group = PrimaryKeyRelatedField(
         many=False,
         queryset=ProductGroup.objects.all(),
@@ -118,6 +125,7 @@ class ProductSerializer(HyperlinkedModelSerializer):
             'end_of_sec_vuln_supp_date',
             'eol_reference_number',
             'eol_reference_url',
+            'lc_state_sync',
         )
         extra_kwargs = {
             'url': {

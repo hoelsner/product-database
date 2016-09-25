@@ -49,6 +49,7 @@
                     <th><abbr title="End of Vulnerability/Security Support date">EoVulnServ</abbr></th>
                     <th>Last Date of Support</th>
                     <th>Vendor Bulletin</th>
+                    <th><abbr title="Lifecycle state automatically synchronized">LC auto-sync</abbr></th>
                 </tr>
             </thead>
         </table>
@@ -237,6 +238,21 @@
                         "visible": false,
                         "searchable": false,
                         "sortable": false
+                    },
+                    {
+                        "targets": 14,
+                        "data": "lc_state_sync",
+                        "visible": false,
+                        "searchable": false,
+                        "sortable": false,
+                        "render": function ( data, type, row ) {
+                            if (row["lc_state_sync"]) {
+                                return "Yes";
+                            }
+                            else {
+                                return "No";
+                            }
+                        }
                     }
                 ],
                 buttons: [

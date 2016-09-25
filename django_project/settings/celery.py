@@ -25,6 +25,11 @@ CELERYBEAT_SCHEDULE = {
         'task': 'ciscoeox.synchronize_with_cisco_eox_api',
         'schedule': crontab(hour=3, minute=0, day_of_week=5)
     },
+    # set the lc_state_sync flag on Cisco equipment based on the configuration values
+    'ciscoeox.populate_product_lc_state_sync_field': {
+        'task': 'ciscoeox.populate_product_lc_state_sync_field',
+        'schedule': crontab(hour=2, minute=0)
+    },
 }
 
 djcelery.setup_loader()

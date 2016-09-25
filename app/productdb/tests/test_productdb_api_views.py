@@ -155,7 +155,7 @@ class TestVendorAPIEndpoint:
         assert jdata["data"][0] == response.json()
 
     def test_add_access_with_permission(self):
-        test_user = "knut"
+        test_user = "user"
         u = User.objects.create_user(test_user, "", test_user)
         p = Permission.objects.get(codename="add_vendor")
         assert p is not None
@@ -173,7 +173,7 @@ class TestVendorAPIEndpoint:
 
     def test_change_access_with_permission(self):
         # create a user with permissions
-        test_user = "knut"
+        test_user = "user"
         u = User.objects.create_user(test_user, "", test_user)
         p = Permission.objects.get(codename="change_vendor")
         assert p is not None
@@ -190,7 +190,7 @@ class TestVendorAPIEndpoint:
         assert Vendor.objects.count() == 3, "no additional vendor is created"
 
     def test_delete_access_with_permission(self):
-        test_user = "knut"
+        test_user = "user"
         u = User.objects.create_user(test_user, "", test_user)
         p = Permission.objects.get(codename="delete_vendor")
         assert p is not None
@@ -368,7 +368,7 @@ class TestProductGroupAPIEndpoint:
         assert jdata["data"][0] == response.json()
 
     def test_add_access_with_permission(self):
-        test_user = "knut"
+        test_user = "user"
         test_product_group_name = "Test Product Group"
         expected_result = {
             "vendor": 1,
@@ -413,7 +413,7 @@ class TestProductGroupAPIEndpoint:
         }
 
         # create a user with permissions
-        test_user = "knut"
+        test_user = "user"
         u = User.objects.create_user(test_user, "", test_user)
         p = Permission.objects.get(codename="change_productgroup")
         assert p is not None
@@ -435,7 +435,7 @@ class TestProductGroupAPIEndpoint:
         pg = mixer.blend("productdb.ProductGroup")
         assert ProductGroup.objects.count() == 1
 
-        test_user = "knut"
+        test_user = "user"
         u = User.objects.create_user(test_user, "", test_user)
         p = Permission.objects.get(codename="delete_productgroup")
         assert p is not None
@@ -690,7 +690,8 @@ class TestProductAPIEndpoint:
                     "eox_update_time_stamp": None,
                     "product_group": None,
                     "end_of_new_service_attachment_date": None,
-                    "currency": "USD"
+                    "currency": "USD",
+                    "lc_state_sync": False
                 }
             ]
         }
@@ -718,7 +719,7 @@ class TestProductAPIEndpoint:
         assert jdata["data"][0] == response.json()
 
     def test_add_access_with_permission(self):
-        test_user = "knut"
+        test_user = "user"
         test_product_id = "Test Product ID"
         expected_result = {
             "currency": "USD",
@@ -740,7 +741,8 @@ class TestProductAPIEndpoint:
             "end_of_sec_vuln_supp_date": None,
             "end_of_routine_failure_analysis": None,
             "id": 0,
-            "product_id": test_product_id
+            "product_id": test_product_id,
+            "lc_state_sync": False
         }
 
         u = User.objects.create_user(test_user, "", test_user)
@@ -761,6 +763,100 @@ class TestProductAPIEndpoint:
         expected_result["id"] = Product.objects.get(product_id=test_product_id).id
         expected_result["url"] = "http://testserver/productdb/api/v0/products/%d/" % expected_result["id"]
         assert response.json() == expected_result, "Should provide the new product"
+
+    def test_create_product_with_lc_state_sync_field(self):
+        test_user = "user"
+        test_product_id = "Test Product ID"
+        expected_result = {
+            "currency": "USD",
+            "end_of_service_contract_renewal": None,
+            "eol_reference_url": None,
+            "url": "http://testserver/productdb/api/v0/products/%d/",
+            "eol_reference_number": None,
+            "product_group": None,
+            "end_of_sale_date": None,
+            "description": "",
+            "vendor": 0,
+            "tags": "",
+            "list_price": None,
+            "eol_ext_announcement_date": None,
+            "eox_update_time_stamp": None,
+            "end_of_new_service_attachment_date": None,
+            "end_of_support_date": None,
+            "end_of_sw_maintenance_date": None,
+            "end_of_sec_vuln_supp_date": None,
+            "end_of_routine_failure_analysis": None,
+            "id": 0,
+            "product_id": test_product_id,
+            "lc_state_sync": False
+        }
+
+        u = User.objects.create_user(test_user, "", test_user)
+        p = Permission.objects.get(codename="add_product")
+        assert p is not None
+        u.user_permissions.add(p)
+        u.save()
+        assert u.has_perm("productdb.add_product")
+
+        client = APIClient()
+        client.login(username=test_user, password=test_user)
+
+        # create with name
+        response = client.post(REST_PRODUCT_LIST, data={"product_id": test_product_id, "lc_state_sync": True})
+
+        assert response.status_code == status.HTTP_201_CREATED
+        # adjust ID values from Database
+        expected_result["id"] = Product.objects.get(product_id=test_product_id).id
+        expected_result["url"] = "http://testserver/productdb/api/v0/products/%d/" % expected_result["id"]
+        assert response.json() == expected_result, "Should provide the new product"
+
+    def test_change_lc_state_sync(self):
+        p = mixer.blend("productdb.Product", product_id="product ID")
+        expected_result = {
+            "currency": "USD",
+            "end_of_service_contract_renewal": None,
+            "eol_reference_url": None,
+            "url": "http://testserver/productdb/api/v0/products/%d/",
+            "eol_reference_number": None,
+            "product_group": None,
+            "end_of_sale_date": None,
+            "description": "",
+            "vendor": 0,
+            "tags": "",
+            "list_price": None,
+            "eol_ext_announcement_date": None,
+            "eox_update_time_stamp": None,
+            "end_of_new_service_attachment_date": None,
+            "end_of_support_date": None,
+            "end_of_sw_maintenance_date": None,
+            "end_of_sec_vuln_supp_date": None,
+            "end_of_routine_failure_analysis": None,
+            "id": 0,
+            "product_id": p.product_id,
+            "lc_state_sync": False
+        }
+
+        # create a user with permissions
+        test_user = "user"
+        u = User.objects.create_user(test_user, "", test_user)
+        perm = Permission.objects.get(codename="change_product")
+        assert perm is not None
+        u.user_permissions.add(perm)
+        u.save()
+        assert u.has_perm("productdb.change_product")
+
+        client = APIClient()
+        client.login(username=test_user, password=test_user)
+        response = client.put(REST_PRODUCT_DETAIL % p.id, data={
+            "product_id": p.product_id,
+            "lc_state_sync": True
+        })
+
+        assert response.status_code == status.HTTP_200_OK
+        # adjust pk value
+        expected_result["id"] = Product.objects.get(product_id="product ID").id
+        expected_result["url"] = expected_result["url"] % expected_result["id"]
+        assert response.json() == expected_result
 
     def test_change_access_with_permission(self):
         p = mixer.blend("productdb.Product", product_id="product ID")
@@ -785,11 +881,12 @@ class TestProductAPIEndpoint:
             "end_of_sec_vuln_supp_date": None,
             "end_of_routine_failure_analysis": None,
             "id": 0,
-            "product_id": test_renamed_product
+            "product_id": test_renamed_product,
+            "lc_state_sync": False
         }
 
         # create a user with permissions
-        test_user = "knut"
+        test_user = "user"
         u = User.objects.create_user(test_user, "", test_user)
         perm = Permission.objects.get(codename="change_product")
         assert perm is not None
@@ -833,7 +930,8 @@ class TestProductAPIEndpoint:
             "end_of_sec_vuln_supp_date": None,
             "end_of_routine_failure_analysis": None,
             "id": p.id,
-            "product_id": p.product_id
+            "product_id": p.product_id,
+            "lc_state_sync": False
         }
 
         client = APIClient()
@@ -863,7 +961,7 @@ class TestProductAPIEndpoint:
         p = mixer.blend("productdb.Product")
         assert Product.objects.count() == 1
 
-        test_user = "knut"
+        test_user = "user"
         u = User.objects.create_user(test_user, "", test_user)
         perm = Permission.objects.get(codename="delete_product")
         assert perm is not None
@@ -924,7 +1022,8 @@ class TestProductAPIEndpoint:
                     "eox_update_time_stamp": None,
                     "product_group": None,
                     "end_of_new_service_attachment_date": None,
-                    "currency": "USD"
+                    "currency": "USD",
+                    "lc_state_sync": False
                 },
                 {
                     "id": 0,
@@ -946,7 +1045,8 @@ class TestProductAPIEndpoint:
                     "eox_update_time_stamp": None,
                     "product_group": None,
                     "end_of_new_service_attachment_date": None,
-                    "currency": "USD"
+                    "currency": "USD",
+                    "lc_state_sync": False
                 }
             ]
         }
@@ -1004,7 +1104,8 @@ class TestProductAPIEndpoint:
                     "eox_update_time_stamp": None,
                     "product_group": None,
                     "end_of_new_service_attachment_date": None,
-                    "currency": "USD"
+                    "currency": "USD",
+                    "lc_state_sync": False
                 },
                 {
                     "id": 0,
@@ -1026,7 +1127,8 @@ class TestProductAPIEndpoint:
                     "eox_update_time_stamp": None,
                     "product_group": None,
                     "end_of_new_service_attachment_date": None,
-                    "currency": "USD"
+                    "currency": "USD",
+                    "lc_state_sync": False
                 }
             ]
         }
@@ -1088,7 +1190,8 @@ class TestProductAPIEndpoint:
                     "eox_update_time_stamp": None,
                     "product_group": None,
                     "end_of_new_service_attachment_date": None,
-                    "currency": "USD"
+                    "currency": "USD",
+                    "lc_state_sync": False
                 }
             ]
         }
@@ -1146,7 +1249,8 @@ class TestProductAPIEndpoint:
                     "eox_update_time_stamp": None,
                     "product_group": None,
                     "end_of_new_service_attachment_date": None,
-                    "currency": "USD"
+                    "currency": "USD",
+                    "lc_state_sync": False
                 }
             ]
         }
@@ -1213,7 +1317,8 @@ class TestProductAPIEndpoint:
                     "eox_update_time_stamp": None,
                     "product_group": None,
                     "end_of_new_service_attachment_date": None,
-                    "currency": "USD"
+                    "currency": "USD",
+                    "lc_state_sync": False
                 }
             ]
         }
@@ -1271,7 +1376,8 @@ class TestProductAPIEndpoint:
                     "eox_update_time_stamp": None,
                     "product_group": None,
                     "end_of_new_service_attachment_date": None,
-                    "currency": "USD"
+                    "currency": "USD",
+                    "lc_state_sync": False
                 }
             ]
         }
