@@ -464,12 +464,7 @@
       dest: /home/{{ site_user }}/.bash_profile
       regexp: ^export PDB_DATABASE_PORT={{ db_port }}
       line: export PDB_DATABASE_PORT={{ db_port }}
-  - name: add config file in bash profile
-    lineinfile:
-      dest: /home/{{ site_user }}/.bash_profile
-      regexp: ^export PDB_CONFIG_FILE=product_database.server.config
-      line: export PDB_CONFIG_FILE==product_database.server.config
-  - name: add config file in bash profile
+  - name: set HTTPs only mode
     lineinfile:
       dest: /home/{{ site_user }}/.bash_profile
       regexp: ^export PDB_HTTPS_ONLY=1

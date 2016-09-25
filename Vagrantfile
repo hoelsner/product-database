@@ -2,7 +2,6 @@ Vagrant.configure(2) do |config|
   config.vm.define "productdb", primary: true do |productdb|
     productdb.vm.box = "ubuntu/xenial64"
 
-    productdb.vm.network "forwarded_port", guest: 80, host: 16000
     productdb.vm.network "forwarded_port", guest: 443, host: 16443
     productdb.vm.synced_folder ".", "/vagrant", disabled: false
 
@@ -22,12 +21,11 @@ Vagrant.configure(2) do |config|
       ansible.playbook = "deploy/stage_vagrant/deploy-vagrant-file.yaml"
     end
 
-    productdb.vm.post_up_message = "access the product database at http://localhost:16000 (Ubuntu)"
+    productdb.vm.post_up_message = "access the product database at https://localhost:16443 (Ubuntu)"
   end
   config.vm.define "productdb_ldap", primary: true do |productdb_ldap|
     productdb_ldap.vm.box = "ubuntu/xenial64"
 
-    productdb_ldap.vm.network "forwarded_port", guest: 80, host: 17000
     productdb_ldap.vm.network "forwarded_port", guest: 443, host: 17443
     productdb_ldap.vm.synced_folder ".", "/vagrant", disabled: false
 
@@ -47,6 +45,6 @@ Vagrant.configure(2) do |config|
       ansible.playbook = "deploy/stage_vagrant/deploy-vagrant_with_ldap-file.yaml"
     end
 
-    productdb_ldap.vm.post_up_message = "access the product database at http://localhost:17000 (Ubuntu with LDAP)"
+    productdb_ldap.vm.post_up_message = "access the product database at https://localhost:17443 (Ubuntu with LDAP)"
   end
 end

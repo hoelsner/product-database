@@ -4,6 +4,10 @@
 
 * add User Profile settings (change eMail and preferred vendor)
 * search function now configurable (like or regular expressions) - see [issue #3](https://github.com/hoelsner/product-database/issues/3)
+* optional HTTPs only deployment (using a self-signed or custom certificate)
+* optional LDAP integration for the authentication backend
+* add "automatic synchronized" flag to Product entries (if synchronization with the Cisco EoX API is enabled)
+* move Product Database configuration values to the database, removed the configuration file
 
 ## Version 0.3
 

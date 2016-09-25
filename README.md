@@ -6,6 +6,10 @@
 **This is the Product Database development branch. I recommend to use the latest [stable version 0.3](https://github.com/hoelsner/product-database/tree/v0.3) 
 for production.**
 
+**Before updating to Version 0.4 (or this development version), please save your current configuration values. Version 0.4 
+uses the database to store the configuration values, not the configuration file. After updating, you must reconfigure 
+the Product Database settings.**
+
 This version is currently in development and contains multiple major changes to the underlying operating system and the
 application . **Please note that an update path from Version 0.2 is not maintained.**
 

@@ -95,9 +95,6 @@ DEMO_MODE = False
 SESSION_COOKIE_AGE = 60 * 15
 SESSION_SAVE_EVERY_REQUEST = True
 
-# name of the configuration file that should be used
-APP_CONFIG_FILE = os.path.join("conf", os.getenv("PDB_CONFIG_FILE", "product_database.config"))
-
 BOOTSTRAP3 = {
     'jquery_url': 'lib/jquery/dist/jquery.min.js',
     'base_url': 'lib/bootstrap/dist',
