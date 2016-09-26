@@ -167,7 +167,7 @@
                      "<'row'<'col-sm-12'tr>>" +
                      "<'row'<'col-sm-5'i><'col-sm-7'p>>",
                 "pagingType": "full_numbers",
-                "lengthMenu": [[50, 10, 25, 100], [50, 10, 25, 100]],
+                "lengthMenu": [[50, 10, 25, 100, 250], [50, 10, 25, 100, 250]],
                 "fixedHeader": {
                     "headerOffset": 50
                 },
@@ -283,7 +283,8 @@
                     {
                         extend: "copyHtml5",
                         exportOptions: {
-                            columns: ":visible"
+                            columns: ":visible",
+                            orthogonal: "export"
                         }
                     },
                     {
@@ -292,7 +293,8 @@
                         fieldSeparator: ";",
                         fieldBoundary: "",
                         exportOptions: {
-                            columns: ":visible"
+                            columns: ":visible",
+                            orthogonal: "export"
                         },
                         extension: ".csv"
                     },
@@ -303,14 +305,16 @@
                         orientation: "landscape",
                         pageSize: "A4",
                         exportOptions: {
-                            columns: ":visible"
+                            columns: ":visible",
+                            orthogonal: "export"
                         }
                     },
                     {
                         extend: "excelHtml5",
                         title: "product list - {{ product_list.name }}",
                         exportOptions: {
-                            columns: ":visible"
+                            columns: ":visible",
+                            orthogonal: "export"
                         }
                     },
                     {

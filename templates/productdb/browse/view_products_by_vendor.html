@@ -132,7 +132,7 @@
                      "<'row'<'col-sm-5'i><'col-sm-7'p>>",
                 "processing": true,
                 "pagingType": "full_numbers",
-                "lengthMenu": [[50, 10, 25, 100], [50, 10, 25, 100]],
+                "lengthMenu": [[50, 10, 25, 100, 250], [50, 10, 25, 100, 250]],
                 "fixedHeader": {
                     "headerOffset": 50
                 },
@@ -275,9 +275,9 @@
                                 else {
                                     link_str = "Link"
                                 }
-
-                                return "<a href=\"" + row['eol_reference_url'] +
-                                        "\" target=\"_blank\">" + link_str + "</a>";
+                                return type == "export" ?
+                                        row['eol_reference_url'] :
+                                        "<a href=\"" + row['eol_reference_url'] + "\" target=\"_blank\">" + link_str + "</a>";
                             }
                             else {
                                 return ""
@@ -307,7 +307,8 @@
                     {
                         extend: "copyHtml5",
                         exportOptions: {
-                            columns: ":visible"
+                            columns: ":visible",
+                            orthogonal: "export"
                         }
                     },
                     {
@@ -316,7 +317,8 @@
                         fieldSeparator: ";",
                         fieldBoundary: "",
                         exportOptions: {
-                            columns: ":visible"
+                            columns: ":visible",
+                            orthogonal: "export"
                         },
                         extension: ".csv"
                     },
@@ -326,14 +328,16 @@
                         orientation: "landscape",
                         pageSize: "A4",
                         exportOptions: {
-                            columns: ":visible"
+                            columns: ":visible",
+                            orthogonal: "export"
                         }
                     },
                     {
                         extend: "excelHtml5",
                         title: "export products",
                         exportOptions: {
-                            columns: ":visible"
+                            columns: ":visible",
+                            orthogonal: "export"
                         }
                     },
                     {
