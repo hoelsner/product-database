@@ -12,6 +12,7 @@ router = routers.DefaultRouter()
 router.register(r'vendors', api_views.VendorViewSet, base_name="vendors")
 router.register(r'products', api_views.ProductViewSet, base_name="products")
 router.register(r'productgroups', api_views.ProductGroupViewSet, base_name="productgroups")
+router.register(r'productlists', api_views.ProductListViewSet, base_name="productlists")
 
 # namespace: productdb
 urlpatterns = [

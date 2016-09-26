@@ -2,8 +2,8 @@ import django_filters
 from rest_framework import permissions
 from rest_framework import filters
 from rest_framework.response import Response
-from app.productdb.serializers import ProductSerializer, VendorSerializer, ProductGroupSerializer
-from app.productdb.models import Product, Vendor, ProductGroup
+from app.productdb.serializers import ProductSerializer, VendorSerializer, ProductGroupSerializer, ProductListSerializer
+from app.productdb.models import Product, Vendor, ProductGroup, ProductList
 from rest_framework import viewsets
 from rest_framework.decorators import list_route
 
@@ -62,6 +62,30 @@ class ProductGroupViewSet(viewsets.ModelViewSet):
             "count": ProductGroup.objects.count()
         }
         return Response(result)
+
+
+class ProductListFilter(filters.FilterSet):
+    name = django_filters.CharFilter(name="name", lookup_type="icontains")
+    description = django_filters.CharFilter(name="description", lookup_type="icontains")
+
+    class Meta:
+        model = ProductList
+        fields = ['id', 'name', 'description']
+
+
+class ProductListViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    API endpoint for the ProductList object
+    """
+    queryset = ProductList.objects.all().order_by("name")
+    serializer_class = ProductListSerializer
+    lookup_field = "id"
+    filter_backends = (
+        filters.DjangoFilterBackend,
+        filters.SearchFilter,
+    )
+    filter_class = ProductListFilter
+    permission_classes = (permissions.DjangoModelPermissions,)
 
 
 class ProductFilter(filters.FilterSet):

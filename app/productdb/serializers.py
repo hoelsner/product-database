@@ -1,8 +1,8 @@
-from rest_framework.serializers import HyperlinkedModelSerializer, BooleanField
+from rest_framework.serializers import HyperlinkedModelSerializer, BooleanField, ValidationError
 from rest_framework import serializers
 from rest_framework.serializers import ChoiceField, CharField, DecimalField, PrimaryKeyRelatedField
 from django.core.validators import MinValueValidator
-from app.productdb.models import Product, Vendor, CURRENCY_CHOICES, ProductGroup
+from app.productdb.models import Product, Vendor, CURRENCY_CHOICES, ProductGroup, ProductList
 
 
 class VendorSerializer(HyperlinkedModelSerializer):
@@ -42,6 +42,48 @@ class ProductGroupSerializer(HyperlinkedModelSerializer):
             'url': {
                 'lookup_field': 'id',
                 'view_name': 'productdb:productgroups-detail'
+            }
+        }
+        depth = 0
+
+
+class ProductListItemField(serializers.Field):
+    def to_representation(self, value):
+        return value.split("\n")
+
+    def to_internal_value(self, data):
+        return "\n".join(data)
+
+
+class ProductListSerializer(HyperlinkedModelSerializer):
+    """Read only Product List endpoint"""
+    contact_email = serializers.SerializerMethodField(
+        'get_update_user_email',
+        read_only=True,
+        required=False
+    )
+
+    string_product_list = ProductListItemField(read_only=True)
+
+    def get_update_user_email(self, obj):
+        """returns the email address of the update user or an empty string"""
+        return obj.update_user.email
+
+    class Meta:
+        model = ProductList
+        fields = (
+            "id",
+            "name",
+            "description",
+            "string_product_list",
+            "update_date",
+            "contact_email",
+            "url"
+        )
+        extra_kwargs = {
+            "url": {
+                "lookup_field": "id",
+                "view_name": "productdb:productlists-detail"
             }
         }
         depth = 0

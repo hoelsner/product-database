@@ -5,10 +5,11 @@ import pytest
 from urllib.parse import quote
 from django.contrib.auth.models import User, Permission
 from django.core.urlresolvers import reverse
+from django.utils.datetime_safe import date
 from mixer.backend.django import mixer
 from rest_framework import status
 from rest_framework.test import APIClient
-from app.productdb.models import Vendor, ProductGroup, Product
+from app.productdb.models import Vendor, ProductGroup, Product, ProductList
 
 pytestmark = pytest.mark.django_db
 
@@ -29,12 +30,16 @@ REST_PRODUCT_GROUP_DETAIL = REST_PRODUCT_GROUP_LIST + "%d/"
 REST_PRODUCT_LIST = reverse("productdb:products-list")
 REST_PRODUCT_COUNT = REST_PRODUCT_LIST + "count/"
 REST_PRODUCT_DETAIL = REST_PRODUCT_LIST + "%d/"
+REST_PRODUCTLIST_LIST = reverse("productdb:productlists-list")
+REST_PRODUCTLIST_DETAIL = REST_PRODUCTLIST_LIST + "%d/"
 
 COMMON_API_ENDPOINT_BEHAVIOR = [
     REST_VENDOR_LIST,
     REST_VENDOR_DETAIL % 1,
     REST_PRODUCT_GROUP_LIST,
-    REST_PRODUCT_GROUP_DETAIL % 1
+    REST_PRODUCT_GROUP_DETAIL % 1,
+    REST_PRODUCTLIST_LIST,
+    REST_PRODUCTLIST_DETAIL % 1,
 ]
 
 
@@ -187,7 +192,6 @@ class TestVendorAPIEndpoint:
 
         assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED, "API endpoint is always read only"
         assert response.json() == {'detail': 'Method "PUT" not allowed.'}
-        assert Vendor.objects.count() == 3, "no additional vendor is created"
 
     def test_delete_access_with_permission(self):
         test_user = "user"
@@ -1418,3 +1422,212 @@ class TestProductAPIEndpoint:
         assert "pagination" in jdata, "pagination information not provided"
         assert "data" in jdata, "data branch not provided"
         assert jdata["pagination"]["total_records"] == 0, "Should return no element"
+
+
+@pytest.mark.usefixtures("import_default_users")
+@pytest.mark.usefixtures("import_default_vendors")
+class TestProductListAPIEndpoint:
+    """Django REST framework API endpoint tests for the Product List model"""
+    TEST_PRODUCTS = [
+        "Product A",
+        "Product B",
+        "Product C",
+        "Product D",
+        "Product E"
+    ]
+    TEST_PRODUCT_LIST_NAME = "Test Product List"
+
+    def create_test_data(self):
+        for e in self.TEST_PRODUCTS:
+            mixer.blend("productdb.Product", product_id=e)
+
+    def create_test_product_list(self):
+        self.create_test_data()
+        u = User.objects.get(username="pdb_admin")
+        pl = mixer.blend(
+            "productdb.ProductList",
+            name=self.TEST_PRODUCT_LIST_NAME,
+            description="<strong>Test Liste</strong>\nJust a test list",
+            string_product_list="\n".join(self.TEST_PRODUCTS),
+            update_user=u
+        )
+
+        return pl.id
+
+    def test_read_access_with_authenticated_user(self):
+        self.create_test_data()
+        expected_result = {
+            "pagination": {
+                "page_records": 1,
+                "total_records": 1,
+                "url": {
+                    "previous": None,
+                    "next": None
+                },
+                "page": 1,
+                "last_page": 1
+            },
+            "data": [
+                {
+                    "id": 0,
+                    "name": "TestList",
+                    "description": "<strong>Test Liste</strong>\nJust a test list",
+                    "string_product_list": self.TEST_PRODUCTS,
+                    "update_date": "",
+                    "contact_email": "",
+                    "url": "http://testserver/productdb/api/v0/productlists/%d/"
+                }
+            ]
+        }
+        u = User.objects.get(username="api")
+        pl = mixer.blend(
+            "productdb.ProductList",
+            name=expected_result["data"][0]["name"],
+            description=expected_result["data"][0]["description"],
+            string_product_list="\n".join(expected_result["data"][0]["string_product_list"]),
+            update_user=u
+        )
+        expected_result["data"][0]["id"] = pl.id
+        expected_result["data"][0]["url"] = expected_result["data"][0]["url"] % pl.id
+        expected_result["data"][0]["update_date"] = pl.update_date.strftime("%Y-%m-%d")
+        expected_result["data"][0]["contact_email"] = u.email
+
+        client = APIClient()
+        client.login(**AUTH_USER)
+
+        response = client.get(REST_PRODUCTLIST_LIST)
+        assert response.status_code == status.HTTP_200_OK
+
+        jdata = response.json()
+        assert "pagination" in jdata, "pagination information not provided"
+        assert "data" in jdata, "data branch not found in result"
+        assert jdata["pagination"]["total_records"] == 1, "unexpected result from API endpoint"
+        assert jdata == expected_result, "unexpected result from API endpoint"
+
+        # access first element of the list
+        response = client.get(jdata["data"][0]["url"])
+
+        assert response.status_code == status.HTTP_200_OK
+        assert jdata["data"][0] == response.json()
+
+    def test_add_access_with_permission(self):
+        """add action through API for Product List not supported"""
+        self.create_test_data()
+        test_user = "user"
+        test_product_list_id = "Test Product List"
+
+        u = User.objects.create_user(test_user, "", test_user)
+        p = Permission.objects.get(codename="add_productlist")
+        assert p is not None
+        u.user_permissions.add(p)
+        u.save()
+        assert u.has_perm("productdb.add_productlist")
+
+        client = APIClient()
+        client.login(username=test_user, password=test_user)
+
+        # create with name
+        response = client.post(REST_PRODUCTLIST_LIST, data={"name": test_product_list_id})
+
+        assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED
+        assert response.json() == {'detail': 'Method "POST" not allowed.'}
+        assert ProductList.objects.count() == 0, "no product list was created"
+
+    def test_change_access_with_permission(self):
+        id = self.create_test_product_list()
+
+        # create a user with permissions
+        test_user = "user"
+        u = User.objects.create_user(test_user, "", test_user)
+        p = Permission.objects.get(codename="change_productlist")
+        assert p is not None
+        u.user_permissions.add(p)
+        u.save()
+        assert u.has_perm("productdb.change_productlist")
+
+        client = APIClient()
+        client.login(username=test_user, password=test_user)
+        response = client.put(REST_PRODUCTLIST_DETAIL % id, data={"name": "renamed product list"})
+
+        assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED, "API endpoint is always read only"
+        assert response.json() == {'detail': 'Method "PUT" not allowed.'}
+
+    def test_delete_access_with_permission(self):
+        id = self.create_test_product_list()
+
+        test_user = "user"
+        u = User.objects.create_user(test_user, "", test_user)
+        p = Permission.objects.get(codename="delete_productlist")
+        assert p is not None
+        u.user_permissions.add(p)
+        u.save()
+        assert u.has_perm("productdb.delete_productlist")
+
+        client = APIClient()
+        client.login(username=test_user, password=test_user)
+        response = client.delete(REST_PRODUCTLIST_DETAIL % id)
+
+        assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED, "API endpoint is always read only"
+        assert response.json() == {'detail': 'Method "DELETE" not allowed.'}
+        assert ProductList.objects.count() == 1, "no product list was deleted"
+
+    def test_filter_fields(self):
+        pl_id = self.create_test_product_list()
+        mixer.blend("productdb.ProductList", name="Product List", string_product_list="Product A")
+        expected_result = {
+            "pagination": {
+                "page_records": 1,
+                "total_records": 1,
+                "url": {
+                    "previous": None,
+                    "next": None
+                },
+                "page": 1,
+                "last_page": 1
+            },
+            "data": [
+                {
+                    "id": 0,
+                    "name": self.TEST_PRODUCT_LIST_NAME,
+                    "description": "<strong>Test Liste</strong>\nJust a test list",
+                    "string_product_list": self.TEST_PRODUCTS,
+                    "update_date": "",
+                    "contact_email": "admin@localhost.localhost",
+                    "url": "http://testserver/productdb/api/v0/productlists/%d/"
+                }
+            ]
+        }
+        expected_result["data"][0]["id"] = pl_id
+        expected_result["data"][0]["update_date"] = date.today().strftime("%Y-%m-%d")
+        expected_result["data"][0]["url"] = expected_result["data"][0]["url"] % pl_id
+
+        client = APIClient()
+        client.login(**AUTH_USER)
+
+        # use ID field filter (exact match)
+        response = client.get(REST_PRODUCTLIST_LIST + "?id=%d" % pl_id)
+
+        assert response.status_code == status.HTTP_200_OK
+        jdata = response.json()
+        assert "pagination" in jdata, "pagination information not provided"
+        assert "data" in jdata, "data branch not provided"
+        assert jdata == expected_result, "unexpected result from API endpoint"
+
+        # use name field (contains)
+        response = client.get(REST_PRODUCTLIST_LIST + "?name=" + quote(self.TEST_PRODUCT_LIST_NAME.lower()))
+
+        assert response.status_code == status.HTTP_200_OK
+        jdata = response.json()
+        assert "pagination" in jdata, "pagination information not provided"
+        assert "data" in jdata, "data branch not provided"
+        assert jdata == expected_result, "unexpected result from API endpoint"
+
+        # use description field (contains)
+        response = client.get(REST_PRODUCTLIST_LIST + "?description=" + quote("Just a test"))
+
+        assert response.status_code == status.HTTP_200_OK
+        jdata = response.json()
+        assert "pagination" in jdata, "pagination information not provided"
+        assert "data" in jdata, "data branch not provided"
+        assert jdata == expected_result, "unexpected result from API endpoint"
+
