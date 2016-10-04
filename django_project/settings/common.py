@@ -57,6 +57,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'django_project.context_processors.is_ldap_authenticated_user',
+                'django_project.context_processors.get_internal_product_id_label',
             ],
         },
     },
@@ -87,9 +88,6 @@ STATICFILES_DIRS = (
     os.path.join(BASE_DIR, "../static"),
     os.path.join(BASE_DIR, "../node_modules"),
 )
-
-# demo mode only for testing
-DEMO_MODE = False
 
 # enable session timeout
 SESSION_COOKIE_AGE = 60 * 15

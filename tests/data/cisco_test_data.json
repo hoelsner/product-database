@@ -196,7 +196,8 @@
       "currency": "USD",
       "tags": "chassis",
       "vendor": "Cisco Systems",
-      "product_group": "Catalyst 2960X"
+      "product_group": "Catalyst 2960X",
+      "internal_product_id": "2960x-24pd-l"
     },
     {
       "product_id": "CAB-ACE",
@@ -232,7 +233,8 @@
       "currency": "USD",
       "tags": "chassis",
       "vendor": "Cisco Systems",
-      "product_group": "Catalyst 2960X"
+      "product_group": "Catalyst 2960X",
+      "internal_product_id": "2960x-24ps-l"
     },
     {
       "product_id": "WS-C2960X-24TD-L",

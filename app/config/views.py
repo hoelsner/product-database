@@ -181,6 +181,7 @@ def change_configuration(request):
                     )
 
                 app_config.set_periodic_sync_enabled(form.cleaned_data["eox_api_auto_sync_enabled"])
+                app_config.set_internal_product_id_label(form.cleaned_data["internal_product_id_label"])
                 app_config.set_auto_create_new_products(form.cleaned_data["eox_auto_sync_auto_create_elements"])
                 app_config.set_cisco_eox_api_queries(form.cleaned_data["eox_api_queries"])
                 app_config.set_product_blacklist_regex(form.cleaned_data["eox_api_blacklist"])
@@ -198,6 +199,7 @@ def change_configuration(request):
         form = SettingsForm()
         form.fields['cisco_api_enabled'].initial = app_config.is_cisco_api_enabled()
         form.fields['login_only_mode'].initial = app_config.is_login_only_mode()
+        form.fields['internal_product_id_label'].initial = app_config.get_internal_product_id_label()
         form.fields['cisco_api_client_id'].initial = app_config.get_cisco_api_client_id()
         form.fields['cisco_api_client_secret'].initial = app_config.get_cisco_api_client_secret()
         form.fields['eox_api_auto_sync_enabled'].initial = app_config.is_periodic_sync_enabled()

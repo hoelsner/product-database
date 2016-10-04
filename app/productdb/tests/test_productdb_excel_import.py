@@ -288,6 +288,44 @@ class TestImportProductsExcelFile:
         assert pa.list_price == 0.53
 
     @pytest.mark.usefixtures("apply_base_import_products_excel_file_mock")
+    def test_import_with_internal_product_id(self):
+        """Test the import of the internal product id column"""
+        test_value = "some custom data"
+        global CURRENT_TEST_DATA
+        CURRENT_TEST_DATA = pd.DataFrame(
+            [
+                [
+                    "Product A",
+                    "description of Product A",
+                    ".53",
+                    "USD",
+                    "Cisco Systems",
+                    test_value
+                ]
+            ], columns=[
+                "product id",
+                "description",
+                "list price",
+                "currency",
+                "vendor",
+                "internal product id"
+            ]
+        )
+        user = User.objects.get(username="api")
+        product_file = ImportProductsExcelFile(
+            "virtual_file.xlsx",
+            user_for_revision=user
+        )
+        product_file.verify_file()
+        product_file.import_products_to_database()
+        assert Product.objects.count() == 1
+
+        # verify imported data
+        pa = Product.objects.get(product_id="Product A")
+        assert pa.internal_product_id is not None
+        assert pa.internal_product_id == test_value
+
+    @pytest.mark.usefixtures("apply_base_import_products_excel_file_mock")
     def test_valid_import_with_revision_user(self):
         global CURRENT_TEST_DATA
         CURRENT_TEST_DATA = DEFAULT_TEST_DATA_FRAME

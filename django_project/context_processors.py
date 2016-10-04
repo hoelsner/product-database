@@ -4,6 +4,8 @@ custom context processors for the page
 from django_auth_ldap.backend import LDAPBackend
 from django.conf import settings
 
+from app.config.settings import AppSettings
+
 
 def is_ldap_authenticated_user(request):
     """
@@ -25,4 +27,11 @@ def is_ldap_authenticated_user(request):
 
     return {
         "IS_LDAP_ACCOUNT": result
+    }
+
+
+def get_internal_product_id_label(request):
+    app_config = AppSettings()
+    return {
+        "INTERNAL_PRODUCT_ID_LABEL": app_config.get_internal_product_id_label()
     }

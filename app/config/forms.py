@@ -22,7 +22,14 @@ class SettingsForm(forms.Form):
     login_only_mode = forms.BooleanField(
         initial=False,
         required=False,
-        label="<strong>login always required</strong>"
+        label="<strong>login always required</strong>",
+        help_text="This setting enables/disable the public access to the site (except share links). "
+    )
+
+    internal_product_id_label = forms.CharField(
+        required=False,
+        label="Internal Product ID label",
+        help_text="Custom label for the Internal Product ID"
     )
 
     homepage_text_before = forms.CharField(

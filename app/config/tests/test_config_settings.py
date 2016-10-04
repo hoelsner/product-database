@@ -14,7 +14,7 @@ class TestConfigSettings:
     def test_create_default_config(self):
         # default configuration is created on object initialization
         _ = AppSettings()
-        assert ConfigOption.objects.count() == 10
+        assert ConfigOption.objects.count() == 11
 
     def test_login_only_mode_configuration(self):
         # create new AppSettings object and create defaults
@@ -161,3 +161,17 @@ class TestConfigSettings:
         read_value = settings.get_cisco_eox_api_auto_sync_last_execution_time()
         assert value == read_value
         assert now == parse_datetime(read_value)
+
+    def test_internal_product_id_label(self):
+        settings = AppSettings()
+
+        # get values
+        value = settings.get_internal_product_id_label()
+        assert value == "Internal Product ID"
+
+        # set values
+        test_internal_product_label = "My custom label"
+        settings.set_internal_product_id_label(test_internal_product_label)
+        value = settings.get_internal_product_id_label()
+
+        assert value == test_internal_product_label

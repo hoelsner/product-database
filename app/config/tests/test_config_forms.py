@@ -34,6 +34,7 @@ class TestSettingsForm:
         assert form.cleaned_data["homepage_text_before"] is ""
         assert form.cleaned_data["homepage_text_after"] is ""
         assert form.cleaned_data["cisco_api_enabled"] is False
+        assert form.cleaned_data["internal_product_id_label"] is ""
         assert form.cleaned_data["eox_auto_sync_auto_create_elements"] is False
         assert form.cleaned_data["eox_api_auto_sync_enabled"] is False
 
@@ -43,6 +44,14 @@ class TestSettingsForm:
         }
         form = SettingsForm(data=data)
         assert form.is_valid() is True
+
+        test_internal_product_id = "number"
+        data = {
+            "internal_product_id_label": test_internal_product_id
+        }
+        form = SettingsForm(data=data)
+        assert form.is_valid() is True
+        assert form.cleaned_data["internal_product_id_label"] == test_internal_product_id
 
     def test_form_api_blacklist_entries(self):
         # test with only a single invalid entry

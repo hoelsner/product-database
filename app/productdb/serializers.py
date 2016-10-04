@@ -51,9 +51,6 @@ class ProductListItemField(serializers.Field):
     def to_representation(self, value):
         return value.split("\n")
 
-    def to_internal_value(self, data):
-        return "\n".join(data)
-
 
 class ProductListSerializer(HyperlinkedModelSerializer):
     """Read only Product List endpoint"""
@@ -168,6 +165,7 @@ class ProductSerializer(HyperlinkedModelSerializer):
             'eol_reference_number',
             'eol_reference_url',
             'lc_state_sync',
+            'internal_product_id',
         )
         extra_kwargs = {
             'url': {

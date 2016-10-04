@@ -139,7 +139,8 @@ class VendorProductListJson(BaseDatatableView, ColumnSearchMixin):
                 "end_of_support_date": item.end_of_support_date,
                 "eol_reference_number": item.eol_reference_number,
                 "eol_reference_url": item.eol_reference_url,
-                "lc_state_sync": item.lc_state_sync
+                "lc_state_sync": item.lc_state_sync,
+                "internal_product_id": item.internal_product_id
             })
         return json_data
 
@@ -274,7 +275,8 @@ class ListProductsByGroupJson(BaseDatatableView, ColumnSearchMixin):
                 "end_of_support_date": item.end_of_support_date,
                 "eol_reference_number": item.eol_reference_number,
                 "eol_reference_url": item.eol_reference_url,
-                "lc_state_sync": item.lc_state_sync
+                "lc_state_sync": item.lc_state_sync,
+                "internal_product_id": item.internal_product_id
             })
         return json_data
 
@@ -380,6 +382,7 @@ class ListProductsJson(BaseDatatableView, ColumnSearchMixin):
                 "end_of_support_date": item.end_of_support_date,
                 "eol_reference_number": item.eol_reference_number,
                 "eol_reference_url": item.eol_reference_url,
-                "lc_state_sync": item.lc_state_sync
+                "lc_state_sync": item.lc_state_sync,
+                "internal_product_id": item.internal_product_id
             })
         return json_data

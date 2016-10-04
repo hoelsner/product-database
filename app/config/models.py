@@ -119,6 +119,7 @@ class TextBlock(models.Model):
 class ConfigOption(models.Model):
     GLOBAL_CISCO_API_ENABLED = "global.cisco_api_enabled"
     GLOBAL_LOGIN_ONLY_MODE = "global.login_only_mode"
+    GLOBAL_INTERNAL_PRODUCT_ID_LABEL = "global.internal_product_id_label"
     CISCO_API_CLIENT_ID = "cisco_api.client_id"
     CISCO_API_CLIENT_SECRET = "cisco_api.client_secret"
     CISCO_EOX_CRAWLER_AUTO_SYNC = "cisco_eox.auto_sync"

@@ -68,6 +68,7 @@
                         <th>Last Date of Support</th>
                         <th>Vendor Bulletin</th>
                         <th><abbr title="Lifecycle state automatically synchronized">LC auto-sync</abbr></th>
+                        <th>{{ INTERNAL_PRODUCT_ID_LABEL }}</th>
                     </tr>
                 </thead>
             </table>
@@ -301,6 +302,13 @@
                                 return "No";
                             }
                         }
+                    },
+                    {
+                        "targets": 16,
+                        "data": "internal_product_id",
+                        "visible": false,
+                        "searchable": false,
+                        "sortable": false
                     }
                 ],
                 buttons: [

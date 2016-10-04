@@ -29,6 +29,11 @@
             <dt>Product ID:</dt>
             <dd>{{ product.product_id }}</dd>
 
+            {% if product.internal_product_id %}
+                <dt>{{ INTERNAL_PRODUCT_ID_LABEL }}:</dt>
+                <dd>{{ product.internal_product_id }}</dd>
+            {% endif %}
+
             {% if product.product_group %}
                 <dt>Product Group:</dt>
                 <dd>

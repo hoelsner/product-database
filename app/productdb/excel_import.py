@@ -295,6 +295,14 @@ class ImportProductsExcelFile:
                             if p.eol_reference_number != row[row_key]:
                                 p.eol_reference_number = row[row_key]
 
+                    # set internal product ID (optional)
+                    row_key = "internal product id"
+                    if row_key in row:  # optional key
+                        if not pd.isnull(row[row_key]):
+                            if p.internal_product_id != row[row_key]:
+                                p.internal_product_id = row[row_key]
+                                changed = True
+
                 except Exception as ex:
                     faulty_entry = True
                     msg = "cannot set %s for <code>%s</code> (%s)" % (row_key, row["product id"], ex)

@@ -74,6 +74,8 @@
                     <th><abbr title="End of Vulnerability/Security Support date">EoVulnServ</abbr></th>
                     <th>Last Date of Support</th>
                     <th>Vendor Bulletin</th>
+                    <th><abbr title="Lifecycle state automatically synchronized">LC auto-sync</abbr></th>
+                    <th>{{ INTERNAL_PRODUCT_ID_LABEL }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -113,6 +115,18 @@
                         <td>
                             {% if product.eol_reference_url %}
                                 <a href="{{ product.eol_reference_url }}">{{ product.eol_reference_number|default:"Link" }}</a>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if product.lc_auto_sync %}
+                                Yes
+                            {% else %}
+                                No
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if product.internal_product_id %}
+                                {{ product.internal_product_id }}
                             {% endif %}
                         </td>
                     </tr>
@@ -274,6 +288,14 @@
                     },
                     {
                         "targets": 15,
+                        "data": "lc_state_sync",
+                        "visible": false,
+                        "searchable": false,
+                        "sortable": false
+                    },
+                    {
+                        "targets": 16,
+                        "data": "internal_product_id",
                         "visible": false,
                         "searchable": false,
                         "sortable": false

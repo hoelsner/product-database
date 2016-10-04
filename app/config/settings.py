@@ -76,6 +76,11 @@ class AppSettings:
             co.value = ""
             co.save()
 
+        co, created = ConfigOption.objects.get_or_create(key=ConfigOption.GLOBAL_INTERNAL_PRODUCT_ID_LABEL)
+        if created:
+            co.value = "Internal Product ID"
+            co.save()
+
         ConfigOption.objects.get_or_create(key=ConfigOption.CISCO_EOX_CRAWLER_LAST_EXECUTION_TIME)
         ConfigOption.objects.get_or_create(key=ConfigOption.CISCO_EOX_CRAWLER_LAST_EXECUTION_RESULT)
 
@@ -240,5 +245,20 @@ class AppSettings:
         set the last execution result of the EoX API auto sync
         """
         co = ConfigOption.objects.get(key=ConfigOption.CISCO_EOX_CRAWLER_LAST_EXECUTION_RESULT)
+        co.value = value
+        co.save()
+
+    def get_internal_product_id_label(self):
+        """
+        get the custom label for the internal product ID
+        """
+        co = ConfigOption.objects.get(key=ConfigOption.GLOBAL_INTERNAL_PRODUCT_ID_LABEL)
+        return co.value
+
+    def set_internal_product_id_label(self, value):
+        """
+        set the custom label for the internal product ID
+        """
+        co = ConfigOption.objects.get(key=ConfigOption.GLOBAL_INTERNAL_PRODUCT_ID_LABEL)
         co.value = value
         co.save()

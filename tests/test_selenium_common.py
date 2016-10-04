@@ -11,7 +11,9 @@ from mixer.backend.django import mixer
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.select import Select
-from app.productdb.models import Vendor
+
+from app.config.settings import AppSettings
+from app.productdb.models import Vendor, Product
 from tests import BaseSeleniumTest
 
 pytestmark = pytest.mark.django_db
@@ -526,9 +528,25 @@ class TestProductDatabaseViews(BaseSeleniumTest):
 
         # open detail page
         browser.find_element_by_partial_link_text("C2960X-STACK").click()
+        detail_link = browser.current_url
 
         # verify page by title
         assert "C2960X-STACK Product details" in browser.find_element_by_tag_name("body").text
+
+        # verify that the "Internal Product ID" is not visible (because not set)
+        app_config = AppSettings()
+        assert app_config.get_internal_product_id_label() not in browser.find_element_by_tag_name("body").text
+
+        # add an internal product ID and verify that it is visible
+        test_internal_product_id = "123456789-abcdef"
+        p = Product.objects.get(product_id="C2960X-STACK")
+        p.internal_product_id = test_internal_product_id
+        p.save()
+
+        browser.get(detail_link)
+        page_text = browser.find_element_by_tag_name("body").text
+        assert app_config.get_internal_product_id_label() in page_text
+        assert test_internal_product_id in page_text
 
     def test_browse_product_list_view(self, browser, live_server):
         expected_content = "This database contains information about network equipment like routers and switches " \
@@ -682,16 +700,26 @@ class TestProductDatabaseViews(BaseSeleniumTest):
         search.send_keys(search_term)
         time.sleep(3)
 
+        # show product groups
+        dt_buttons = browser.find_element_by_class_name("dt-buttons")
+        dt_buttons.find_element_by_link_text("show additional columns").click()
+        browser.find_element_by_link_text("Internal Product ID").click()
+        browser.find_element_by_link_text("Product Group").click()
+
         # the table performs the search function and a defined amount of rows is displayed
-        expected_table_content = """Product ID\nDescription\nList Price Lifecycle State"""
+        expected_table_content = "Product ID\nProduct Group\nDescription\n" \
+                                 "List Price Lifecycle State Internal Product ID"
         table_rows = [
-            'WS-C2960X-24PD-L Catalyst 2960-X 24 GigE PoE 370W, 2 x 10G SFP+, LAN Base 4595.00 USD',
-            'WS-C2960X-24PS-L Catalyst 2960-X 24 GigE PoE 370W, 4 x 1G SFP, LAN Base 3195.00 USD',
+            "WS-C2960X-24PD-L Catalyst 2960X Catalyst 2960-X 24 GigE PoE 370W, 2 x 10G SFP+, "
+            "LAN Base 4595.00 USD 2960x-24pd-l",
+            "WS-C2960X-24PS-L Catalyst 2960X Catalyst 2960-X 24 GigE PoE 370W, 4 x 1G SFP, "
+            "LAN Base 3195.00 USD 2960x-24ps-l",
         ]
 
         table = browser.find_element_by_id('product_table')
         assert expected_table_content in table.text
         for r in table_rows:
+            print(table.text)
             assert r in table.text
         browser.find_element_by_xpath(search_xpath).clear()
         time.sleep(1)
@@ -705,6 +733,16 @@ class TestProductDatabaseViews(BaseSeleniumTest):
             assert r in table.text
 
         browser.find_element_by_id("column_search_Product ID").clear()
+
+        # search product by column (contains)
+        browser.find_element_by_id("column_search_Product Group").send_keys("2960X")
+        time.sleep(2)
+        table = browser.find_element_by_id('product_table')
+        assert expected_table_content in table.text
+        for r in table_rows:
+            assert r in table.text
+
+        browser.find_element_by_id("column_search_Product Group").clear()
 
         # search description by column
         browser.find_element_by_id("column_search_Description").send_keys("10G SFP")

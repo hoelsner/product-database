@@ -695,7 +695,8 @@ class TestProductAPIEndpoint:
                     "product_group": None,
                     "end_of_new_service_attachment_date": None,
                     "currency": "USD",
-                    "lc_state_sync": False
+                    "lc_state_sync": False,
+                    "internal_product_id": None
                 }
             ]
         }
@@ -746,7 +747,8 @@ class TestProductAPIEndpoint:
             "end_of_routine_failure_analysis": None,
             "id": 0,
             "product_id": test_product_id,
-            "lc_state_sync": False
+            "lc_state_sync": False,
+            "internal_product_id": None
         }
 
         u = User.objects.create_user(test_user, "", test_user)
@@ -792,7 +794,8 @@ class TestProductAPIEndpoint:
             "end_of_routine_failure_analysis": None,
             "id": 0,
             "product_id": test_product_id,
-            "lc_state_sync": False
+            "lc_state_sync": False,
+            "internal_product_id": None
         }
 
         u = User.objects.create_user(test_user, "", test_user)
@@ -837,7 +840,8 @@ class TestProductAPIEndpoint:
             "end_of_routine_failure_analysis": None,
             "id": 0,
             "product_id": p.product_id,
-            "lc_state_sync": False
+            "lc_state_sync": False,
+            "internal_product_id": None
         }
 
         # create a user with permissions
@@ -886,7 +890,8 @@ class TestProductAPIEndpoint:
             "end_of_routine_failure_analysis": None,
             "id": 0,
             "product_id": test_renamed_product,
-            "lc_state_sync": False
+            "lc_state_sync": False,
+            "internal_product_id": None
         }
 
         # create a user with permissions
@@ -935,7 +940,8 @@ class TestProductAPIEndpoint:
             "end_of_routine_failure_analysis": None,
             "id": p.id,
             "product_id": p.product_id,
-            "lc_state_sync": False
+            "lc_state_sync": False,
+            "internal_product_id": None
         }
 
         client = APIClient()
@@ -1027,7 +1033,8 @@ class TestProductAPIEndpoint:
                     "product_group": None,
                     "end_of_new_service_attachment_date": None,
                     "currency": "USD",
-                    "lc_state_sync": False
+                    "lc_state_sync": False,
+                    "internal_product_id": None
                 },
                 {
                     "id": 0,
@@ -1050,7 +1057,8 @@ class TestProductAPIEndpoint:
                     "product_group": None,
                     "end_of_new_service_attachment_date": None,
                     "currency": "USD",
-                    "lc_state_sync": False
+                    "lc_state_sync": False,
+                    "internal_product_id": None
                 }
             ]
         }
@@ -1109,7 +1117,8 @@ class TestProductAPIEndpoint:
                     "product_group": None,
                     "end_of_new_service_attachment_date": None,
                     "currency": "USD",
-                    "lc_state_sync": False
+                    "lc_state_sync": False,
+                    "internal_product_id": None
                 },
                 {
                     "id": 0,
@@ -1132,7 +1141,8 @@ class TestProductAPIEndpoint:
                     "product_group": None,
                     "end_of_new_service_attachment_date": None,
                     "currency": "USD",
-                    "lc_state_sync": False
+                    "lc_state_sync": False,
+                    "internal_product_id": None
                 }
             ]
         }
@@ -1195,7 +1205,8 @@ class TestProductAPIEndpoint:
                     "product_group": None,
                     "end_of_new_service_attachment_date": None,
                     "currency": "USD",
-                    "lc_state_sync": False
+                    "lc_state_sync": False,
+                    "internal_product_id": None
                 }
             ]
         }
@@ -1254,7 +1265,8 @@ class TestProductAPIEndpoint:
                     "product_group": None,
                     "end_of_new_service_attachment_date": None,
                     "currency": "USD",
-                    "lc_state_sync": False
+                    "lc_state_sync": False,
+                    "internal_product_id": None
                 }
             ]
         }
@@ -1322,7 +1334,8 @@ class TestProductAPIEndpoint:
                     "product_group": None,
                     "end_of_new_service_attachment_date": None,
                     "currency": "USD",
-                    "lc_state_sync": False
+                    "lc_state_sync": False,
+                    "internal_product_id": None
                 }
             ]
         }
@@ -1381,7 +1394,8 @@ class TestProductAPIEndpoint:
                     "product_group": None,
                     "end_of_new_service_attachment_date": None,
                     "currency": "USD",
-                    "lc_state_sync": False
+                    "lc_state_sync": False,
+                    "internal_product_id": None
                 }
             ]
         }

@@ -127,7 +127,6 @@ class Product(models.Model):
     EOS_ANNOUNCED_STR = "EoS announced"
     NO_EOL_ANNOUNCEMENT_STR = "No EoL announcement"
 
-    # Used as Primary Key
     product_id = models.CharField(
         unique=True,
         max_length=512,
@@ -259,6 +258,14 @@ class Product(models.Model):
         verbose_name="lifecycle data automatically synchronized",
         help_text="product is automatically synchronized against the vendor data"  # always false except for Cisco EoX
                                                                                    # API entries
+    )
+
+    internal_product_id = models.CharField(
+        verbose_name="Internal Product ID",
+        help_text="optional internal reference for the Product",
+        max_length=255,
+        null=True,
+        blank=True
     )
 
     @property

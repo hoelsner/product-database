@@ -2,6 +2,7 @@
 Test suite for the config.views module
 """
 import pytest
+from html import escape
 from django.contrib.auth.models import AnonymousUser
 from django.contrib.messages.storage.fallback import FallbackStorage
 from django.core.cache import cache
@@ -11,7 +12,7 @@ from django.http import Http404
 from django.test import RequestFactory
 from mixer.backend.django import mixer
 from app.config import views
-from app.config.models import NotificationMessage
+from app.config.models import NotificationMessage, TextBlock
 from app.config import utils
 from app.config.settings import AppSettings
 
@@ -334,6 +335,26 @@ class TestChangeConfiguration:
         response = views.change_configuration(request)
 
         assert response.status_code == 200
+
+        for content in TextBlock.objects.all().values_list("html_content", flat=True):
+            assert escape(content) in response.content.decode()
+
+    def test_global_options_are_visible(self):
+        app_config = AppSettings()
+        test_internal_id = "My custom Internal ID"
+        app_config.set_internal_product_id_label(test_internal_id)
+
+        # require super user permissions
+        user = mixer.blend("auth.User", is_superuser=True)
+        url = reverse(self.URL_NAME)
+        request = RequestFactory().get(url)
+        request.user = user
+        patch_contrib_messages(request)
+
+        response = views.change_configuration(request)
+
+        assert response.status_code == 200
+        assert test_internal_id in response.content.decode()
 
     @pytest.mark.usefixtures("mock_cisco_eox_api_access_available")
     @pytest.mark.usefixtures("import_default_text_blocks")

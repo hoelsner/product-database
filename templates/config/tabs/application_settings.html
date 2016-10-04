@@ -4,10 +4,8 @@
         <h3 class="panel-title">Common Settings</h3>
     </div>
     <div class="panel-body">
-        <p>
-            The following setting enables/disable the public access to the site (except <i>share</i> links).
-        </p>
         {% bootstrap_field form.login_only_mode layout="horizontal" %}
+        {% bootstrap_field form.internal_product_id_label layout="horizontal" %}
     </div>
 </div>
 <div class="panel panel-default">
