@@ -28,7 +28,7 @@ class SettingsForm(forms.Form):
 
     internal_product_id_label = forms.CharField(
         required=False,
-        label="Internal Product ID label",
+        label="Internal Product ID label:",
         help_text="Custom label for the Internal Product ID"
     )
 
@@ -93,6 +93,14 @@ class SettingsForm(forms.Form):
         help_text="Regular expressions separated by semicolon (;) or word wrap. If a PID matches the regular "
                   "expression, it won't be created in the database. This option is only required, if "
                   "<strong>auto-create new products</strong>-option is enabled."
+    )
+
+    eox_api_wait_time = forms.IntegerField(
+        min_value=1,
+        max_value=60,
+        required=False,
+        label="Cisco EoX query wait time:",
+        help_text="Value between 1 and 60 seconds that is used as a wait timer between the Cisco EoX API queries."
     )
 
     def _get_eox_api_blacklist_as_list(self):

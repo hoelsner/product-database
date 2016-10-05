@@ -45,17 +45,6 @@ def browser(request):
 
 
 @pytest.fixture
-def set_test_config_file(settings):
-    """Set a different configuration file, that is removed after the execution"""
-    settings.APP_CONFIG_FILE = SELENIUM_TEST_CONFIG
-    yield
-
-    # cleanup the configuration after the execution
-    if os.path.exists(SELENIUM_TEST_CONFIG):
-        os.remove(SELENIUM_TEST_CONFIG)
-
-
-@pytest.fixture
 def mock_cisco_eox_api_access_available(monkeypatch):
     monkeypatch.setattr(utils, "check_cisco_eox_api_access",
                         lambda client_id, client_secret, drop_credentials=False: True)

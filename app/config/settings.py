@@ -81,6 +81,11 @@ class AppSettings:
             co.value = "Internal Product ID"
             co.save()
 
+        co, created = ConfigOption.objects.get_or_create(key=ConfigOption.CISCO_EOX_WAIT_TIME)
+        if created:
+            co.value = "5"
+            co.save()
+
         ConfigOption.objects.get_or_create(key=ConfigOption.CISCO_EOX_CRAWLER_LAST_EXECUTION_TIME)
         ConfigOption.objects.get_or_create(key=ConfigOption.CISCO_EOX_CRAWLER_LAST_EXECUTION_RESULT)
 
@@ -260,5 +265,23 @@ class AppSettings:
         set the custom label for the internal product ID
         """
         co = ConfigOption.objects.get(key=ConfigOption.GLOBAL_INTERNAL_PRODUCT_ID_LABEL)
+        co.value = value
+        co.save()
+
+    def get_cisco_eox_api_sync_wait_time(self):
+        """
+        get the amount of seconds to wait between each API call
+        :return:
+        """
+        co = ConfigOption.objects.get(key=ConfigOption.CISCO_EOX_WAIT_TIME)
+        return co.value
+
+    def set_cisco_eox_api_sync_wait_time(self, value):
+        """
+        set the Cisco EoX API timeout
+        :param value:
+        :return:
+        """
+        co = ConfigOption.objects.get(key=ConfigOption.CISCO_EOX_WAIT_TIME)
         co.value = value
         co.save()

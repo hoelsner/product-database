@@ -150,6 +150,7 @@ def change_configuration(request):
                 app_config.set_auto_create_new_products(False)
                 app_config.set_cisco_eox_api_queries("")
                 app_config.set_product_blacklist_regex("")
+                app_config.set_cisco_eox_api_sync_wait_time("5")
 
             else:
                 app_config.set_cisco_api_enabled(api_enabled)
@@ -185,6 +186,8 @@ def change_configuration(request):
                 app_config.set_auto_create_new_products(form.cleaned_data["eox_auto_sync_auto_create_elements"])
                 app_config.set_cisco_eox_api_queries(form.cleaned_data["eox_api_queries"])
                 app_config.set_product_blacklist_regex(form.cleaned_data["eox_api_blacklist"])
+                if form.cleaned_data["eox_api_wait_time"]:
+                    app_config.set_cisco_eox_api_sync_wait_time(form.cleaned_data["eox_api_wait_time"])
 
             # expire cached settings
             cache.delete("LOGIN_ONLY_MODE_SETTING")
@@ -206,6 +209,7 @@ def change_configuration(request):
         form.fields['eox_auto_sync_auto_create_elements'].initial = app_config.is_auto_create_new_products()
         form.fields['eox_api_queries'].initial = app_config.get_cisco_eox_api_queries()
         form.fields['eox_api_blacklist'].initial = app_config.get_product_blacklist_regex()
+        form.fields['eox_api_wait_time'].initial = app_config.get_cisco_eox_api_sync_wait_time()
         form.fields['homepage_text_before'].initial = hp_content_before.html_content
         form.fields['homepage_text_after'].initial = hp_content_after.html_content
 

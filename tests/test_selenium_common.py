@@ -24,7 +24,6 @@ selenium_test = pytest.mark.skipif(not pytest.config.getoption("--selenium"), re
 @pytest.mark.usefixtures("import_default_users")
 @pytest.mark.usefixtures("import_default_vendors")
 @pytest.mark.usefixtures("import_default_text_blocks")
-@pytest.mark.usefixtures("set_test_config_file")
 @selenium_test
 class TestCommonFunctions(BaseSeleniumTest):
     @pytest.mark.usefixtures("mock_cisco_eox_api_access_available")
@@ -168,7 +167,6 @@ class TestCommonFunctions(BaseSeleniumTest):
 @pytest.mark.usefixtures("import_default_users")
 @pytest.mark.usefixtures("import_default_vendors")
 @pytest.mark.usefixtures("import_default_text_blocks")
-@pytest.mark.usefixtures("set_test_config_file")
 @selenium_test
 class TestUserProfile(BaseSeleniumTest):
     def test_preferred_vendor_user_profile(self, browser, live_server):
@@ -316,7 +314,6 @@ class TestUserProfile(BaseSeleniumTest):
 @pytest.mark.usefixtures("import_default_users")
 @pytest.mark.usefixtures("import_default_vendors")
 @pytest.mark.usefixtures("import_default_text_blocks")
-@pytest.mark.usefixtures("set_test_config_file")
 @selenium_test
 class TestProductLists(BaseSeleniumTest):
     def test_product_list(self, browser, live_server):
@@ -437,7 +434,6 @@ class TestProductLists(BaseSeleniumTest):
 @pytest.mark.usefixtures("import_default_users")
 @pytest.mark.usefixtures("import_default_vendors")
 @pytest.mark.usefixtures("import_default_text_blocks")
-@pytest.mark.usefixtures("set_test_config_file")
 @selenium_test
 class TestProductDatabaseViews(BaseSeleniumTest):
     def test_product_group_view(self, browser, live_server):

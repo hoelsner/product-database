@@ -14,6 +14,7 @@ from app.config.models import NotificationMessage
 from app.config.settings import AppSettings
 from app.productdb.models import Product, Vendor
 from django_project.celery import TaskState
+from app.config import utils
 
 pytestmark = pytest.mark.django_db
 
@@ -250,6 +251,27 @@ class TestExecuteTaskToSynchronizeCiscoEoxStateTask:
         assert task.status == "SUCCESS", task.traceback
         assert task.state == TaskState.SUCCESS
         assert task.info.get("status_message") != "task not enabled"
+
+    def test_api_not_reachable_while_task_synchronization(self, monkeypatch):
+        monkeypatch.setattr(utils, "check_cisco_eox_api_access", lambda x, y,z: False)
+        expected_detail_msg = "The synchronization with the Cisco EoX API was not started."
+
+        # test automatic trigger
+        app = AppSettings()
+        app.set_periodic_sync_enabled(True)
+        app.set_cisco_eox_api_queries("yxcz")
+
+        task = tasks.execute_task_to_synchronize_cisco_eox_states.delay()
+
+        assert task is not None
+        assert task.status == "SUCCESS", task.traceback
+        assert task.state == TaskState.SUCCESS
+        assert task.info.get("status_message", None) is None
+        assert task.info.get("error_message") == "Cannot access the Cisco API. Please ensure that the server is " \
+                                                 "connected to the internet and that the authentication settings are " \
+                                                 "valid."
+        assert NotificationMessage.objects.count() == 1, "Task should create a Notification Message"
+        assert NotificationMessage.objects.all().first().detailed_message == expected_detail_msg
 
 
 @pytest.mark.usefixtures("set_celery_always_eager")

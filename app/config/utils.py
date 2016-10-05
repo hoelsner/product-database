@@ -21,7 +21,7 @@ def check_cisco_hello_api_access(client_id, client_secret, drop_credentials=True
 
         return True
 
-    except:
+    except Exception:
         return False
 
 
@@ -43,5 +43,5 @@ def check_cisco_eox_api_access(client_id, client_secret, drop_credentials=True):
 
         return True
 
-    except Exception as ex:
+    except Exception:
         return False

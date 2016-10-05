@@ -1,6 +1,7 @@
 import logging
 import re
 
+import time
 from django.core.cache import cache
 from django.db import transaction
 
@@ -144,6 +145,9 @@ def execute_task_to_synchronize_cisco_eox_states(self, ignore_periodic_sync_flag
                             "status_message": "send query <code>%s</code> to the Cisco EoX API (<strong>%d of "
                                               "%d</strong>)..." % (query, counter + 1, len(queries))
                         })
+
+                        # wait a specific amount of seconds between each update call
+                        time.sleep(int(app_config.get_cisco_eox_api_sync_wait_time()))
 
                         query_results = cisco_eox_api_crawler.update_cisco_eox_database(query)
 

@@ -26,9 +26,6 @@ class BaseCiscoApiConsole:
     http_auth_header = None
     token_expire_datetime = datetime.datetime.now()
 
-    # just for testing, indicates, that the class has claimed new token
-    __new_token_created__ = False
-
     def __repr__(self):
         return {
             "cliend_id": self.client_id,
@@ -36,7 +33,7 @@ class BaseCiscoApiConsole:
             "current_access_token": self.current_access_token
         }
 
-    def __save_cached_temp_token__(self):
+    def __save_cached_temp_token__(self, timeout_seconds):
         logger.debug("save token to cache")
 
         temp_auth_token = dict()
@@ -46,7 +43,7 @@ class BaseCiscoApiConsole:
         cache.set(
             self.AUTH_TOKEN_CACHE_KEY,
             json.dumps(temp_auth_token),
-            timeout=self.token_expire_datetime.timestamp()
+            timeout=timeout_seconds
         )
 
         logger.debug("temporary token saved")
@@ -57,6 +54,7 @@ class BaseCiscoApiConsole:
         try:
             cached_auth_token = cache.get(self.AUTH_TOKEN_CACHE_KEY)
             if not cached_auth_token:
+                self.drop_cached_token()        # clean instance
                 return False
             temp_auth_token = json.loads(cached_auth_token)
 
@@ -141,26 +139,26 @@ class BaseCiscoApiConsole:
 
                 cache.delete(self.AUTH_TOKEN_CACHE_KEY)
                 self.current_access_token = jdata
-                self.__new_token_created__ = True
 
                 # set expire date
                 expire_offset = datetime.timedelta(seconds=self.current_access_token['expires_in'])
                 self.token_expire_datetime = datetime.datetime.now() + expire_offset
 
-            self.http_auth_header = {
-                # we will just work with JSON results
-                "Accept": "application/json",
-                "Authorization": "%s %s" % (self.current_access_token['token_type'],
-                                            self.current_access_token['access_token']),
-            }
+                self.http_auth_header = {
+                    # we will just work with JSON results
+                    "Accept": "application/json",
+                    "Authorization": "%s %s" % (self.current_access_token['token_type'],
+                                                self.current_access_token['access_token']),
+                }
 
-        # dump token to temp file
-        self.__save_cached_temp_token__()
+                # dump token to temp file
+                self.__save_cached_temp_token__(self.current_access_token['expires_in'])
 
     def drop_cached_token(self):
         cache.delete(self.AUTH_TOKEN_CACHE_KEY)
         self.current_access_token = None
         self.http_auth_header = None
+        self.token_expire_datetime = None
 
     def __is_cached_token_valid__(self):
         result = False

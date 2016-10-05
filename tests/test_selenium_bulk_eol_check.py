@@ -16,7 +16,6 @@ selenium_test = pytest.mark.skipif(not pytest.config.getoption("--selenium"), re
 @pytest.mark.usefixtures("test_download_dir")
 @pytest.mark.usefixtures("import_default_users")
 @pytest.mark.usefixtures("import_default_vendors")
-@pytest.mark.usefixtures("set_test_config_file")
 class TestBulkEolCheckFunction(BaseSeleniumTest):
     def test_with_valid_query(self, browser, live_server, test_download_dir):
         # open the bulk eol check page

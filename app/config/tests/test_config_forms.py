@@ -53,6 +53,40 @@ class TestSettingsForm:
         assert form.is_valid() is True
         assert form.cleaned_data["internal_product_id_label"] == test_internal_product_id
 
+    def test_form_cisco_eox_api_wait_time(self):
+        # test with only a single invalid entry
+        data = {
+            "eox_api_wait_time": "Test"
+        }
+        form = SettingsForm(data=data)
+        assert form.is_valid() is False
+        assert "eox_api_wait_time" in form.errors
+        assert "Enter a whole number." in form.errors["eox_api_wait_time"]
+
+        data = {
+            "eox_api_wait_time": "90"
+        }
+        form = SettingsForm(data=data)
+        assert form.is_valid() is False
+        assert "eox_api_wait_time" in form.errors
+        assert "Ensure this value is less than or equal to 60." in form.errors["eox_api_wait_time"]
+
+        data = {
+            "eox_api_wait_time": "-20"
+        }
+        form = SettingsForm(data=data)
+        assert form.is_valid() is False
+        assert "eox_api_wait_time" in form.errors
+        assert "Ensure this value is greater than or equal to 1." in form.errors["eox_api_wait_time"]
+
+        # test with valid entry
+        data = {
+            "eox_api_wait_time": "15"
+        }
+        form = SettingsForm(data=data)
+        assert form.is_valid() is True
+        assert form.cleaned_data["eox_api_wait_time"] == 15
+
     def test_form_api_blacklist_entries(self):
         # test with only a single invalid entry
         data = {

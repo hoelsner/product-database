@@ -19,7 +19,6 @@ online = pytest.mark.skipif(not pytest.config.getoption("--online"), reason="nee
 @pytest.mark.usefixtures("import_default_users")
 @pytest.mark.usefixtures("import_default_vendors")
 @pytest.mark.usefixtures("import_default_text_blocks")
-@pytest.mark.usefixtures("set_test_config_file")
 @selenium_test
 class TestExcelImportFeature(BaseSeleniumTest):
     @pytest.mark.usefixtures("set_celery_always_eager")
@@ -275,7 +274,6 @@ class TestExcelImportFeature(BaseSeleniumTest):
 @pytest.mark.usefixtures("import_default_vendors")
 @pytest.mark.usefixtures("import_default_text_blocks")
 @pytest.mark.usefixtures("set_celery_always_eager")
-@pytest.mark.usefixtures("set_test_config_file")
 @online
 @selenium_test
 class TestSyncLocalDatabaseWithCiscoEoxApi(BaseSeleniumTest):
@@ -526,7 +524,6 @@ class TestSyncLocalDatabaseWithCiscoEoxApi(BaseSeleniumTest):
 @pytest.mark.usefixtures("import_default_users")
 @pytest.mark.usefixtures("import_default_vendors")
 @pytest.mark.usefixtures("import_default_text_blocks")
-@pytest.mark.usefixtures("set_test_config_file")
 @selenium_test
 class TestSettingsPermissions(BaseSeleniumTest):
     def test_regular_user_has_no_access_to_settings_pages(self, browser, live_server):

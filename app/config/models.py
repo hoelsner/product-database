@@ -128,6 +128,7 @@ class ConfigOption(models.Model):
     CISCO_EOX_CRAWLER_LAST_EXECUTION_RESULT = "cisco_eox.last_execution_result"
     CISCO_EOX_API_QUERIES = "cisco_eox.api_queries"
     CISCO_EOX_PRODUCT_BLACKLIST_REGEX = "cisco_eox.product_blacklist_regex"
+    CISCO_EOX_WAIT_TIME = "cisco_eox.wait_time_between_queries"
 
     key = models.CharField(
         max_length=256,
