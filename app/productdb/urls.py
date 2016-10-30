@@ -13,6 +13,8 @@ router.register(r'vendors', api_views.VendorViewSet, base_name="vendors")
 router.register(r'products', api_views.ProductViewSet, base_name="products")
 router.register(r'productgroups', api_views.ProductGroupViewSet, base_name="productgroups")
 router.register(r'productlists', api_views.ProductListViewSet, base_name="productlists")
+router.register(r'productmigrationsources', api_views.ProductMigrationSourceViewSet, base_name="productmigrationsources")
+router.register(r'productmigrationoptions', api_views.ProductMigrationOptionViewSet, base_name="productmigrationoptions")
 
 # namespace: productdb
 urlpatterns = [

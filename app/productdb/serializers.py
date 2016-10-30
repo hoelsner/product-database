@@ -1,8 +1,9 @@
-from rest_framework.serializers import HyperlinkedModelSerializer, BooleanField, ValidationError
+from rest_framework.serializers import HyperlinkedModelSerializer, BooleanField
 from rest_framework import serializers
 from rest_framework.serializers import ChoiceField, CharField, DecimalField, PrimaryKeyRelatedField
 from django.core.validators import MinValueValidator
-from app.productdb.models import Product, Vendor, CURRENCY_CHOICES, ProductGroup, ProductList
+from app.productdb.models import Product, Vendor, CURRENCY_CHOICES, ProductGroup, ProductList, ProductMigrationSource, \
+    ProductMigrationOption
 
 
 class VendorSerializer(HyperlinkedModelSerializer):
@@ -171,6 +172,59 @@ class ProductSerializer(HyperlinkedModelSerializer):
             'url': {
                 'lookup_field': 'id',
                 'view_name': 'productdb:products-detail'
+            }
+        }
+        depth = 0
+
+
+class ProductMigrationOptionSerializer(HyperlinkedModelSerializer):
+    product = PrimaryKeyRelatedField(
+        many=False,
+        queryset=Product.objects.all(),
+        read_only=False,
+        required=False
+    )
+    migration_source = PrimaryKeyRelatedField(
+        many=False,
+        queryset=ProductMigrationSource.objects.all(),
+        read_only=False,
+        required=False
+    )
+
+    class Meta:
+        model = ProductMigrationOption
+        fields = (
+            "id",
+            "product",
+            "migration_source",
+            "comment",
+            "migration_product_info_url",
+            "replacement_product_id",
+            "url"
+        )
+        extra_kwargs = {
+            "url": {
+                "lookup_field": "id",
+                "view_name": "productdb:productmigrationoptions-detail"
+            }
+        }
+        depth = 0
+
+
+class ProductMigrationSourceSerializer(HyperlinkedModelSerializer):
+    class Meta:
+        model = ProductMigrationSource
+        fields = (
+            "id",
+            "name",
+            "description",
+            "preference",
+            "url",
+        )
+        extra_kwargs = {
+            "url": {
+                "lookup_field": "id",
+                "view_name": "productdb:productmigrationsources-detail"
             }
         }
         depth = 0

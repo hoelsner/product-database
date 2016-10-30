@@ -2,8 +2,10 @@ import django_filters
 from rest_framework import permissions
 from rest_framework import filters
 from rest_framework.response import Response
-from app.productdb.serializers import ProductSerializer, VendorSerializer, ProductGroupSerializer, ProductListSerializer
-from app.productdb.models import Product, Vendor, ProductGroup, ProductList
+from app.productdb.serializers import ProductSerializer, VendorSerializer, ProductGroupSerializer, ProductListSerializer, \
+    ProductMigrationSourceSerializer, ProductMigrationOptionSerializer
+from app.productdb.models import Product, Vendor, ProductGroup, ProductList, ProductMigrationSource, \
+    ProductMigrationOption
 from rest_framework import viewsets
 from rest_framework.decorators import list_route
 
@@ -21,6 +23,48 @@ class VendorViewSet(viewsets.ReadOnlyModelViewSet):
     )
     filter_fields = ('id', 'name')
     search_fields = ('$name',)
+    permission_classes = (permissions.DjangoModelPermissions,)
+
+
+class ProductMigrationSourceViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    API endpoint for the ProductMigrationSource objects
+    """
+    queryset = ProductMigrationSource.objects.all().order_by("name")
+    serializer_class = ProductMigrationSourceSerializer
+    lookup_field = 'id'
+    filter_backends = (
+        filters.DjangoFilterBackend,
+        filters.SearchFilter,
+    )
+    filter_fields = ('id', 'name')
+    search_fields = ('$name',)
+    permission_classes = (permissions.DjangoModelPermissions,)
+
+
+class ProductMigrationOptionFilter(filters.FilterSet):
+    product = django_filters.CharFilter(name="product__product_id", lookup_type="startswith")
+    migration_source = django_filters.CharFilter(name="migration_source__name", lookup_type="startswith")
+    replacement_product_id = django_filters.CharFilter(name="replacement_product_id", lookup_type="startswith")
+
+    class Meta:
+        model = ProductMigrationOption
+        fields = ['id', 'replacement_product_id', 'migration_source', 'product']
+
+
+class ProductMigrationOptionViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    API endpoint for the ProductMigrationOption objects
+    """
+    queryset = ProductMigrationOption.objects.all().order_by("id")
+    serializer_class = ProductMigrationOptionSerializer
+    lookup_field = 'id'
+    filter_backends = (
+        filters.DjangoFilterBackend,
+        filters.SearchFilter,
+    )
+    filter_class = ProductMigrationOptionFilter
+    search_fields = ('$replacement_product_id', '$product__product_id',)
     permission_classes = (permissions.DjangoModelPermissions,)
 
 

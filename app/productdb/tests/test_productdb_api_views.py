@@ -9,7 +9,8 @@ from django.utils.datetime_safe import date
 from mixer.backend.django import mixer
 from rest_framework import status
 from rest_framework.test import APIClient
-from app.productdb.models import Vendor, ProductGroup, Product, ProductList
+from app.productdb.models import Vendor, ProductGroup, Product, ProductList, ProductMigrationOption, \
+    ProductMigrationSource
 
 pytestmark = pytest.mark.django_db
 
@@ -32,6 +33,10 @@ REST_PRODUCT_COUNT = REST_PRODUCT_LIST + "count/"
 REST_PRODUCT_DETAIL = REST_PRODUCT_LIST + "%d/"
 REST_PRODUCTLIST_LIST = reverse("productdb:productlists-list")
 REST_PRODUCTLIST_DETAIL = REST_PRODUCTLIST_LIST + "%d/"
+REST_PRODUCTMIGRATIONSOURCE_LIST = reverse("productdb:productmigrationsources-list")
+REST_PRODUCTMIGRATIONSOURCE_DETAIL = REST_PRODUCTMIGRATIONSOURCE_LIST + "%d/"
+REST_PRODUCTMIGRATIONOPTION_LIST = reverse("productdb:productmigrationoptions-list")
+REST_PRODUCTMIGRATIONOPTION_DETAIL = REST_PRODUCTMIGRATIONOPTION_LIST + "%d/"
 
 COMMON_API_ENDPOINT_BEHAVIOR = [
     REST_VENDOR_LIST,
@@ -40,6 +45,10 @@ COMMON_API_ENDPOINT_BEHAVIOR = [
     REST_PRODUCT_GROUP_DETAIL % 1,
     REST_PRODUCTLIST_LIST,
     REST_PRODUCTLIST_DETAIL % 1,
+    REST_PRODUCTMIGRATIONSOURCE_LIST,
+    REST_PRODUCTMIGRATIONSOURCE_DETAIL % 1,
+    REST_PRODUCTMIGRATIONOPTION_LIST,
+    REST_PRODUCTMIGRATIONOPTION_DETAIL % 1,
 ]
 
 
@@ -47,6 +56,8 @@ COMMON_API_ENDPOINT_BEHAVIOR = [
 def common_api_endpoint_objects():
     """DB objects for the common API endpoint tests"""
     mixer.blend("productdb.ProductGroup")
+    mixer.blend("productdb.ProductMigrationSource")
+    mixer.blend("productdb.ProductMigrationOption")
 
 
 @pytest.mark.usefixtures("common_api_endpoint_objects")
@@ -82,7 +93,7 @@ class TestCommonAPIEndpoint:
             assert response.json() == {'detail': 'You do not have permission to perform this action.'}
 
     def test_page_size(self):
-        for e in range(0, 50):
+        for e in range(1, 50):
             mixer.blend("productdb.Product")
 
         client = APIClient()
@@ -301,6 +312,521 @@ class TestVendorAPIEndpoint:
 
         # call with empty result
         response = client.get(REST_VENDOR_LIST + "?name=" + quote("Cisco"))
+
+        assert response.status_code == status.HTTP_200_OK
+        jdata = response.json()
+        assert "pagination" in jdata, "pagination information not provided"
+        assert "data" in jdata, "data branch not provided"
+        assert jdata["pagination"]["total_records"] == 0, "should return nothing, because an exact match is required"
+
+
+@pytest.mark.usefixtures("import_default_users")
+@pytest.mark.usefixtures("import_default_vendors")
+class TestProductMigrationOptionAPIEndpoint:
+    """
+    Django REST Framework API endpoint tests for the ProductMigrationOption model
+    """
+    def test_read_access_with_authenticated_user(self):
+        expected_result = {
+            "pagination": {
+                "page": 1,
+                "page_records": 2,
+                "url": {
+                    "next": None,
+                    "previous": None
+                },
+                "last_page": 1,
+                "total_records": 2
+            },
+            "data": [
+                {
+                    "migration_source": 1,
+                    "migration_product_info_url": None,
+                    "url": "http://testserver/productdb/api/v0/productmigrationoptions/%d/",
+                    "replacement_product_id": "replacement",
+                    "id": 1,
+                    "product": 1,
+                    "comment": "",
+                },
+                {
+                    "migration_source": 1,
+                    "migration_product_info_url": None,
+                    "url": "http://testserver/productdb/api/v0/productmigrationoptions/%d/",
+                    "replacement_product_id": "replacement2",
+                    "id": 2,
+                    "product": 2,
+                    "comment": "",
+                }
+            ]
+        }
+        p1 = mixer.blend("productdb.Product", vendor=Vendor.objects.get(id=1), id=1, product_id="B")
+        p2 = mixer.blend("productdb.Product", vendor=Vendor.objects.get(id=1), id=2, product_id="A")
+        pmg = mixer.blend("productdb.ProductMigrationSource", name="Cisco", id=1)
+
+        pmo1 = mixer.blend("productdb.ProductMigrationOption", product=p1, migration_source=pmg,
+                           replacement_product_id=expected_result["data"][0]["replacement_product_id"], comment="")
+        pmo2 = mixer.blend("productdb.ProductMigrationOption", product=p2, migration_source=pmg,
+                           replacement_product_id=expected_result["data"][1]["replacement_product_id"], comment="")
+        expected_result["data"][0]["id"] = pmo1.id
+        expected_result["data"][0]["url"] = expected_result["data"][0]["url"] % pmo1.id
+        expected_result["data"][0]["comment"] = pmo1.comment
+        expected_result["data"][1]["id"] = pmo2.id
+        expected_result["data"][1]["url"] = expected_result["data"][1]["url"] % pmo2.id
+        expected_result["data"][1]["comment"] = pmo2.comment
+
+        client = APIClient()
+        client.login(**AUTH_USER)
+        response = client.get(REST_PRODUCTMIGRATIONOPTION_LIST)
+
+        assert response.status_code == status.HTTP_200_OK
+
+        jdata = response.json()
+        assert "pagination" in jdata, "pagination information not provided"
+        assert "data" in jdata, "data branch not found in result"
+        assert jdata == expected_result, "unexpected result from API endpoint"
+
+        # access first element of the list
+        response = client.get(jdata["data"][0]["url"])
+
+        assert response.status_code == status.HTTP_200_OK
+        assert jdata["data"][0] == response.json()
+
+    def test_add_access_with_permission(self):
+        test_user = "user"
+        u = User.objects.create_user(test_user, "", test_user)
+        p = Permission.objects.get(codename="add_productmigrationoption")
+        assert p is not None
+        u.user_permissions.add(p)
+        u.save()
+        assert u.has_perm("productdb.add_productmigrationoption")
+
+        client = APIClient()
+        client.login(username=test_user, password=test_user)
+        response = client.post(REST_PRODUCTMIGRATIONOPTION_LIST,
+                               data={"replacement_id": "Awesome Product Migration Option"})
+
+        assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED, "API endpoint is always read only"
+        assert response.json() == {'detail': 'Method "POST" not allowed.'}
+        assert ProductMigrationOption.objects.count() == 0, "no additional product migration option is created"
+
+    def test_change_access_with_permission(self):
+        # create a user with permissions
+        test_user = "user"
+        u = User.objects.create_user(test_user, "", test_user)
+        p = Permission.objects.get(codename="change_productmigrationoption")
+        assert p is not None
+        u.user_permissions.add(p)
+        u.save()
+        assert u.has_perm("productdb.change_productmigrationoption")
+
+        mixer.blend("productdb.productmigrationoption")
+        client = APIClient()
+        client.login(username=test_user, password=test_user)
+        response = client.put(REST_PRODUCTMIGRATIONOPTION_DETAIL % 1, data={"comment": "renamed product migration source"})
+
+        assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED, "API endpoint is always read only"
+        assert response.json() == {'detail': 'Method "PUT" not allowed.'}
+
+    def test_delete_access_with_permission(self):
+        test_user = "user"
+        u = User.objects.create_user(test_user, "", test_user)
+        p = Permission.objects.get(codename="delete_productmigrationoption")
+        assert p is not None
+        u.user_permissions.add(p)
+        u.save()
+        assert u.has_perm("productdb.delete_productmigrationoption")
+
+        mixer.blend("productdb.productmigrationoption")
+        client = APIClient()
+        client.login(username=test_user, password=test_user)
+        response = client.delete(REST_PRODUCTMIGRATIONOPTION_DETAIL % 1)
+
+        assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED, "API endpoint is always read only"
+        assert response.json() == {'detail': 'Method "DELETE" not allowed.'}
+        assert ProductMigrationOption.objects.count() == 1, "no product migration option was deleted"
+
+    def test_search_field(self):
+        """
+        search field contains a regular expression on the product id of the migration option and on the
+        replacement product id
+        :return:
+        """
+        expected_result = {
+            "pagination": {
+                "page": 1,
+                "page_records": 2,
+                "url": {
+                    "next": None,
+                    "previous": None
+                },
+                "last_page": 1,
+                "total_records": 2
+            },
+            "data": [
+                {
+                    "migration_source": 1,
+                    "migration_product_info_url": None,
+                    "url": "http://testserver/productdb/api/v0/productmigrationoptions/%d/",
+                    "replacement_product_id": "replacement",
+                    "id": 1,
+                    "product": 1,
+                    "comment": "",
+                },
+                {
+                    "migration_source": 1,
+                    "migration_product_info_url": None,
+                    "url": "http://testserver/productdb/api/v0/productmigrationoptions/%d/",
+                    "replacement_product_id": "replacement2",
+                    "id": 2,
+                    "product": 2,
+                    "comment": "",
+                }
+            ]
+        }
+        p1 = mixer.blend("productdb.Product", vendor=Vendor.objects.get(id=1), id=1, product_id="A1")
+        p2 = mixer.blend("productdb.Product", vendor=Vendor.objects.get(id=1), id=2, product_id="A2")
+        p3 = mixer.blend("productdb.Product", vendor=Vendor.objects.get(id=1), id=3, product_id="B1")
+        pmg = mixer.blend("productdb.ProductMigrationSource", name="Cisco", id=1)
+
+        pmo1 = mixer.blend("productdb.ProductMigrationOption", product=p1, migration_source=pmg,
+                           replacement_product_id=expected_result["data"][0]["replacement_product_id"], comment="")
+        pmo2 = mixer.blend("productdb.ProductMigrationOption", product=p2, migration_source=pmg,
+                           replacement_product_id=expected_result["data"][1]["replacement_product_id"], comment="")
+        mixer.blend("productdb.ProductMigrationOption", product=p3, migration_source=pmg,
+                    replacement_product_id=expected_result["data"][1]["replacement_product_id"], comment="")
+        expected_result["data"][0]["id"] = pmo1.id
+        expected_result["data"][0]["url"] = expected_result["data"][0]["url"] % pmo1.id
+        expected_result["data"][0]["comment"] = pmo1.comment
+        expected_result["data"][1]["id"] = pmo2.id
+        expected_result["data"][1]["url"] = expected_result["data"][1]["url"] % pmo2.id
+        expected_result["data"][1]["comment"] = pmo2.comment
+
+        client = APIClient()
+        client.login(**AUTH_USER)
+        # verify the use of regular expressions
+        response = client.get(REST_PRODUCTMIGRATIONOPTION_LIST + "?search=" + quote("^A"))
+
+        assert response.status_code == status.HTTP_200_OK
+        jdata = response.json()
+        assert "pagination" in jdata, "pagination information not provided"
+        assert "data" in jdata, "data branch not provided"
+
+        assert jdata == expected_result, "unexpected result from API endpoint"
+
+    def test_filter_fields(self):
+        expected_result = {
+            "pagination": {
+                "page": 1,
+                "page_records": 2,
+                "url": {
+                    "next": None,
+                    "previous": None
+                },
+                "last_page": 1,
+                "total_records": 2
+            },
+            "data": [
+                {
+                    "migration_source": 1,
+                    "migration_product_info_url": None,
+                    "url": "http://testserver/productdb/api/v0/productmigrationoptions/%d/",
+                    "replacement_product_id": "replacement1",
+                    "id": 1,
+                    "product": 1,
+                    "comment": "",
+                },
+                {
+                    "migration_source": 2,
+                    "migration_product_info_url": None,
+                    "url": "http://testserver/productdb/api/v0/productmigrationoptions/%d/",
+                    "replacement_product_id": "replacement2",
+                    "id": 2,
+                    "product": 2,
+                    "comment": "",
+                }
+            ]
+        }
+        p1 = mixer.blend("productdb.Product", vendor=Vendor.objects.get(id=1), id=1, product_id="A1")
+        p2 = mixer.blend("productdb.Product", vendor=Vendor.objects.get(id=1), id=2, product_id="A2")
+        p3 = mixer.blend("productdb.Product", vendor=Vendor.objects.get(id=1), id=3, product_id="B1")
+        pmg = mixer.blend("productdb.ProductMigrationSource", name="Cisco", id=1)
+        pmg2 = mixer.blend("productdb.ProductMigrationSource", name="Other", id=2)
+
+        pmo1 = mixer.blend("productdb.ProductMigrationOption", product=p1, migration_source=pmg,
+                           replacement_product_id=expected_result["data"][0]["replacement_product_id"], comment="")
+        pmo2 = mixer.blend("productdb.ProductMigrationOption", product=p2, migration_source=pmg2,
+                           replacement_product_id=expected_result["data"][1]["replacement_product_id"], comment="")
+        mixer.blend("productdb.ProductMigrationOption", product=p3, migration_source=pmg2,
+                    replacement_product_id=expected_result["data"][1]["replacement_product_id"], comment="")
+        expected_result["data"][0]["id"] = pmo1.id
+        expected_result["data"][0]["url"] = expected_result["data"][0]["url"] % pmo1.id
+        expected_result["data"][0]["comment"] = pmo1.comment
+        expected_result["data"][1]["id"] = pmo2.id
+        expected_result["data"][1]["url"] = expected_result["data"][1]["url"] % pmo2.id
+        expected_result["data"][1]["comment"] = pmo2.comment
+
+        client = APIClient()
+        client.login(**AUTH_USER)
+
+        # use ID field filter (exact match)
+        response = client.get(REST_PRODUCTMIGRATIONOPTION_LIST + "?id=%s" % pmo1.id)
+
+        assert response.status_code == status.HTTP_200_OK
+        jdata = response.json()
+        assert "pagination" in jdata, "pagination information not provided"
+        assert "data" in jdata, "data branch not provided"
+        mod_res = expected_result
+        mod_res["pagination"] = {
+            "page": 1,
+            "page_records": 1,
+            "url": {
+                "next": None,
+                "previous": None
+            },
+            "last_page": 1,
+            "total_records": 1
+        }
+        del mod_res["data"][1]
+        assert jdata == expected_result, "unexpected result from API endpoint"
+
+        # use replacement_product_id field filter (startswith match)
+        response = client.get(REST_PRODUCTMIGRATIONOPTION_LIST + "?replacement_product_id=" + quote("replacement1"))
+
+        assert response.status_code == status.HTTP_200_OK
+        jdata = response.json()
+        assert "pagination" in jdata, "pagination information not provided"
+        assert "data" in jdata, "data branch not provided"
+        assert jdata == mod_res, "unexpected result from API endpoint"
+
+        # use product field filter (startswith match)
+        response = client.get(REST_PRODUCTMIGRATIONOPTION_LIST + "?product=" + quote("A1"))
+
+        assert response.status_code == status.HTTP_200_OK
+        jdata = response.json()
+        assert "pagination" in jdata, "pagination information not provided"
+        assert "data" in jdata, "data branch not provided"
+        assert jdata == mod_res, "unexpected result from API endpoint"
+
+        # use migration_source field filter (startswith match)
+        response = client.get(REST_PRODUCTMIGRATIONOPTION_LIST + "?migration_source=" + quote("Cisco"))
+
+        assert response.status_code == status.HTTP_200_OK
+        jdata = response.json()
+        assert "pagination" in jdata, "pagination information not provided"
+        assert "data" in jdata, "data branch not provided"
+        assert jdata == mod_res, "unexpected result from API endpoint"
+
+        # call with empty result
+        response = client.get(REST_PRODUCTMIGRATIONOPTION_LIST + "?replacement_product_id=" + quote("invalid"))
+
+        assert response.status_code == status.HTTP_200_OK
+        jdata = response.json()
+        assert "pagination" in jdata, "pagination information not provided"
+        assert "data" in jdata, "data branch not provided"
+        assert jdata["pagination"]["total_records"] == 0, "should return nothing, because an exact match is required"
+
+
+@pytest.mark.usefixtures("import_default_users")
+@pytest.mark.usefixtures("import_default_vendors")
+class TestProductMigrationSourceAPIEndpoint:
+    """
+    Django REST Framework API endpoint tests for the ProductMigrationSource model
+    """
+    def test_read_access_with_authenticated_user(self):
+        expected_result = {
+            "pagination": {
+                "page": 1,
+                "page_records": 2,
+                "url": {
+                    "next": None,
+                    "previous": None
+                },
+                "last_page": 1,
+                "total_records": 2
+            },
+            "data": [
+                {
+                    "id": 1,
+                    "preference": 50,
+                    "url": "http://testserver/productdb/api/v0/productmigrationsources/1/",
+                    "description": "My description",
+                    "name": "Cisco",
+                },
+                {
+                    "id": 2,
+                    "preference": 50,
+                    "url": "http://testserver/productdb/api/v0/productmigrationsources/2/",
+                    "description": "My other description",
+                    "name": "other",
+                }
+            ]
+        }
+
+        [mixer.blend("productdb.ProductMigrationSource", **expected_result["data"][i])
+         for i in range(0, len(expected_result["data"]))]
+
+        client = APIClient()
+        client.login(**AUTH_USER)
+        response = client.get(REST_PRODUCTMIGRATIONSOURCE_LIST)
+
+        assert response.status_code == status.HTTP_200_OK
+
+        jdata = response.json()
+        assert "pagination" in jdata, "pagination information not provided"
+        assert "data" in jdata, "data branch not found in result"
+        assert jdata == expected_result, "unexpected result from API endpoint"
+
+        # access first element of the list
+        response = client.get(jdata["data"][0]["url"])
+
+        assert response.status_code == status.HTTP_200_OK
+        assert jdata["data"][0] == response.json()
+
+    def test_add_access_with_permission(self):
+        test_user = "user"
+        u = User.objects.create_user(test_user, "", test_user)
+        p = Permission.objects.get(codename="add_productmigrationsource")
+        assert p is not None
+        u.user_permissions.add(p)
+        u.save()
+        assert u.has_perm("productdb.add_productmigrationsource")
+
+        client = APIClient()
+        client.login(username=test_user, password=test_user)
+        response = client.post(REST_PRODUCTMIGRATIONSOURCE_LIST, data={"name": "Awesome Product Migration Source"})
+
+        assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED, "API endpoint is always read only"
+        assert response.json() == {'detail': 'Method "POST" not allowed.'}
+        assert ProductMigrationSource.objects.count() == 0, "no additional vendor is created"
+
+    def test_change_access_with_permission(self):
+        # create a user with permissions
+        test_user = "user"
+        u = User.objects.create_user(test_user, "", test_user)
+        p = Permission.objects.get(codename="change_productmigrationsource")
+        assert p is not None
+        u.user_permissions.add(p)
+        u.save()
+        assert u.has_perm("productdb.change_productmigrationsource")
+
+        mixer.blend("productdb.productmigrationsource")
+        client = APIClient()
+        client.login(username=test_user, password=test_user)
+        response = client.put(REST_PRODUCTMIGRATIONSOURCE_DETAIL % 1, data={"name": "renamed product migration source"})
+
+        assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED, "API endpoint is always read only"
+        assert response.json() == {'detail': 'Method "PUT" not allowed.'}
+
+    def test_delete_access_with_permission(self):
+        test_user = "user"
+        u = User.objects.create_user(test_user, "", test_user)
+        p = Permission.objects.get(codename="delete_productmigrationsource")
+        assert p is not None
+        u.user_permissions.add(p)
+        u.save()
+        assert u.has_perm("productdb.delete_productmigrationsource")
+
+        mixer.blend("productdb.productmigrationsource")
+        client = APIClient()
+        client.login(username=test_user, password=test_user)
+        response = client.delete(REST_PRODUCTMIGRATIONSOURCE_DETAIL % 1)
+
+        assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED, "API endpoint is always read only"
+        assert response.json() == {'detail': 'Method "DELETE" not allowed.'}
+        assert ProductMigrationSource.objects.count() == 1, "no product migration source was deleted"
+
+    def test_search_field(self):
+        """
+        search field implementation contains a regular expression search on the vendor name field
+        :return:
+        """
+        expected_result = {
+            "pagination": {
+                "page": 1,
+                "page_records": 1,
+                "url": {
+                    "next": None,
+                    "previous": None
+                },
+                "last_page": 1,
+                "total_records": 1
+            },
+            "data": [
+                {
+                    "name": "Cisco Systems",
+                    "url": "http://testserver/productdb/api/v0/productmigrationsources/%d/",
+                    "id": 1,
+                    "preference": 50,
+                    "description": None,
+                }
+            ]
+        }
+        pmg = mixer.blend("productdb.productmigrationsource", name="Cisco Systems")
+        expected_result["data"][0]["id"] = pmg.id
+        expected_result["data"][0]["url"] = expected_result["data"][0]["url"] % pmg.id
+        mixer.blend("productdb.productmigrationsource", name="Other PMG")
+
+        client = APIClient()
+        client.login(**AUTH_USER)
+        # verify the use of regular expressions
+        response = client.get(REST_PRODUCTMIGRATIONSOURCE_LIST + "?search=" + quote("^Ci"))
+
+        assert response.status_code == status.HTTP_200_OK
+        jdata = response.json()
+        assert "pagination" in jdata, "pagination information not provided"
+        assert "data" in jdata, "data branch not provided"
+        assert jdata == expected_result, "unexpected result from API endpoint"
+
+    def test_filter_fields(self):
+        expected_result = {
+            "pagination": {
+                "page": 1,
+                "page_records": 1,
+                "url": {
+                    "next": None,
+                    "previous": None
+                },
+                "last_page": 1,
+                "total_records": 1
+            },
+            "data": [
+                {
+                    "description": None,
+                    "id": 1,
+                    "name": "Cisco Systems",
+                    "preference": 50,
+                    "url": "http://testserver/productdb/api/v0/productmigrationsources/%d/"
+                }
+            ]
+        }
+        pmg = mixer.blend("productdb.productmigrationsource", name="Cisco Systems")
+        expected_result["data"][0]["id"] = pmg.id
+        expected_result["data"][0]["url"] = expected_result["data"][0]["url"] % pmg.id
+        mixer.blend("productdb.productmigrationsource", name="Other PMG")
+
+        client = APIClient()
+        client.login(**AUTH_USER)
+
+        # use ID field filter (exact match)
+        response = client.get(REST_PRODUCTMIGRATIONSOURCE_LIST + "?id=%s" % pmg.id)
+
+        assert response.status_code == status.HTTP_200_OK
+        jdata = response.json()
+        assert "pagination" in jdata, "pagination information not provided"
+        assert "data" in jdata, "data branch not provided"
+        assert jdata == expected_result, "unexpected result from API endpoint"
+
+        # use name field filter (exact match)
+        response = client.get(REST_PRODUCTMIGRATIONSOURCE_LIST + "?name=" + quote("Cisco Systems"))
+
+        assert response.status_code == status.HTTP_200_OK
+        jdata = response.json()
+        assert "pagination" in jdata, "pagination information not provided"
+        assert "data" in jdata, "data branch not provided"
+        assert jdata == expected_result, "unexpected result from API endpoint"
+
+        # call with empty result
+        response = client.get(REST_PRODUCTMIGRATIONSOURCE_LIST + "?name=" + quote("Cisco"))
 
         assert response.status_code == status.HTTP_200_OK
         jdata = response.json()
