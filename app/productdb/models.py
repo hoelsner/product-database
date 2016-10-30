@@ -3,9 +3,10 @@ from django.contrib.auth.models import User
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
-from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 from django.db.models import Q
+from django.utils.functional import cached_property
 from django.db.models.signals import pre_delete, post_save
 from django.dispatch import receiver
 from django.utils.timezone import datetime
@@ -90,7 +91,7 @@ class ProductGroup(models.Model):
 
     def clean(self):
         # check that the Product Group Name already exist in the database for the given vendor
-        if ProductGroup.objects.filter(vendor=self.vendor, name=self.name).count() != 0:
+        if ProductGroup.objects.filter(vendor=self.vendor, name=self.name).exists():
             raise ValidationError({
                 "name": ValidationError("group name already defined for this vendor")
             })
@@ -353,10 +354,189 @@ class Product(models.Model):
                         )
                 })
 
+    def has_migration_options(self):
+        return self.productmigrationoption_set.exists()
+
+    def get_preferred_replacement_option(self):
+        if self.has_migration_options():
+            return self.get_migration_path(self.productmigrationoption_set.all().first().migration_source.name)[-1]
+        return None
+
+    def get_migration_path(self, migration_source_name=None):
+        """
+        recursive lookup of the given migration source name, result is an ordered list, the first element
+        is the direct replacemet and the last one is the valid replacement
+        """
+        if not migration_source_name:
+            if not self.productmigrationoption_set.all().exists():
+                return []
+
+            else:
+                # use the preferred path
+                migration_source_name = self.productmigrationoption_set.all().first().migration_source.name
+
+        if type(migration_source_name) is not str:
+            raise AttributeError("attribute 'migration_source_name' must be a string")
+
+        result = []
+        if self.productmigrationoption_set.filter(migration_source__name=migration_source_name).exists():
+            result.append(self.productmigrationoption_set.filter(migration_source__name=migration_source_name).first())
+
+            while True:
+                # test, that the product migration option is valid and that a replacement_product_id exists
+                if not result[-1].is_valid_replacement() and result[-1].replacement_product_id:
+                    # test if it is in the database
+                    if result[-1].is_replacement_in_db():
+                        # get replacement product ID from database
+                        p = Product.objects.get(product_id=result[-1].replacement_product_id)
+                        if p.productmigrationoption_set.filter(migration_source__name=migration_source_name).exists():
+                            result.append(
+                                p.productmigrationoption_set.filter(migration_source__name=migration_source_name).first()
+                            )
+                        else:
+                            break
+                    else:
+                        break
+                else:
+                    break
+
+        return result
+
+    def get_product_migration_source_names_set(self):
+        return list(self.productmigrationoption_set.all().values_list("migration_source__name", flat=True))
+
     class Meta:
         verbose_name = "product"
         verbose_name_plural = "products"
         ordering = ('product_id',)
+
+
+class ProductMigrationSource(models.Model):
+    name = models.CharField(
+        help_text="name of the migration source",
+        unique=True,
+        max_length=255
+    )
+
+    description = models.TextField(
+        help_text="",
+        max_length=4096,
+        blank=True,
+        null=True
+    )
+
+    preference = models.PositiveSmallIntegerField(
+        help_text="preference value, identifies which source is preferred over another (100 is most preferred)",
+        validators=[
+            MaxValueValidator(100),
+            MinValueValidator(1)
+        ],
+        default=50
+    )
+
+    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
+        self.full_clean()
+        super().save(force_insert, force_update, using, update_fields)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = "product migration source"
+        verbose_name_plural = "product migration sources"
+        ordering = ["-preference", "name"]  # sort descending, that the most preferred source is always on op
+
+
+class ProductMigrationOption(models.Model):
+    product = models.ForeignKey(Product)
+    migration_source = models.ForeignKey(ProductMigrationSource)
+
+    replacement_product_id = models.CharField(
+        max_length=512,
+        help_text="the suggested replacement option",
+        null=False,
+        blank=True
+    )
+    comment = models.TextField(
+        max_length=4096,
+        help_text="comment from the group (optional)",
+        null=False,
+        blank=True
+    )
+
+    migration_product_info_url = models.URLField(
+        null=True,
+        blank=True,
+        verbose_name="Migration Product Info URL",
+        help_text="Migration Product Information URL"
+    )
+
+    def is_replacement_in_db(self):
+        """True, if the replacement product is part of the database"""
+        try:
+            if self.replacement_product_id:
+                Product.objects.get(product_id=self.replacement_product_id)
+                return True
+
+        except models.ObjectDoesNotExist:
+            pass
+
+        return False
+
+    def get_product_replacement_id(self):
+        """returns the product ID of the replacement, if not defined or not in the database, result is None"""
+        if self.is_replacement_in_db():
+            return Product.objects.get(product_id=self.replacement_product_id).id
+
+        else:
+            return None
+
+    def is_valid_replacement(self):
+        """Check that the object is a valid replacement option. A replacement option is valid if
+         * a replacement Product ID is set and not part of the database
+         * a replacement Product ID is set and part of the database (only, if the Product is not EoL announced)
+        """
+        if self.replacement_product_id:
+            if self.is_replacement_in_db():
+                # replacement product ID is part of the database
+                p = Product.objects.get(product_id=self.replacement_product_id)
+                if not p.end_of_sale_date or p.current_lifecycle_states == [Product.NO_EOL_ANNOUNCEMENT_STR]:
+                    # product is not EoL and therefore valid
+                    return True
+
+                else:
+                    return False
+
+            else:
+                return True
+
+        return False
+
+    def get_valid_replacement_product(self):
+        """get a valid replacement product for this migration source"""
+        try:
+            if self.is_valid_replacement():
+                return Product.objects.get(product_id=self.replacement_product_id)
+
+            else:
+                return None
+
+        except models.ObjectDoesNotExist:
+            return None
+
+    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
+        self.full_clean()
+        super().save(force_insert, force_update, using, update_fields)
+
+    def __str__(self):
+        return "replacement option for %s" % self.product.product_id
+
+    class Meta:
+        # only a single migration option is allowed per migration source
+        unique_together = ["product", "migration_source"]
+        ordering = ["-migration_source__preference"]  # first element is from the source that is most preferred
+        verbose_name = "product migration option"
+        verbose_name_plural = "product migration options"
 
 
 class ProductList(models.Model):
@@ -458,6 +638,6 @@ class UserProfile(models.Model):
 
 @receiver(post_save, sender=User)
 def create_user_profile_if_not_exist(sender, instance, **kwargs):
-    if UserProfile.objects.filter(user=instance).count() < 1:
+    if not UserProfile.objects.filter(user=instance).exists():
         # create new user profile with default options
         UserProfile.objects.create(user=instance)

@@ -7,6 +7,7 @@ from django.contrib.admin.sites import AdminSite
 from mixer.backend.django import mixer
 from app.productdb import models
 from app.productdb import admin
+from app.productdb.models import ProductMigrationSource
 
 pytestmark = pytest.mark.django_db
 
@@ -51,3 +52,88 @@ class TestProductAdmin:
         expected = ""
 
         assert result == expected, "should return a HTML representation of the current lifecycle states"
+
+    @pytest.mark.usefixtures("import_default_vendors")
+    def test_has_valid_migration_options(self):
+        site = AdminSite()
+        product_admin = admin.ProductAdmin(models.Product, site)
+        obj = mixer.blend(
+            "productdb.Product",
+            name="Product",
+            eox_update_time_stamp=None
+        )
+
+        result = product_admin.has_migration_options(obj)
+        expected = False
+        assert result == expected
+
+        mixer.blend(
+            "productdb.ProductMigrationOption",
+            product=obj,
+            migration_source=ProductMigrationSource.objects.create(name="test")
+        )
+
+        result = product_admin.has_migration_options(obj)
+        expected = True
+        assert result == expected
+
+    @pytest.mark.usefixtures("import_default_vendors")
+    def test_preferred_replacement_option(self):
+        site = AdminSite()
+        product_admin = admin.ProductAdmin(models.Product, site)
+        obj = mixer.blend(
+            "productdb.Product",
+            name="Product",
+            eox_update_time_stamp=None
+        )
+
+        result = product_admin.preferred_replacement_option(obj)
+        expected = ""
+        assert result == expected
+
+        mixer.blend(
+            "productdb.ProductMigrationOption",
+            product=obj,
+            migration_source=ProductMigrationSource.objects.create(name="test"),
+            replacement_product_id="MyProductId"
+        )
+
+        result = product_admin.preferred_replacement_option(obj)
+        expected = "MyProductId"
+        assert result == expected
+
+    @pytest.mark.usefixtures("import_default_vendors")
+    def test_product_migration_source_names_set(self):
+        site = AdminSite()
+        product_admin = admin.ProductAdmin(models.Product, site)
+        obj = mixer.blend(
+            "productdb.Product",
+            name="Product",
+            eox_update_time_stamp=None
+        )
+
+        result = product_admin.product_migration_source_names(obj)
+        expected = ""
+        assert result == expected
+
+        mixer.blend(
+            "productdb.ProductMigrationOption",
+            product=obj,
+            migration_source=ProductMigrationSource.objects.create(name="test"),
+            replacement_product_id="MyProductId"
+        )
+
+        result = product_admin.product_migration_source_names(obj)
+        expected = "test"
+        assert result == expected
+        mixer.blend(
+            "productdb.ProductMigrationOption",
+            product=obj,
+            migration_source=ProductMigrationSource.objects.create(name="test2"),
+            replacement_product_id="MyProductId"
+        )
+
+        result = product_admin.product_migration_source_names(obj)
+        expected = "test\ntest2"
+        assert result == expected
+

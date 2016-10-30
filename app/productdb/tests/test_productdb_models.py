@@ -10,7 +10,8 @@ from django.core.exceptions import ValidationError
 from django.core.files import File
 from django.db.models import QuerySet
 from mixer.backend.django import mixer
-from app.productdb.models import Vendor, ProductList, JobFile, Product, UserProfile, ProductGroup
+from app.productdb.models import Vendor, ProductList, JobFile, Product, UserProfile, ProductGroup, ProductMigrationSource, \
+    ProductMigrationOption
 
 pytestmark = pytest.mark.django_db
 
@@ -490,3 +491,317 @@ class TestUserProfile:
         up = UserProfile.objects.get_by_natural_key(u.username)
         assert up is not None
         assert up.natural_key() == "test_user"
+
+
+class TestProductMigrationSource:
+    def test_model(self):
+        pmiggrp = ProductMigrationSource.objects.create(name="Test", description="description")
+
+        assert str(pmiggrp) == "Test"
+        assert pmiggrp.preference == 50, "Default value"
+
+        # test ordering
+        pmiggrp2 = ProductMigrationSource.objects.create(
+            name="Test2", preference=70
+        )
+
+        assert ProductMigrationSource.objects.count() == 2
+        assert ProductMigrationSource.objects.all().first().name == pmiggrp2.name
+
+        # test second
+        ProductMigrationSource.objects.create(
+            name="Test3", preference=70
+        )
+
+        assert ProductMigrationSource.objects.count() == 3
+        assert ProductMigrationSource.objects.all().first().name == pmiggrp2.name
+
+    def test_unique_name(self):
+        test_name = "Test Migration Source"
+        mixer.blend("productdb.ProductMigrationSource", name=test_name)
+
+        with pytest.raises(ValidationError) as exinfo:
+            ProductMigrationSource.objects.create(name=test_name)
+
+        assert exinfo.match("\'name\': \[\'Product migration source with this Name already exists.\'\]")
+
+
+@pytest.mark.usefixtures("import_default_vendors")
+class TestProductMigrationOption:
+    def test_model(self):
+        test_product_id = "My Product ID"
+        replacement_product_id = "replaced product"
+        p = mixer.blend(
+            "productdb.Product",
+            product_id=test_product_id,
+            vendor=Vendor.objects.get(id=1)
+        )
+        repl_p = mixer.blend("productdb.Product", product_id=replacement_product_id)
+        promiggrp = ProductMigrationSource.objects.create(name="Test")
+
+        with pytest.raises(ValidationError) as exinfo:
+            ProductMigrationOption.objects.create(
+                migration_source=promiggrp
+            )
+
+        assert exinfo.match("\'product\': \[\'This field cannot be null.\'\]")
+
+        with pytest.raises(ValidationError) as exinfo:
+            ProductMigrationOption.objects.create(
+                product=p
+            )
+
+        assert exinfo.match("\'migration_source\': \[\'This field cannot be null.\'\]")
+
+        # test replacement_product_id with a product ID that is not in the database
+        pmo = ProductMigrationOption.objects.create(
+            product=p,
+            migration_source=promiggrp,
+            replacement_product_id="Missing Product"
+        )
+
+        assert pmo.is_replacement_in_db() is False
+        assert pmo.get_product_replacement_id() is None
+        assert pmo.is_valid_replacement() is True
+        assert pmo.get_valid_replacement_product() is None
+        assert str(pmo) == "replacement option for %s" % p.product_id
+        pmo.delete()
+
+        # test replacement_product_id with a product ID that is in the database
+        pmo2 = ProductMigrationOption.objects.create(
+            product=p,
+            migration_source=promiggrp,
+            replacement_product_id=replacement_product_id
+        )
+
+        assert pmo2.is_valid_replacement() is True
+        assert pmo2.is_replacement_in_db() is True
+        assert pmo2.get_product_replacement_id() == repl_p.id
+        assert pmo2.get_valid_replacement_product().id == repl_p.id
+        assert pmo2.get_valid_replacement_product().product_id == replacement_product_id
+
+        # test replacement_product_id with a product ID that is in the database but EoL announced
+        p = mixer.blend(
+            "productdb.Product",
+            product_id="eol_product",
+            vendor=Vendor.objects.get(id=1),
+            eox_update_time_stamp=datetime.datetime.utcnow(),
+            eol_ext_announcement_date=datetime.date(2016, 1, 1),
+            end_of_sale_date=datetime.date(2016, 1, 1)
+        )
+        assert p.current_lifecycle_states == [Product.END_OF_SALE_STR]
+
+        pmo3 = ProductMigrationOption.objects.create(
+            product=p,
+            migration_source=promiggrp,
+            replacement_product_id="eol_product",
+        )
+
+        assert pmo3.is_valid_replacement() is False, "Should be False, because the product is EoL announced"
+        assert pmo3.is_replacement_in_db() is True
+        assert pmo3.get_valid_replacement_product() is None
+
+    def test_unique_together_constraint(self):
+        p = mixer.blend(
+            "productdb.Product",
+            product_id="Product",
+            vendor=Vendor.objects.get(id=1)
+        )
+        promiggrp = ProductMigrationSource.objects.create(name="Test")
+        ProductMigrationOption.objects.create(migration_source=promiggrp, product=p)
+
+        with pytest.raises(ValidationError) as exinfo:
+            ProductMigrationOption.objects.create(migration_source=promiggrp, product=p)
+
+        assert exinfo.match("Product migration option with this Product and Migration source already exists.")
+
+    def test_product_migration_group_set(self):
+        test_product_id = "My Product ID"
+        p = mixer.blend(
+            "productdb.Product",
+            product_id=test_product_id,
+            vendor=Vendor.objects.get(id=1)
+        )
+        assert p.get_product_migration_source_names_set() == []
+
+        promiggrp = ProductMigrationSource.objects.create(name="Test")
+        ProductMigrationOption.objects.create(
+            product=p,
+            migration_source=promiggrp,
+            replacement_product_id="Missing Product"
+        )
+        p.refresh_from_db()
+
+        assert p.get_product_migration_source_names_set() == ["Test"]
+
+        # test with additional migration group
+        promiggrp2 = ProductMigrationSource.objects.create(name="Test 2")
+        ProductMigrationOption.objects.create(
+            product=p,
+            migration_source=promiggrp2,
+            replacement_product_id="Additional Missing Product"
+        )
+        p.refresh_from_db()
+
+        assert p.get_product_migration_source_names_set() == ["Test", "Test 2"]
+
+    def test_no_migration_option_provided_in_product(self):
+        test_product_id = "My Product ID"
+        p = mixer.blend(
+            "productdb.Product",
+            product_id=test_product_id,
+            vendor=Vendor.objects.get(id=1)
+        )
+
+        assert p.has_migration_options() is False
+        assert p.get_preferred_replacement_option() is None
+
+    def test_single_valid_migration_option_provided_in_product(self):
+        test_product_id = "My Product ID"
+        p = mixer.blend(
+            "productdb.Product",
+            product_id=test_product_id,
+            vendor=Vendor.objects.get(id=1)
+        )
+        promiggrp = ProductMigrationSource.objects.create(name="Test")
+        pmo = ProductMigrationOption.objects.create(
+            product=p,
+            migration_source=promiggrp,
+            replacement_product_id="Missing Product"
+        )
+
+        p.refresh_from_db()
+
+        assert p.has_migration_options() is True
+        assert p.get_preferred_replacement_option() == pmo
+        assert pmo.is_valid_replacement() is True
+
+    def test_single_valid_migration_option_provided_in_product_without_replacement_id(self):
+        test_product_id = "My Product ID"
+        p = mixer.blend(
+            "productdb.Product",
+            product_id=test_product_id,
+            vendor=Vendor.objects.get(id=1)
+        )
+        promiggrp = ProductMigrationSource.objects.create(name="Test")
+        pmo = ProductMigrationOption.objects.create(
+            product=p,
+            migration_source=promiggrp
+        )
+
+        p.refresh_from_db()
+
+        assert p.has_migration_options() is True
+        assert p.get_preferred_replacement_option() == pmo
+        assert pmo.is_valid_replacement() is False
+
+    def test_multiple_migration_options_provided_in_product(self):
+        test_product_id = "My Product ID"
+        p = mixer.blend(
+            "productdb.Product",
+            product_id=test_product_id,
+            vendor=Vendor.objects.get(id=1)
+        )
+        promiggrp = ProductMigrationSource.objects.create(name="Test")
+        preferred_promiggrp = ProductMigrationSource.objects.create(name="Test2", preference=100)
+        pmo = ProductMigrationOption.objects.create(
+            product=p,
+            migration_source=promiggrp,
+            replacement_product_id="Missing Product"
+        )
+        pmo2 = ProductMigrationOption.objects.create(
+            product=p,
+            migration_source=preferred_promiggrp,
+            replacement_product_id="Another Missing Product"
+        )
+
+        p.refresh_from_db()
+
+        assert p.has_migration_options() is True
+        assert p.get_preferred_replacement_option() != pmo
+        assert p.get_preferred_replacement_option() == pmo2
+        assert pmo.is_valid_replacement() is True, "It is also a valid migration option, even if not the preferred one"
+        assert pmo2.is_valid_replacement() is True
+
+    def test_get_migration_path(self):
+        # create basic object structure
+        group1 = ProductMigrationSource.objects.create(name="Group One")
+        group2 = ProductMigrationSource.objects.create(name="Group Two", preference=100)
+        root_product = mixer.blend(
+            "productdb.Product",
+            product_id="C2960XS",
+            vendor=Vendor.objects.get(id=1)
+        )
+        p11 = mixer.blend(
+            "productdb.Product",
+            product_id="C2960XL",
+            vendor=Vendor.objects.get(id=1)
+        )
+        p12 = mixer.blend(
+            "productdb.Product",
+            product_id="C2960XT",
+            vendor=Vendor.objects.get(id=1)
+        )
+        p23 = mixer.blend(
+            "productdb.Product",
+            product_id="C2960XR",
+            vendor=Vendor.objects.get(id=1)
+        )
+        # root is replaced by 11 by Group One and by 12 by Group Two
+        ProductMigrationOption.objects.create(
+            product=root_product,
+            migration_source=group1,
+            replacement_product_id=p11.product_id
+        )
+        ProductMigrationOption.objects.create(
+            product=root_product,
+            migration_source=group2,
+            replacement_product_id=p12.product_id
+        )
+        # p12 is replaced by 23 by group 2
+        ProductMigrationOption.objects.create(
+            product=p12,
+            migration_source=group2,
+            replacement_product_id=p23.product_id
+        )
+
+        # get the preferred group for the root product
+        assert root_product.get_preferred_replacement_option().migration_source.name == group2.name
+
+        # get the new migration path for the preferred group
+        group2_migrations = root_product.get_migration_path()
+
+        expected_replacement_paths_and_order = ["C2960XT"]
+        read_list = [e.replacement_product_id for e in group2_migrations]
+        assert len(group2_migrations) == 1
+        assert group2_migrations[0].migration_source.name == "Group Two"
+        assert expected_replacement_paths_and_order == read_list
+
+        # the replacement option is now end of life
+        p12.eol_ext_announcement_date = datetime.date(2016, 1, 1)
+        p12.end_of_sale_date = datetime.date(2016, 1, 1)
+        p12.save()
+
+        # get the new migration path for the preferred group
+        group2_migrations = root_product.get_migration_path()
+
+        expected_replacement_paths_and_order = ["C2960XT", "C2960XR"]
+        read_list = [e.replacement_product_id for e in group2_migrations]
+        assert len(group2_migrations) == 2
+        assert group2_migrations[0].migration_source.name == "Group Two"
+        assert expected_replacement_paths_and_order == read_list
+
+        # test with valid product (empty list is expected)
+        p11_preferred_migration = p11.get_migration_path()
+        assert p11_preferred_migration == []
+
+        # get the migration path for the other group
+        group1_migration = root_product.get_migration_path(group1.name)
+        expected_replacement_paths_and_order = ["C2960XL"]
+        read_list = [e.replacement_product_id for e in group1_migration]
+        assert len(group1_migration) == 1
+        assert expected_replacement_paths_and_order == read_list
+
+        # test invalid call
+        with pytest.raises(AttributeError):
+            p11.get_migration_path(123)
