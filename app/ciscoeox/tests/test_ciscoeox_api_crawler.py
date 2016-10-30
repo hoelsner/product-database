@@ -10,7 +10,7 @@ from requests import Response
 from app.ciscoeox import api_crawler
 from app.ciscoeox.exception import CiscoApiCallFailed, ConnectionFailedException
 from app.config.settings import AppSettings
-from app.productdb.models import Vendor, Product
+from app.productdb.models import Vendor, Product, ProductMigrationSource, ProductMigrationOption
 
 pytestmark = pytest.mark.django_db
 HIT_COUNT = 0
@@ -90,6 +90,86 @@ def test_product_id_in_database(monkeypatch):
     monkeypatch.setattr(Product.objects, "filter", lambda: unexpected_exception)
 
     assert api_crawler.product_id_in_database(test_query) is False
+
+
+@pytest.mark.usefixtures("import_default_vendors")
+def test_migration_options_from_update_local_db_based_on_eox_record():
+    mixer.blend("productdb.ProductGroup", name="Catalyst 2960")
+    assert Product.objects.count() == 0
+    assert ProductMigrationSource.objects.filter(name="Cisco EoX Migration option").count() == 0
+
+    # load eox_response with test migration data
+    with open("app/ciscoeox/tests/data/cisco_eox_reponse_migration_data.json") as f:
+        eox_records = json.loads(f.read())
+
+    # test with valid migration option
+    result = api_crawler.update_local_db_based_on_record(eox_records["EOXRecord"][0], create_missing=True)
+    assert result["created"] is True
+    assert result["updated"] is True
+    assert ProductMigrationSource.objects.filter(name="Cisco EoX Migration option").count() == 1
+
+    p = Product.objects.get(product_id="WS-C2950T-48-SI-WS", vendor=Vendor.objects.get(id=1))
+
+    assert p.has_migration_options() is True
+    assert p.get_product_migration_source_names_set() == ["Cisco EoX Migration option"]
+
+    pmo = p.get_preferred_replacement_option()
+    assert type(pmo) == ProductMigrationOption
+    assert pmo.replacement_product_id == "WS-C2960G-48TC-L"
+    assert pmo.comment == ""
+    assert pmo.migration_product_info_url == ""
+    assert pmo.is_replacement_in_db() is False
+    assert pmo.is_valid_replacement() is True
+    assert pmo.get_valid_replacement_product() is None
+
+    # create product in database (state of the PMO should change)
+    rep = mixer.blend("productdb.Product", product_id="WS-C2960G-48TC-L", vendor=Vendor.objects.get(id=1))
+    pmo.refresh_from_db()
+    assert pmo.is_replacement_in_db() is True
+    assert pmo.get_valid_replacement_product().product_id == rep.product_id
+
+    # test with missing replacement product
+    result = api_crawler.update_local_db_based_on_record(eox_records["EOXRecord"][1], create_missing=True)
+    assert result["created"] is True
+    assert result["updated"] is True
+    assert ProductMigrationSource.objects.filter(name="Cisco EoX Migration option").count() == 1
+
+    p = Product.objects.get(product_id="WS-C2950G-24-EI", vendor=Vendor.objects.get(id=1))
+
+    assert p.has_migration_options() is True
+    assert p.get_product_migration_source_names_set() == ["Cisco EoX Migration option"]
+
+    pmo = p.get_preferred_replacement_option()
+    assert type(pmo) == ProductMigrationOption
+    assert pmo.replacement_product_id == ""
+    assert pmo.comment == "No Replacement Available"
+    assert pmo.migration_product_info_url == "http://www.cisco.com/en/US/products/ps10538/index.html"
+    assert pmo.is_replacement_in_db() is False
+    assert pmo.is_valid_replacement() is False
+    assert pmo.get_valid_replacement_product() is None
+
+    # test with custom migration (no direct link to a product)
+    result = api_crawler.update_local_db_based_on_record(eox_records["EOXRecord"][2], create_missing=True)
+    assert result["created"] is True
+    assert result["updated"] is True
+    assert ProductMigrationSource.objects.filter(name="Cisco EoX Migration option").count() == 1
+
+    p = Product.objects.get(product_id="WS-C2950G-48-EI-WS", vendor=Vendor.objects.get(id=1))
+
+    assert p.has_migration_options() is True
+    assert p.get_product_migration_source_names_set() == ["Cisco EoX Migration option"]
+
+    pmo = p.get_preferred_replacement_option()
+    assert type(pmo) == ProductMigrationOption
+    assert pmo.replacement_product_id == ""
+    assert pmo.comment == "Customers are encouraged to migrate to the Cisco 8540 Wireless Controller. Information " \
+                          "about this product can be found at http://www.cisco.com/c/en/us/products/wireless/8540-" \
+                          "wireless-controller/index.html."
+    assert pmo.migration_product_info_url == "http://www.cisco.com/c/en/us/products/wireless/8540-wireless-" \
+                                             "controller/index.html"
+    assert pmo.is_replacement_in_db() is False
+    assert pmo.is_valid_replacement() is False
+    assert pmo.get_valid_replacement_product() is None
 
 
 @pytest.mark.usefixtures("import_default_vendors")
@@ -672,3 +752,92 @@ class TestUpdateCiscoEoxDatabase:
                 assert e["message"] is None
 
         assert Product.objects.count() == 1, "No products are created, because the creation mode is disabled by default"
+
+    @pytest.mark.usefixtures("mock_cisco_api_authentication_server")
+    @pytest.mark.usefixtures("enabled_autocreate_new_products")
+    @pytest.mark.usefixtures("enable_cisco_api")
+    def test_offline_valid_update_cisco_eox_database_with_invalid_content_in_api_response(self, monkeypatch):
+        # mock the underlying GET request
+        def mock_response():
+            r = Response()
+            r.status_code = 200
+            with open("app/ciscoeox/tests/data/cisco_eox_response_page_1_of_1.json") as f:
+                content = f.read()
+
+            # modify the URL parameter in the migration data (every import should fail)
+            json_content = json.loads(content)
+            for c in range(0, len(json_content["EOXRecord"])):
+                json_content["EOXRecord"][c]["EOXMigrationDetails"]["MigrationProductInfoURL"] = "()asdf"
+
+            r._content = json.dumps(json_content).encode("utf-8")
+
+            return r
+
+        monkeypatch.setattr(requests, "get", lambda x, headers: mock_response())
+
+        result = api_crawler.update_cisco_eox_database("WS-C2950G-48-EI-WS")
+        assert len(result) == 3, "Three products should be detected"
+        # every body should contain a specific message
+        for e in result:
+            assert "message" in e
+            assert e["message"] == "invalid data received from Cisco EoX API, import incomplete"
+
+        assert Product.objects.count() == 3, "Products are created"
+        assert ProductMigrationOption.objects.count() == 3, "Migration data are created"
+
+    @pytest.mark.usefixtures("mock_cisco_api_authentication_server")
+    @pytest.mark.usefixtures("enabled_autocreate_new_products")
+    @pytest.mark.usefixtures("enable_cisco_api")
+    def test_offline_valid_update_cisco_eox_database_with_multiple_urls_in_api_reponse(self, monkeypatch):
+        # mock the underlying GET request
+        def mock_response():
+            r = Response()
+            r.status_code = 200
+            with open("app/ciscoeox/tests/data/cisco_eox_response_page_1_of_1.json") as f:
+                content = f.read()
+
+            # modify the URL parameter in the migration data (every import should fail)
+            json_content = json.loads(content)
+            values = [
+                "http://localhost;",
+                "http://localhost;",
+                "http://localhost and http://another-localhost",
+            ]
+            for c in range(0, len(json_content["EOXRecord"])):
+                json_content["EOXRecord"][c]["EOXMigrationDetails"]["MigrationProductInfoURL"] = values[c % 3]
+
+            r._content = json.dumps(json_content).encode("utf-8")
+
+            return r
+
+        monkeypatch.setattr(requests, "get", lambda x, headers: mock_response())
+
+        result = api_crawler.update_cisco_eox_database("WS-C2950G-48-EI-WS")
+        assert len(result) == 3, "Three products should be detected"
+        # every body should contain a specific message
+        for e in result:
+            assert "message" in e
+            assert e["message"] == "multiple URL values received, only the first one is saved"
+
+        assert Product.objects.count() == 3, "Products are created"
+        assert ProductMigrationOption.objects.count() == 3, "Migration data are created"
+
+    def test_clean_url_values(self):
+        test_sets = {
+            # input, expected
+            "": "",
+            " ": "",
+            "http://localhost": "http://localhost",
+            "https://localhost": "https://localhost",
+            "https://localhost;http://another_localhost": "https://localhost",
+            "https://localhost and http://another_localhost": "https://localhost",
+            "https://localhost and https://another_localhost": "https://localhost",
+            "https://localhost; and http://another_localhost": "https://localhost",
+            "https://localhost; and https://another_localhost": "https://localhost",
+            "https://localhost http://another_localhost": "https://localhost",
+            "https://localhost https://another_localhost": "https://localhost",
+        }
+
+        for input, exp_output in test_sets.items():
+            output = api_crawler.clean_api_url_response(input)
+            assert output == exp_output

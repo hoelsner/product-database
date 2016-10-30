@@ -4,10 +4,11 @@ import logging
 from reversion import revisions as reversion
 from django.db import transaction
 from django.utils.datetime_safe import datetime
+from django.core.exceptions import ValidationError
 from app.ciscoeox.exception import ConnectionFailedException, CiscoApiCallFailed
 from app.ciscoeox.base_api import CiscoEoxApi
 from app.config.settings import AppSettings
-from app.productdb.models import Product, Vendor
+from app.productdb.models import Product, Vendor, ProductMigrationSource, ProductMigrationOption
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +38,24 @@ def product_id_in_database(product_id):
     except:
         logger.debug("Cannot find product %s in database" % product_id, exc_info=True)
         return False
+
+
+def clean_api_url_response(url_response):
+    """
+    clean the string to a valid URL field (used with API data, because sometimes there are multiple or entries
+    """
+    clean_response = url_response.strip()
+    if url_response != "":
+        clean_response = clean_response if ";" not in clean_response else clean_response.split(";")[0]
+        clean_response = clean_response if " and http://" not in clean_response \
+            else clean_response.split(" and http://")[0]
+        clean_response = clean_response if " http://" not in clean_response \
+            else clean_response.split(" http://")[0]
+        clean_response = clean_response if " and https://" not in clean_response \
+            else clean_response.split(" and https://")[0]
+        clean_response = clean_response if " https://" not in clean_response \
+            else clean_response.split(" https://")[0]
+    return clean_response
 
 
 def update_local_db_based_on_record(eox_record, create_missing=False):
@@ -147,6 +166,44 @@ def update_local_db_based_on_record(eox_record, create_missing=False):
         result_record["message"] = "Update failed: %s" % str(ex)
         return result_record
 
+    # save migration information if defined
+    if "EOXMigrationDetails" in eox_record:
+        migration_details = eox_record["EOXMigrationDetails"]
+        product_migration_source, created = ProductMigrationSource.objects.get_or_create(
+            name="Cisco EoX Migration option"
+        )
+
+        if created:
+            product_migration_source.description = "Migration option suggested by the Cisco EoX API."
+            product_migration_source.save()
+
+        if "MigrationOption" in migration_details:
+            # only a single migration option per migration source is allowed
+            pmo, _ = ProductMigrationOption.objects.get_or_create(product=product,
+                                                                  migration_source=product_migration_source)
+            if migration_details["MigrationOption"] == "Enter PID(s)":
+                # product replacement available, add replacement PID
+                pmo.replacement_product_id = migration_details["MigrationProductId"].strip()
+                pmo.migration_product_info_url = clean_api_url_response(migration_details["MigrationProductInfoURL"])
+
+            elif migration_details["MigrationOption"] == "See Migration Section" or \
+                    migration_details["MigrationOption"] == "Enter Product Name(s)":
+                # complex product migration, only add comment
+                mig_strat = migration_details["MigrationStrategy"].strip()
+                pmo.comment = mig_strat if mig_strat != "" else migration_details["MigrationProductName"].strip()
+                pmo.migration_product_info_url = clean_api_url_response(migration_details["MigrationProductInfoURL"])
+
+            else:
+                # no replacement available, only add comment
+                pmo.comment = migration_details["MigrationOption"].strip()  # some data separated by blank
+                pmo.migration_product_info_url = clean_api_url_response(migration_details["MigrationProductInfoURL"])
+
+            # add message if only a single entry was saved
+            if pmo.migration_product_info_url != migration_details["MigrationProductInfoURL"].strip():
+                result_record["message"] = "multiple URL values received, only the first one is saved"
+
+            pmo.save()
+
     return result_record
 
 
@@ -233,9 +290,18 @@ def update_cisco_eox_database(api_query):
                         })
 
                     else:
-                        res = update_local_db_based_on_record(record, create_missing)
-                        res["blacklist"] = False
-                        result_record.update(res)
+                        res = {}
+                        try:
+                            res = update_local_db_based_on_record(record, create_missing)
+
+                        except ValidationError:
+                            logger.error("invalid data received from Cisco API, cannot save data object for '%s'" % pid,
+                                         exc_info=True)
+                            result_record["message"] = "invalid data received from Cisco EoX API, import incomplete"
+
+                        finally:
+                            res["blacklist"] = False
+                            result_record.update(res)
 
                     results.append(result_record)
 
