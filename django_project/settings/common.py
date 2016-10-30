@@ -6,7 +6,7 @@ import os
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 print("Django BASE_DIR: %s" % BASE_DIR)
 
-INSTALLED_APPS = (
+INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -21,9 +21,9 @@ INSTALLED_APPS = (
     'app.productdb',
     'app.config',
     'app.ciscoeox',
-)
+]
 
-MIDDLEWARE_CLASSES = (
+MIDDLEWARE_CLASSES = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -33,7 +33,7 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'reversion.middleware.RevisionMiddleware',
-)
+]
 
 CACHES = {
     'default': {
@@ -62,6 +62,26 @@ TEMPLATES = [
         },
     },
 ]
+
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "PlsChgMe")
+
+# configure database settings
+DATABASE_NAME = os.getenv("PDB_DATABASE_NAME", "productdb_dev")
+DATABASE_USER = os.getenv("PDB_DATABASE_USER", "productdb")
+DATABASE_PASSWORD = os.getenv("PDB_DATABASE_PASSWORD", "productdb")
+DATABASE_HOST = os.getenv("PDB_DATABASE_HOST", "127.0.0.1")
+DATABASE_PORT = os.getenv("PDB_DATABASE_PORT", "5432")
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': DATABASE_NAME,
+        'USER': DATABASE_USER,
+        'PASSWORD': DATABASE_PASSWORD,
+        'HOST': DATABASE_HOST,
+        'PORT': DATABASE_PORT
+    }
+}
 
 WSGI_APPLICATION = 'django_project.wsgi.application'
 
@@ -118,6 +138,12 @@ if not os.path.exists(DATA_DIRECTORY):
     os.makedirs(DATA_DIRECTORY, exist_ok=True)
 
 ADD_REVERSION_ADMIN = True
+
+if os.getenv("PDB_DEBUG"):
+    # enable django debug toolbar (only installed with the dev requirements)
+    INTERNAL_IPS = ["127.0.0.1"]
+    INSTALLED_APPS += ['debug_toolbar']
+    MIDDLEWARE_CLASSES += ['debug_toolbar.middleware.DebugToolbarMiddleware']
 
 # Force HTTPs (should be used in production)
 if os.getenv("PDB_HTTPS_ONLY", False):

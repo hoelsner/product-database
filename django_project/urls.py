@@ -1,6 +1,7 @@
 """
 Django Project URL Configuration
 """
+from django.conf import settings
 from django.views.generic.base import RedirectView
 from django.conf.urls import include, url
 from django.contrib import admin
@@ -29,3 +30,10 @@ handler404 = 'django_project.views.custom_page_not_found_view'
 handler500 = 'django_project.views.custom_error_view'
 handler400 = 'django_project.views.custom_bad_request_view'
 handler403 = 'django_project.views.custom_permission_denied_view'
+
+# enable django debug toolbar if DEBUG mode is enabled
+if settings.DEBUG:
+    import debug_toolbar
+    urlpatterns += [
+        url(r'^__debug__/', include(debug_toolbar.urls)),
+    ]

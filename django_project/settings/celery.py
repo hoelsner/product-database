@@ -6,7 +6,7 @@ from django_project.settings.common import *
 # Celery configuration
 #
 import djcelery
-INSTALLED_APPS = INSTALLED_APPS + ('djcelery',)
+INSTALLED_APPS += ['djcelery']
 
 BROKER_URL = 'redis://localhost:6379'
 CELERY_RESULT_BACKEND = 'redis://localhost:6379'
