@@ -3,6 +3,7 @@ Settings file class for the product database
 """
 import logging
 from app.config.models import ConfigOption
+from django.core.cache import cache
 
 logger = logging.getLogger(__name__)
 
@@ -11,8 +12,20 @@ class AppSettings:
     """
     Product Database settings
     """
+    CONFIG_OPTIONS_DICT_CACHE_KEY = "PRODUCTDB_CONFIG_OPTIONS"
+
     def __init__(self):
-        self.create_defaults()
+        self._config_options = cache.get(self.CONFIG_OPTIONS_DICT_CACHE_KEY, None)
+        if not self._config_options or len(self._config_options) < 12:
+            # populate cache
+            self.create_defaults()
+            self._config_options = dict(ConfigOption.objects.all().values_list("key", "value"))
+            cache.set(self.CONFIG_OPTIONS_DICT_CACHE_KEY, self._config_options, timeout=None)
+
+    def _rebuild_config_cache(self):
+        cache.delete(self.CONFIG_OPTIONS_DICT_CACHE_KEY)
+        self._config_options = dict(ConfigOption.objects.all().values_list("key", "value"))
+        cache.set(self.CONFIG_OPTIONS_DICT_CACHE_KEY, self._config_options, timeout=None)
 
     def _set_boolean(self, config_object, value):
         if value:
@@ -36,67 +49,31 @@ class AppSettings:
         """
         create default configuration if not set
         """
-        co, created = ConfigOption.objects.get_or_create(key=ConfigOption.GLOBAL_CISCO_API_ENABLED)
-        if created:
-            co.value = "false"
-            co.save()
-
-        co, created = ConfigOption.objects.get_or_create(key=ConfigOption.GLOBAL_LOGIN_ONLY_MODE)
-        if created:
-            co.value = "false"
-            co.save()
-
-        co, created = ConfigOption.objects.get_or_create(key=ConfigOption.CISCO_API_CLIENT_ID)
-        if created:
-            co.value = "PlsChgMe"
-            co.save()
-
-        co, created = ConfigOption.objects.get_or_create(key=ConfigOption.CISCO_API_CLIENT_SECRET)
-        if created:
-            co.value = "PlsChgMe"
-            co.save()
-
-        co, created = ConfigOption.objects.get_or_create(key=ConfigOption.CISCO_EOX_CRAWLER_AUTO_SYNC)
-        if created:
-            co.value = "false"
-            co.save()
-
-        co, created = ConfigOption.objects.get_or_create(key=ConfigOption.CISCO_EOX_CRAWLER_CREATE_PRODUCTS)
-        if created:
-            co.value = "false"
-            co.save()
-
-        co, created = ConfigOption.objects.get_or_create(key=ConfigOption.CISCO_EOX_API_QUERIES)
-        if created:
-            co.value = ""
-            co.save()
-
-        co, created = ConfigOption.objects.get_or_create(key=ConfigOption.CISCO_EOX_PRODUCT_BLACKLIST_REGEX)
-        if created:
-            co.value = ""
-            co.save()
-
-        co, created = ConfigOption.objects.get_or_create(key=ConfigOption.GLOBAL_INTERNAL_PRODUCT_ID_LABEL)
-        if created:
-            co.value = "Internal Product ID"
-            co.save()
-
-        co, created = ConfigOption.objects.get_or_create(key=ConfigOption.CISCO_EOX_WAIT_TIME)
-        if created:
-            co.value = "5"
-            co.save()
-
-        ConfigOption.objects.get_or_create(key=ConfigOption.CISCO_EOX_CRAWLER_LAST_EXECUTION_TIME)
-        ConfigOption.objects.get_or_create(key=ConfigOption.CISCO_EOX_CRAWLER_LAST_EXECUTION_RESULT)
+        expected_defaults = {
+            ConfigOption.GLOBAL_CISCO_API_ENABLED: "false",
+            ConfigOption.GLOBAL_LOGIN_ONLY_MODE: "false",
+            ConfigOption.CISCO_API_CLIENT_ID: "PlsChgMe",
+            ConfigOption.CISCO_API_CLIENT_SECRET: "PlsChgMe",
+            ConfigOption.CISCO_EOX_CRAWLER_AUTO_SYNC: "false",
+            ConfigOption.CISCO_EOX_CRAWLER_CREATE_PRODUCTS: "false",
+            ConfigOption.CISCO_EOX_API_QUERIES: "",
+            ConfigOption.CISCO_EOX_PRODUCT_BLACKLIST_REGEX: "",
+            ConfigOption.GLOBAL_INTERNAL_PRODUCT_ID_LABEL: "Internal Product ID",
+            ConfigOption.CISCO_EOX_WAIT_TIME: "5",
+            ConfigOption.CISCO_EOX_CRAWLER_LAST_EXECUTION_TIME: None,
+            ConfigOption.CISCO_EOX_CRAWLER_LAST_EXECUTION_RESULT: None
+        }
+        for key, value in expected_defaults.items():
+            if not ConfigOption.objects.filter(key=key).exists():
+                co = ConfigOption.objects.create(key=key)
+                co.value = value
+                co.save()
 
     def is_login_only_mode(self):
         """
         True if the login only mode is enabled in the configuration, otherwise False
         """
-        co = ConfigOption.objects.get(key=ConfigOption.GLOBAL_LOGIN_ONLY_MODE)
-        v = co.value.strip()
-
-        return self._get_boolean(v)
+        return self._get_boolean(self._config_options[ConfigOption.GLOBAL_LOGIN_ONLY_MODE])
 
     def set_login_only_mode(self, value):
         """
@@ -104,15 +81,13 @@ class AppSettings:
         """
         co = ConfigOption.objects.get(key=ConfigOption.GLOBAL_LOGIN_ONLY_MODE)
         self._set_boolean(co, value)
+        self._rebuild_config_cache()
 
     def is_cisco_api_enabled(self):
         """
         True if the Cisco API is enabled in the configuration, otherwise False
         """
-        co = ConfigOption.objects.get(key=ConfigOption.GLOBAL_CISCO_API_ENABLED)
-        v = co.value.strip()
-
-        return self._get_boolean(v)
+        return self._get_boolean(self._config_options[ConfigOption.GLOBAL_CISCO_API_ENABLED])
 
     def set_cisco_api_enabled(self, value):
         """
@@ -120,15 +95,13 @@ class AppSettings:
         """
         co = ConfigOption.objects.get(key=ConfigOption.GLOBAL_CISCO_API_ENABLED)
         self._set_boolean(co, value)
+        self._rebuild_config_cache()
 
     def is_periodic_sync_enabled(self):
         """
         True if new products should be created during the sync
         """
-        co = ConfigOption.objects.get(key=ConfigOption.CISCO_EOX_CRAWLER_AUTO_SYNC)
-        v = co.value.strip()
-
-        return self._get_boolean(v)
+        return self._get_boolean(self._config_options[ConfigOption.CISCO_EOX_CRAWLER_AUTO_SYNC])
 
     def set_periodic_sync_enabled(self, value):
         """
@@ -136,15 +109,13 @@ class AppSettings:
         """
         co = ConfigOption.objects.get(key=ConfigOption.CISCO_EOX_CRAWLER_AUTO_SYNC)
         self._set_boolean(co, value)
+        self._rebuild_config_cache()
 
     def is_auto_create_new_products(self):
         """
         True if new products should be created during the sync
         """
-        co = ConfigOption.objects.get(key=ConfigOption.CISCO_EOX_CRAWLER_CREATE_PRODUCTS)
-        v = co.value.strip()
-
-        return self._get_boolean(v)
+        return self._get_boolean(self._config_options[ConfigOption.CISCO_EOX_CRAWLER_CREATE_PRODUCTS])
 
     def set_auto_create_new_products(self, value):
         """
@@ -152,13 +123,14 @@ class AppSettings:
         """
         co = ConfigOption.objects.get(key=ConfigOption.CISCO_EOX_CRAWLER_CREATE_PRODUCTS)
         self._set_boolean(co, value)
+        self._rebuild_config_cache()
 
     def get_cisco_eox_api_queries(self):
         """
         get Cisco EoX API queries
         """
-        co = ConfigOption.objects.get(key=ConfigOption.CISCO_EOX_API_QUERIES)
-        return co.value.strip()
+        return self._config_options[ConfigOption.CISCO_EOX_API_QUERIES]\
+            if self._config_options[ConfigOption.CISCO_EOX_API_QUERIES] else ""
 
     def get_cisco_eox_api_queries_as_list(self):
         """
@@ -177,13 +149,14 @@ class AppSettings:
         co = ConfigOption.objects.get(key=ConfigOption.CISCO_EOX_API_QUERIES)
         co.value = value
         co.save()
+        self._rebuild_config_cache()
 
     def get_product_blacklist_regex(self):
         """
         get Cisco EoX API queries
         """
-        co = ConfigOption.objects.get(key=ConfigOption.CISCO_EOX_PRODUCT_BLACKLIST_REGEX)
-        return co.value.strip()
+        return self._config_options[ConfigOption.CISCO_EOX_PRODUCT_BLACKLIST_REGEX]\
+            if self._config_options[ConfigOption.CISCO_EOX_PRODUCT_BLACKLIST_REGEX] else ""
 
     def set_product_blacklist_regex(self, value):
         """
@@ -192,13 +165,13 @@ class AppSettings:
         co = ConfigOption.objects.get(key=ConfigOption.CISCO_EOX_PRODUCT_BLACKLIST_REGEX)
         co.value = value
         co.save()
+        self._rebuild_config_cache()
 
     def get_cisco_api_client_id(self):
         """
         get Cisco API Client ID
         """
-        co = ConfigOption.objects.get(key=ConfigOption.CISCO_API_CLIENT_ID)
-        return co.value.strip()
+        return self._config_options[ConfigOption.CISCO_API_CLIENT_ID]
 
     def set_cisco_api_client_id(self, value):
         """
@@ -207,13 +180,13 @@ class AppSettings:
         co = ConfigOption.objects.get(key=ConfigOption.CISCO_API_CLIENT_ID)
         co.value = value
         co.save()
+        self._rebuild_config_cache()
 
     def get_cisco_api_client_secret(self):
         """
         get Cisco API Client secret
         """
-        co = ConfigOption.objects.get(key=ConfigOption.CISCO_API_CLIENT_SECRET)
-        return co.value.strip()
+        return self._config_options[ConfigOption.CISCO_API_CLIENT_SECRET]
 
     def set_cisco_api_client_secret(self, value):
         """
@@ -222,13 +195,13 @@ class AppSettings:
         co = ConfigOption.objects.get(key=ConfigOption.CISCO_API_CLIENT_SECRET)
         co.value = value
         co.save()
+        self._rebuild_config_cache()
 
     def get_cisco_eox_api_auto_sync_last_execution_time(self):
         """
         get the last execution time of the EoX API auto sync
         """
-        co = ConfigOption.objects.get(key=ConfigOption.CISCO_EOX_CRAWLER_LAST_EXECUTION_TIME)
-        return co.value.strip()
+        return self._config_options[ConfigOption.CISCO_EOX_CRAWLER_LAST_EXECUTION_TIME]
 
     def set_cisco_eox_api_auto_sync_last_execution_time(self, value):
         """
@@ -237,13 +210,13 @@ class AppSettings:
         co = ConfigOption.objects.get(key=ConfigOption.CISCO_EOX_CRAWLER_LAST_EXECUTION_TIME)
         co.value = value
         co.save()
+        self._rebuild_config_cache()
 
     def get_cisco_eox_api_auto_sync_last_execution_result(self):
         """
         get the last execution result of the EoX API auto sync
         """
-        co = ConfigOption.objects.get(key=ConfigOption.CISCO_EOX_CRAWLER_LAST_EXECUTION_RESULT)
-        return co.value
+        return self._config_options[ConfigOption.CISCO_EOX_CRAWLER_LAST_EXECUTION_RESULT]
 
     def set_cisco_eox_api_auto_sync_last_execution_result(self, value):
         """
@@ -252,13 +225,13 @@ class AppSettings:
         co = ConfigOption.objects.get(key=ConfigOption.CISCO_EOX_CRAWLER_LAST_EXECUTION_RESULT)
         co.value = value
         co.save()
+        self._rebuild_config_cache()
 
     def get_internal_product_id_label(self):
         """
         get the custom label for the internal product ID
         """
-        co = ConfigOption.objects.get(key=ConfigOption.GLOBAL_INTERNAL_PRODUCT_ID_LABEL)
-        return co.value
+        return self._config_options[ConfigOption.GLOBAL_INTERNAL_PRODUCT_ID_LABEL]
 
     def set_internal_product_id_label(self, value):
         """
@@ -267,14 +240,14 @@ class AppSettings:
         co = ConfigOption.objects.get(key=ConfigOption.GLOBAL_INTERNAL_PRODUCT_ID_LABEL)
         co.value = value
         co.save()
+        self._rebuild_config_cache()
 
     def get_cisco_eox_api_sync_wait_time(self):
         """
         get the amount of seconds to wait between each API call
         :return:
         """
-        co = ConfigOption.objects.get(key=ConfigOption.CISCO_EOX_WAIT_TIME)
-        return co.value
+        return self._config_options[ConfigOption.CISCO_EOX_WAIT_TIME]
 
     def set_cisco_eox_api_sync_wait_time(self, value):
         """
@@ -285,3 +258,4 @@ class AppSettings:
         co = ConfigOption.objects.get(key=ConfigOption.CISCO_EOX_WAIT_TIME)
         co.value = value
         co.save()
+        self._rebuild_config_cache()

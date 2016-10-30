@@ -3,6 +3,7 @@ import pytest
 import redis
 import requests
 from django.core.management import call_command
+from django.core.cache import cache
 from requests import Response
 from app.config.settings import AppSettings
 from app.config import utils
@@ -88,3 +89,10 @@ def mock_cisco_api_authentication_server(monkeypatch):
         "post",
         lambda url, params=None: mock_post_response()
     )
+
+
+@pytest.fixture
+def clear_cache():
+    """clear certain keys that are created to improve the performance"""
+    if cache.get(AppSettings.CONFIG_OPTIONS_DICT_CACHE_KEY):
+        cache.delete(AppSettings.CONFIG_OPTIONS_DICT_CACHE_KEY)

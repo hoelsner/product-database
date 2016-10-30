@@ -27,6 +27,7 @@ selenium_test = pytest.mark.skipif(not pytest.config.getoption("--selenium"), re
 @selenium_test
 class TestCommonFunctions(BaseSeleniumTest):
     @pytest.mark.usefixtures("mock_cisco_eox_api_access_available")
+    @pytest.mark.usefixtures("clear_cache")
     def test_login_only_mode(self, browser, live_server):
         # open the homepage
         browser.get(live_server + reverse("productdb:home"))

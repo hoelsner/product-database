@@ -4,16 +4,29 @@ Test suite for the config.settings module
 import pytest
 from datetime import datetime
 from django.utils.dateparse import parse_datetime
+from django.core.cache import cache
 from app.config.settings import AppSettings
 from app.config.models import ConfigOption
 
 pytestmark = pytest.mark.django_db
 
 
+def test_config_options_cache():
+    # check that cache key doesn't exist
+    assert cache.get(AppSettings.CONFIG_OPTIONS_DICT_CACHE_KEY) is None
+
+    # create object
+    AppSettings()
+
+    # key exists and contains a dictionary
+    assert cache.get(AppSettings.CONFIG_OPTIONS_DICT_CACHE_KEY) is not None
+    assert type(cache.get(AppSettings.CONFIG_OPTIONS_DICT_CACHE_KEY)) is dict
+
+
 class TestConfigSettings:
     def test_create_default_config(self):
         # default configuration is created on object initialization
-        _ = AppSettings()
+        AppSettings()
         assert ConfigOption.objects.count() == 12
 
     def test_login_only_mode_configuration(self):

@@ -142,6 +142,8 @@ class ConfigOption(models.Model):
     )
 
     def save(self, *args, **kwargs):
+        self.value = str(self.value).strip() if self.value else None
+        self.key = self.key.strip() if self.key else None
         self.full_clean()
         super(ConfigOption, self).save(*args, **kwargs)
 
