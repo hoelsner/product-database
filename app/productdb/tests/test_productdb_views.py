@@ -12,7 +12,7 @@ from django.http import Http404
 from django.test import RequestFactory
 from mixer.backend.django import mixer
 from app.productdb import views
-from app.productdb.models import ProductList, Product
+from app.productdb.models import ProductList, Product, ProductMigrationOption, Vendor, ProductMigrationSource
 
 pytestmark = pytest.mark.django_db
 
@@ -477,6 +477,37 @@ class TestProductDetailsView:
         response = views.view_product_details(request, p.id)
 
         assert response.status_code == 200, "Should be callable"
+
+    @pytest.mark.usefixtures("import_default_vendors")
+    def test_detail_view_with_migration_options(self):
+        # create basic object structure
+        group1 = ProductMigrationSource.objects.create(name="Group One")
+        group2 = ProductMigrationSource.objects.create(name="Group Two", preference=100)
+        root_product = mixer.blend("productdb.Product", product_id="C2960XS", vendor=Vendor.objects.get(id=1))
+        p11 = mixer.blend("productdb.Product", product_id="C2960XL", vendor=Vendor.objects.get(id=1))
+        p12 = mixer.blend("productdb.Product", product_id="C2960XT", vendor=Vendor.objects.get(id=1))
+        p23 = mixer.blend("productdb.Product", product_id="C2960XR", vendor=Vendor.objects.get(id=1))
+        ProductMigrationOption.objects.create(
+            product=root_product, migration_source=group1,
+            replacement_product_id=p11.product_id
+        )
+        ProductMigrationOption.objects.create(
+            product=root_product, migration_source=group2,
+            replacement_product_id=p12.product_id
+        )
+        # p12 is replaced by 23 by group 2
+        ProductMigrationOption.objects.create(
+            product=p12, migration_source=group2,
+            replacement_product_id=p23.product_id
+        )
+
+        for pid in [root_product.id, p11.id, p12.id, p23.id]:
+            url = reverse(self.URL_NAME, kwargs={"product_id": pid})
+            request = RequestFactory().get(url)
+            request.user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+            response = views.view_product_details(request, pid)
+
+            assert response.status_code == 200, "Should be callable"
 
 
 class TestBulkEolCheckView:

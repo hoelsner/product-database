@@ -226,12 +226,30 @@ def view_product_details(request, product_id=None):
 
     else:
         try:
-            p = Product.objects.get(id=product_id)
+            view_product = Product.objects.get(id=product_id)
         except:
             raise Http404("Product with ID %s not found in database" % product_id)
 
+    # identify migration options
+    link_to_preferred_option = None
+    preferred_replacement_option = None
+
+    if view_product.has_migration_options():
+        preferred_replacement_option = view_product.get_preferred_replacement_option()
+        if preferred_replacement_option.is_valid_replacement() and preferred_replacement_option.is_replacement_in_db():
+            link_to_preferred_option = reverse("productdb:product-detail", kwargs={
+                "product_id": preferred_replacement_option.get_valid_replacement_product().id
+            })
+
+    migration_paths = {}
+    for migration_source_name in view_product.get_product_migration_source_names_set():
+        migration_paths[migration_source_name] = view_product.get_migration_path(migration_source_name)
+
     context = {
-        "product": p,
+        "product": view_product,
+        "preferred_replacement_option": preferred_replacement_option,
+        "link_to_preferred_option": link_to_preferred_option,
+        "migration_paths": migration_paths,
         "back_to": request.GET.get("back_to") if request.GET.get("back_to") else reverse("productdb:all_products")
     }
 

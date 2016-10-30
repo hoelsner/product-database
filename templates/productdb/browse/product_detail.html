@@ -7,7 +7,7 @@
 {% endblock %}
 
 {% block page_content %}
-    <div class="col-md-6 col-md-offset-3">
+    <div class="col-lg-8 col-lg-offset-2">
         <div class="page-header">
             <h1>
                 {{ product.product_id }}
@@ -22,134 +22,258 @@
 
         {% bootstrap_messages %}
 
-        <dl class="dl-horizontal">
-            <dt>Vendor:</dt>
-            <dd>{{ product.vendor.name }}</dd>
+        <div class="col-md-12">
+            <dl class="dl-horizontal">
+                <dt>Vendor:</dt>
+                <dd>{{ product.vendor.name }}</dd>
 
-            <dt>Product ID:</dt>
-            <dd>{{ product.product_id }}</dd>
+                <dt>Product ID:</dt>
+                <dd>{{ product.product_id }}</dd>
 
-            {% if product.internal_product_id %}
-                <dt>{{ INTERNAL_PRODUCT_ID_LABEL }}:</dt>
-                <dd>{{ product.internal_product_id }}</dd>
-            {% endif %}
-
-            {% if product.product_group %}
-                <dt>Product Group:</dt>
-                <dd>
-                    <a href="{% url 'productdb:detail-product_group' product_group_id=product.product_group.id %}?back_to={{ request.get_full_path|urlencode }}">
-                        {{ product.product_group.name }}
-                    </a>
-                </dd>
-            {% endif %}
-
-            <dt>Description:</dt>
-            <dd>{{ product.description }}</dd>
-
-            {% if product.list_price %}
-                <dt>List Price:</dt>
-                <dd>{{ product.list_price|floatformat:2 }} {{ product.currency }}</dd>
-            {% endif %}
-
-            <dt>Tags:</dt>
-            <dd>{{ product.tags|default:"<i>No tags defined</i>" }}</dd>
-        </dl>
-
-        <h2>Lifecycle data</h2>
-        {% if product.current_lifecycle_states %}
-            <div class="panel panel-default">
-                {% if product.lc_state_sync %}
-                    {% bootstrap_alert "The lifecycle states of this product are automatically synchronized." alert_type="info" dismissable=False %}
-                {% else %}
-                    {% bootstrap_alert "The lifecycle states of this product are not automatically synchronized." alert_type="warning" dismissable=False %}
+                {% if product.internal_product_id %}
+                    <dt>{{ INTERNAL_PRODUCT_ID_LABEL }}:</dt>
+                    <dd>{{ product.internal_product_id }}</dd>
                 {% endif %}
 
-                <div class="panel-body">
-                {% if product.current_lifecycle_states|length > 1 %}
-                    <div class="alert alert-warning" role="alert">
-                        <strong>Current lifecycle state: </strong>
-                        <ul>
-                            {% for entry in product.current_lifecycle_states %}
-                            <li>{{ entry }}</li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                {% elif product.current_lifecycle_states|length == 1 %}
-                    {% if "No EoL announcement" in product.current_lifecycle_states.0 %}
-                        <div class="alert alert-info" role="alert">
-                            No End-of-Life announcement saved in the database.
+                {% if product.product_group %}
+                    <dt>Product Group:</dt>
+                    <dd>
+                        <a href="{% url 'productdb:detail-product_group' product_group_id=product.product_group.id %}?back_to={{ request.get_full_path|urlencode }}">
+                            {{ product.product_group.name }}
+                        </a>
+                    </dd>
+                {% endif %}
+
+                <dt>Description:</dt>
+                <dd>{{ product.description }}</dd>
+
+                {% if product.list_price %}
+                    <dt>List Price:</dt>
+                    <dd>{{ product.list_price|floatformat:2 }} {{ product.currency }}</dd>
+                {% endif %}
+
+                <dt>Tags:</dt>
+                <dd>{{ product.tags|default:"<i>No tags defined</i>" }}</dd>
+
+                <dt></dt>
+                {% if product.lc_state_sync %}
+                    <dd class="text-success">Automatic synchronization of the lifecycle data</dd>
+                {% else %}
+                    <dd class="text-danger">No automatic synchronization of the lifecycle data</dd>
+                {% endif %}
+            </dl>
+        </div>
+        <div class="col-md-12">
+            {% if product.current_lifecycle_states %}
+                <h2>Lifecycle data</h2>
+                <div class="col-md-6">
+                    {% if product.current_lifecycle_states|length > 1 %}
+                        <div class="alert alert-warning" role="alert">
+                            <strong>Current lifecycle state: </strong>
+                            <ul>
+                                {% for entry in product.current_lifecycle_states %}
+                                <li>{{ entry }}</li>
+                                {% endfor %}
+                            </ul>
                         </div>
-
-                    {% else %}
-                        {% if "EoS announced" in product.current_lifecycle_states.0 %}
-                            <div class="alert alert-warning" role="alert">
-                                <strong>Current lifecycle state: </strong>
-                                {{ product.current_lifecycle_states.0 }}
-                            </div>
-
-                        {% elif "End of Sale" in product.current_lifecycle_states.0 %}
-                            <div class="alert alert-warning" role="alert">
-                                <strong>Current lifecycle state: </strong>
-                                {{ product.current_lifecycle_states.0 }}
+                    {% elif product.current_lifecycle_states|length == 1 %}
+                        {% if "No EoL announcement" in product.current_lifecycle_states.0 %}
+                            <div class="alert alert-info" role="alert">
+                                No End-of-Life announcement saved in the database.
                             </div>
 
                         {% else %}
-                            {# must be End of Support at this stage #}
-                            <div class="alert alert-danger" role="alert">
-                                <strong>Current lifecycle state: </strong>
-                                {{ product.current_lifecycle_states.0 }}
-                            </div>
+                            {% if "EoS announced" in product.current_lifecycle_states.0 %}
+                                <div class="alert alert-warning" role="alert">
+                                    <strong>Current lifecycle state: </strong>
+                                    {{ product.current_lifecycle_states.0 }}
+                                </div>
 
+                            {% elif "End of Sale" in product.current_lifecycle_states.0 %}
+                                <div class="alert alert-warning" role="alert">
+                                    <strong>Current lifecycle state: </strong>
+                                    {{ product.current_lifecycle_states.0 }}
+                                </div>
+
+                            {% else %}
+                                {# must be End of Support at this stage #}
+                                <div class="alert alert-danger" role="alert">
+                                    <strong>Current lifecycle state: </strong>
+                                    {{ product.current_lifecycle_states.0 }}
+                                </div>
+
+                            {% endif %}
                         {% endif %}
                     {% endif %}
-                {% endif %}
-                {% if "No EoL announcement" not in product.current_lifecycle_states.0 %}
-                    <table class="table">
-                        <tr>
-                            <th>End-of-Life Announcement Date:</th>
-                            <td>{{ product.eol_ext_announcement_date|date:"SHORT_DATE_FORMAT" }}</td>
-                        </tr>
-                        <tr>
-                            <th>End-of-Sale Date:</th>
-                            <td>{{ product.end_of_sale_date|date:"SHORT_DATE_FORMAT" }}</td>
-                        </tr>
-                        <tr>
-                            <th>End of New Service Attachment Date:</th>
-                            <td>{{ product.end_of_new_service_attachment_date|date:"SHORT_DATE_FORMAT" }}</td>
-                        </tr>
-                        <tr>
-                            <th>End of SW Maintenance Releases Date:</th>
-                            <td>{{ product.end_of_sw_maintenance_date|date:"SHORT_DATE_FORMAT" }}</td>
-                        </tr>
-                        <tr>
-                            <th>End of Routine Failure Analysis Date:</th>
-                            <td>{{ product.end_of_routine_failure_analysis|date:"SHORT_DATE_FORMAT" }}</td>
-                        </tr>
-                        <tr>
-                            <th>End of Service Contract Renewal Date:</th>
-                            <td>{{ product.end_of_service_contract_renewal|date:"SHORT_DATE_FORMAT" }}</td>
-                        </tr>
-                        <tr>
-                            <th>End of Vulnerability/Security Support Date:</th>
-                            <td>{{ product.end_of_sec_vuln_supp_date|date:"SHORT_DATE_FORMAT" }}</td>
-                        </tr>
-                        <tr>
-                            <th>Last Date of Support:</th>
-                            <td>{{ product.end_of_support_date|date:"SHORT_DATE_FORMAT" }}</td>
-                        </tr>
-                        {% if product.eol_reference_url %}
+                    {% if "No EoL announcement" not in product.current_lifecycle_states.0 %}
+                        <table class="table">
                             <tr>
-                                <th>Vendor Bulletin:</th>
-                                <td><a href="{{ product.eol_reference_url }}" target="_blank">{{ product.eol_reference_number|default:"Link" }}</a></td>
+                                <th>End-of-Life Announcement Date:</th>
+                                <td>{{ product.eol_ext_announcement_date|date:"SHORT_DATE_FORMAT" }}</td>
                             </tr>
-                        {% endif %}
-                    </table>
+                            <tr>
+                                <th>End-of-Sale Date:</th>
+                                <td>{{ product.end_of_sale_date|date:"SHORT_DATE_FORMAT" }}</td>
+                            </tr>
+                            <tr>
+                                <th>End of New Service Attachment Date:</th>
+                                <td>{{ product.end_of_new_service_attachment_date|date:"SHORT_DATE_FORMAT" }}</td>
+                            </tr>
+                            <tr>
+                                <th>End of SW Maintenance Releases Date:</th>
+                                <td>{{ product.end_of_sw_maintenance_date|date:"SHORT_DATE_FORMAT" }}</td>
+                            </tr>
+                            <tr>
+                                <th>End of Routine Failure Analysis Date:</th>
+                                <td>{{ product.end_of_routine_failure_analysis|date:"SHORT_DATE_FORMAT" }}</td>
+                            </tr>
+                            <tr>
+                                <th>End of Service Contract Renewal Date:</th>
+                                <td>{{ product.end_of_service_contract_renewal|date:"SHORT_DATE_FORMAT" }}</td>
+                            </tr>
+                            <tr>
+                                <th>End of Vulnerability/Security Support Date:</th>
+                                <td>{{ product.end_of_sec_vuln_supp_date|date:"SHORT_DATE_FORMAT" }}</td>
+                            </tr>
+                            <tr>
+                                <th>Last Date of Support:</th>
+                                <td>{{ product.end_of_support_date|date:"SHORT_DATE_FORMAT" }}</td>
+                            </tr>
+                            {% if product.eol_reference_url %}
+                                <tr>
+                                    <th>Vendor Bulletin:</th>
+                                    <td><a href="{{ product.eol_reference_url }}" target="_blank">{{ product.eol_reference_number|default:"Link" }}</a></td>
+                                </tr>
+                            {% endif %}
+                        </table>
+                    {% endif %}
+                </div>
+                {% if product.has_migration_options %}
+                    <div class="col-md-6">
+                        <ul class="list-group">
+                            <li class="list-group-item list-group-item-success">
+                                <h4 class="list-group-item-heading">preferred migration option</h4>
+                            </li>
+                            <li class="list-group-item{% if preferred_replacement_option.is_valid_replacement %} list-group-item-success{% else %} list-group-item-warning{% endif %}">
+                                <dl class="dl-horizontal">
+                                    {% if preferred_replacement_option.replacement_product_id %}
+                                        <dt>Product ID:</dt>
+                                        <dd>
+                                            {% if link_to_preferred_option %}
+                                                <a href="{{ link_to_preferred_option }}">
+                                                    {{ preferred_replacement_option.replacement_product_id }}
+                                                </a>
+                                            {% else %}
+                                                {{ preferred_replacement_option.replacement_product_id }}
+                                            {% endif %}
+                                        </dd>
+                                    {% endif %}
+                                    {% if preferred_replacement_option.comment %}
+                                        <dt>comment:</dt>
+                                        <dd>{{ preferred_replacement_option.comment }}</dd>
+                                    {% endif %}
+                                    <dt>source</dt>
+                                    <dd>{{ preferred_replacement_option.migration_source }}</dd>
+                                    {% if preferred_replacement_option.migration_product_info_url %}
+                                        <dt></dt>
+                                        <dd>
+                                            <a href="{{ preferred_replacement_option.migration_product_info_url }}" target="_blank">
+                                                Migration Info URL
+                                            </a>
+                                        </dd>
+                                    {% endif %}
+                                </dl>
+                            </li>
+                        </ul>
+                        {% for migration_source_name in migration_paths.keys %}
+                            <a type="button" class="btn btn-default btn-block" style="white-space: normal" data-toggle="modal" data-target="#modal_show_{{ migration_source_name|slugify }}" id="view_{{ migration_source_name|slugify }}">
+                                <strong>{{ migration_source_name }}</strong> (detailed)
+                            </a>
+                        {% endfor %}
+                    </div>
                 {% endif %}
+            {% else %}
+                {% bootstrap_alert "No lifecycle data are stored in the database." alert_type="info" dismissable=False %}
+            {% endif %}
+        </div>
+    </div>
+
+    {% if product.has_migration_options %}
+        {# show all migration paths #}
+        {% for migration_source_name, path in migration_paths.items %}
+            <div class="modal fade" id="modal_show_{{ migration_source_name|slugify }}" tabindex="-1" role="dialog" aria-labelledby="{{ migration_source_name|slugify }}">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h4 class="modal-title" id="{{ migration_source_name }}">detailed migration path by {{ migration_source_name }}</h4>
+                        </div>
+                        <div class="modal-body">
+                            <p>The following replacement path was defined by <strong>{{ migration_source_name }}</strong>:</p>
+                            <ul class="list-group">
+                            {% for pmo in path|slice:":-1" %}
+                                {# render invalid elements #}
+                                <del>
+                                    <li class="list-group-item disabled">
+                                        <dl class="dl-horizontal">
+                                            {% if pmo.replacement_product_id %}
+                                                <dt>Product ID:</dt>
+                                                <dd>
+                                                    {% if pmo.is_replacement_in_db %}
+                                                        <a href="{% url "productdb:product-detail" product_id=pmo.get_product_replacement_id %}">{{ pmo.replacement_product_id }}</a>
+                                                    {% else %}
+                                                        {{ pmo.replacement_product_id }}
+                                                    {% endif %}
+                                                </dd>
+                                            {% endif %}
+                                            {% if pmo.comment %}
+                                                <dt>comment:</dt>
+                                                <dd>{{ pmo.comment }}</dd>
+                                            {% endif %}
+                                            {% if pmo.migration_product_info_url %}
+                                                <dt></dt>
+                                                <dd>
+                                                    <a href="{{ pmo.migration_product_info_url }}" target="_blank">
+                                                        Migration Info URL
+                                                    </a>
+                                                </dd>
+                                            {% endif %}
+                                        </dl>
+                                    </li>
+                                </del>
+                            {% endfor %}
+                            {% with pmo=path|last %}
+                                <li class="list-group-item{% if preferred_replacement_option.is_valid_replacement %} list-group-item-success{% else %} list-group-item-warning{% endif %}">
+                                    <dl class="dl-horizontal">
+                                        {% if pmo.replacement_product_id %}
+                                            <dt>Product ID:</dt>
+                                            <dd>
+                                                {% if pmo.is_replacement_in_db %}
+                                                    <a href="{% url "productdb:product-detail" product_id=pmo.get_product_replacement_id %}">{{ pmo.replacement_product_id }}</a>
+                                                {% else %}
+                                                    {{ pmo.replacement_product_id }}
+                                                {% endif %}
+                                            </dd>
+                                        {% endif %}
+                                        {% if pmo.comment %}
+                                            <dt>comment:</dt>
+                                            <dd>{{ pmo.comment }}</dd>
+                                        {% endif %}
+                                        {% if pmo.migration_product_info_url %}
+                                            <dt></dt>
+                                            <dd>
+                                                <a href="{{ pmo.migration_product_info_url }}" target="_blank">
+                                                    Migration Info URL
+                                                </a>
+                                            </dd>
+                                        {% endif %}
+                                    </dl>
+                                </li>
+                            {% endwith %}
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </div>
-        {% else %}
-            {% bootstrap_alert "No lifecycle data are stored in the database." alert_type="info" dismissable=False %}
-        {% endif %}
-
-    </div>
+        {% endfor %}
+    {% endif %}
 {% endblock %}
