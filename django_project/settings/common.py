@@ -21,6 +21,7 @@ INSTALLED_APPS = [
     'app.productdb',
     'app.config',
     'app.ciscoeox',
+    'cacheops',
 ]
 
 MIDDLEWARE_CLASSES = [
@@ -35,12 +36,42 @@ MIDDLEWARE_CLASSES = [
     'reversion.middleware.RevisionMiddleware',
 ]
 
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
-        'LOCATION': 'product_database_cache_table',
+if os.getenv("PDB_DEBUG"):
+    print("Use database caching and disable cacheops...")
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+            'LOCATION': 'product_database_cache_table',
+        }
     }
-}
+    CACHEOPS_ENABLED = False  # disable cacheops for debugging
+
+else:
+    CACHES = {
+        'default': {
+            'BACKEND': 'redis_cache.RedisCache',
+            'LOCATION': 'localhost:6379',
+        },
+    }
+    CACHEOPS_REDIS = {
+        'host': 'localhost',
+        'port': 6379,
+        'socket_timeout': 3,
+    }
+    CACHEOPS_DEFAULTS = {
+        'timeout': 60 * 60
+    }
+    CACHEOPS = {
+        'auth.user': {'ops': 'get', 'timeout': 60*15},
+        'auth.*': {'ops': ('fetch', 'get')},
+        'auth.permission': {'ops': 'all'},
+        'productdb.Vendor': {'ops': 'get'},
+        'productdb.Product': {'ops': 'all'},
+        'productdb.ProductGroup': {'ops': 'all'},
+        'productdb.ProductMigrationOption': {'ops': 'all'},
+        'productdb.ProductMigrationSource': {'ops': 'all'},
+        'productdb.ProductList': {'ops': 'all'},
+    }
 
 ROOT_URLCONF = 'django_project.urls'
 

@@ -2,6 +2,7 @@ import json
 import pytest
 import redis
 import requests
+from cacheops import invalidate_all
 from django.core.management import call_command
 from django.core.cache import cache
 from requests import Response
@@ -91,8 +92,8 @@ def mock_cisco_api_authentication_server(monkeypatch):
     )
 
 
-@pytest.fixture
-def clear_cache():
-    """clear certain keys that are created to improve the performance"""
-    if cache.get(AppSettings.CONFIG_OPTIONS_DICT_CACHE_KEY):
-        cache.delete(AppSettings.CONFIG_OPTIONS_DICT_CACHE_KEY)
+@pytest.yield_fixture(autouse=True)
+def flush_cache():
+    """delete all cached data"""
+    cache.clear()
+    invalidate_all()
