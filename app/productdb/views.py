@@ -2,6 +2,7 @@ import logging
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.decorators import permission_required
+from django.core.cache import cache
 from django.core.urlresolvers import reverse
 from django.db.models import Q
 from django.http import Http404
@@ -19,6 +20,7 @@ import app.productdb.tasks as tasks
 from django_project.celery import set_meta_data_for_task
 from app.productdb.utils import login_required_if_login_only_mode
 
+HOMEPAGE_CONTEXT_CACHE_KEY = "PDB_HOMEPAGE_CONTEXT"
 logger = logging.getLogger(__name__)
 
 
@@ -32,34 +34,39 @@ def home(request):
 
     today_date = datetime.now().date()
 
-    context = {
-        "recent_events": NotificationMessage.objects.filter(
-            created__gte=datetime.now(get_current_timezone()) - timedelta(days=30)
-        ).order_by('-created')[:5],
-        "TB_HOMEPAGE_TEXT_BEFORE_FAVORITE_ACTIONS":
-            TextBlock.objects.filter(name=TextBlock.TB_HOMEPAGE_TEXT_BEFORE_FAVORITE_ACTIONS).first(),
-        "TB_HOMEPAGE_TEXT_AFTER_FAVORITE_ACTIONS":
-            TextBlock.objects.filter(name=TextBlock.TB_HOMEPAGE_TEXT_AFTER_FAVORITE_ACTIONS).first(),
-        "vendors": [x.name for x in Vendor.objects.all() if x.name != "unassigned"],
-        "product_count": Product.objects.all().count(),
-        "product_lifecycle_count": Product.objects.filter(eox_update_time_stamp__isnull=False).count(),
-        "product_no_eol_announcement_count": Product.objects.filter(
-            eox_update_time_stamp__isnull=False,
-            eol_ext_announcement_date__isnull=True
-        ).count(),
-        "product_eol_announcement_count": Product.objects.filter(
-            eol_ext_announcement_date__isnull=False,
-            end_of_sale_date__gt=today_date
-        ).count(),
-        "product_eos_count": Product.objects.filter(
-            Q(end_of_sale_date__lte=today_date, end_of_support_date__gt=today_date)|
-            Q(end_of_sale_date__lte=today_date, end_of_support_date__isnull=True)
-        ).count(),
-        "product_eol_count": Product.objects.filter(
-            end_of_support_date__lte=today_date
-        ).count(),
-        "product_price_count": Product.objects.filter(list_price__isnull=False).count(),
-    }
+    context = cache.get(HOMEPAGE_CONTEXT_CACHE_KEY)
+    if not context:
+        all_products_query = Product.objects.all()
+        context = {
+            "recent_events": NotificationMessage.objects.filter(
+                created__gte=datetime.now(get_current_timezone()) - timedelta(days=30)
+            ).order_by('-created')[:5],
+            "TB_HOMEPAGE_TEXT_BEFORE_FAVORITE_ACTIONS":
+                TextBlock.objects.filter(name=TextBlock.TB_HOMEPAGE_TEXT_BEFORE_FAVORITE_ACTIONS).first(),
+            "TB_HOMEPAGE_TEXT_AFTER_FAVORITE_ACTIONS":
+                TextBlock.objects.filter(name=TextBlock.TB_HOMEPAGE_TEXT_AFTER_FAVORITE_ACTIONS).first(),
+            "vendors": [x.name for x in Vendor.objects.all() if x.name != "unassigned"],
+            "vendors": [x.name for x in Vendor.objects.all() if x.name != "unassigned"],
+            "product_count": all_products_query.count(),
+            "product_lifecycle_count": all_products_query.filter(eox_update_time_stamp__isnull=False).count(),
+            "product_no_eol_announcement_count": all_products_query.filter(
+                eox_update_time_stamp__isnull=False,
+                eol_ext_announcement_date__isnull=True
+            ).count(),
+            "product_eol_announcement_count": all_products_query.filter(
+                eol_ext_announcement_date__isnull=False,
+                end_of_sale_date__gt=today_date
+            ).count(),
+            "product_eos_count": all_products_query.filter(
+                Q(end_of_sale_date__lte=today_date, end_of_support_date__gt=today_date)|
+                Q(end_of_sale_date__lte=today_date, end_of_support_date__isnull=True)
+            ).count(),
+            "product_eol_count": all_products_query.filter(
+                end_of_support_date__lte=today_date
+            ).count(),
+            "product_price_count": all_products_query.filter(list_price__isnull=False).count(),
+        }
+        cache.set(HOMEPAGE_CONTEXT_CACHE_KEY, context, timeout=60*10)
 
     return render(request, "productdb/home.html", context=context)
 

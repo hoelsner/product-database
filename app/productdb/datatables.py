@@ -85,7 +85,7 @@ class VendorProductListJson(BaseDatatableView, ColumnSearchMixin):
         if "vendor_id" in self.kwargs:
             if self.kwargs['vendor_id']:
                 self.vendor_id = self.kwargs['vendor_id']
-        return Product.objects.filter(vendor__id=self.vendor_id)
+        return Product.objects.filter(vendor__id=self.vendor_id).prefetch_related("vendor", "product_group")
 
     def filter_queryset(self, qs):
         search_string = self.request.GET.get('search[value]', None)
@@ -165,7 +165,7 @@ class ListProductGroupsJson(BaseDatatableView, ColumnSearchMixin):
     }
 
     def get_initial_queryset(self):
-        return ProductGroup.objects.all()
+        return ProductGroup.objects.all().prefetch_related("vendor")
 
     def filter_queryset(self, qs):
         # use request parameters to filter queryset
@@ -318,7 +318,7 @@ class ListProductsJson(BaseDatatableView, ColumnSearchMixin):
     }
 
     def get_initial_queryset(self):
-        return Product.objects.all()
+        return Product.objects.all().prefetch_related("vendor", "product_group")
 
     def filter_queryset(self, qs):
         # use request parameters to filter queryset

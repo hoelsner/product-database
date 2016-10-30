@@ -2,7 +2,6 @@
 Test suite for the ciscoeox.base_api module
 """
 import datetime
-import time
 import json
 import pytest
 import requests
@@ -74,7 +73,7 @@ def use_test_api_configuration(monkeypatch):
 class TestCiscoHelloApi:
     """Test of the Cisco Hello API class, test also the functionality of the base class"""
     @pytest.mark.usefixtures("use_test_api_configuration")
-    #@online
+    @online
     def test_base_functionality(self):
         cisco_hello_api = CiscoHelloApi()
         assert cisco_hello_api.is_ready_for_use() is False
@@ -116,7 +115,7 @@ class TestCiscoHelloApi:
         cisco_hello_api.current_access_token = {
             "token_type": "my dummy value",
             "access_token": "my dummy value"
-        }  # manually overwrite it to see that something happns
+        }  # manually overwrite it to see that something happens
         cisco_hello_api.create_temporary_access_token(force_new_token=True)
         assert cisco_hello_api.current_access_token != "my dummy value"
 

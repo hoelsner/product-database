@@ -4,9 +4,10 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.cache import cache
+from django.core.cache.utils import make_template_fragment_key
 from django.db import models
 from django.db.models import Q
-from django.utils.functional import cached_property
 from django.db.models.signals import pre_delete, post_save
 from django.dispatch import receiver
 from django.utils.timezone import datetime
@@ -583,7 +584,7 @@ class ProductList(models.Model):
         for product_id in self.get_string_product_list_as_list():
             q_filter.add(Q(product_id=product_id), Q.OR)
 
-        return Product.objects.filter(q_filter)
+        return Product.objects.filter(q_filter).prefetch_related("vendor", "product_group")
 
     def save(self, **kwargs):
         self.full_clean()
@@ -641,3 +642,19 @@ def create_user_profile_if_not_exist(sender, instance, **kwargs):
     if not UserProfile.objects.filter(user=instance).exists():
         # create new user profile with default options
         UserProfile.objects.create(user=instance)
+
+
+@receiver(post_save, sender=ProductList)
+def invalidate_page_cache(sender, instance, **kwargs):
+    key = make_template_fragment_key("productlist_detail", [instance.id, False])
+    if key:
+        cache.delete(key)
+    key = make_template_fragment_key("productlist_detail", [instance.id, True])
+    if key:
+        cache.delete(key)
+
+
+@receiver(post_save, sender=Product)
+def invalidate_product_related_cache_values(sender, instance, **kwargs):
+    """delete cache values that are somehow related to the Product data model"""
+    cache.delete("PDB_HOMEPAGE_CONTEXT")

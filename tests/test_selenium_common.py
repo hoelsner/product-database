@@ -27,7 +27,6 @@ selenium_test = pytest.mark.skipif(not pytest.config.getoption("--selenium"), re
 @selenium_test
 class TestCommonFunctions(BaseSeleniumTest):
     @pytest.mark.usefixtures("mock_cisco_eox_api_access_available")
-    @pytest.mark.usefixtures("clear_cache")
     def test_login_only_mode(self, browser, live_server):
         # open the homepage
         browser.get(live_server + reverse("productdb:home"))
@@ -610,7 +609,6 @@ class TestProductDatabaseViews(BaseSeleniumTest):
         # the user sees a selection field, where the value "Cisco Systems" is selected
         pl_selection = browser.find_element_by_id("vendor_selection")
         assert default_vendor in pl_selection.text
-        pl_selection = Select(pl_selection)
 
         # the table has three buttons: Copy, CSV and a PDF
         dt_buttons = browser.find_element_by_class_name("dt-buttons")

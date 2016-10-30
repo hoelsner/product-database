@@ -79,7 +79,7 @@ class AppSettings:
         """
         enable/disable the login only mode
         """
-        co = ConfigOption.objects.get(key=ConfigOption.GLOBAL_LOGIN_ONLY_MODE)
+        co, created = ConfigOption.objects.get_or_create(key=ConfigOption.GLOBAL_LOGIN_ONLY_MODE)
         self._set_boolean(co, value)
         self._rebuild_config_cache()
 
@@ -93,7 +93,7 @@ class AppSettings:
         """
         enable/disable the Cisco API access
         """
-        co = ConfigOption.objects.get(key=ConfigOption.GLOBAL_CISCO_API_ENABLED)
+        co, _ = ConfigOption.objects.get_or_create(key=ConfigOption.GLOBAL_CISCO_API_ENABLED)
         self._set_boolean(co, value)
         self._rebuild_config_cache()
 
@@ -107,7 +107,7 @@ class AppSettings:
         """
         set the auto_create_new_products config value
         """
-        co = ConfigOption.objects.get(key=ConfigOption.CISCO_EOX_CRAWLER_AUTO_SYNC)
+        co, _ = ConfigOption.objects.get_or_create(key=ConfigOption.CISCO_EOX_CRAWLER_AUTO_SYNC)
         self._set_boolean(co, value)
         self._rebuild_config_cache()
 
@@ -121,7 +121,7 @@ class AppSettings:
         """
         set the auto_create_new_products config value
         """
-        co = ConfigOption.objects.get(key=ConfigOption.CISCO_EOX_CRAWLER_CREATE_PRODUCTS)
+        co, _ = ConfigOption.objects.get_or_create(key=ConfigOption.CISCO_EOX_CRAWLER_CREATE_PRODUCTS)
         self._set_boolean(co, value)
         self._rebuild_config_cache()
 
@@ -146,7 +146,7 @@ class AppSettings:
         """
         set Cisco EoX API queries
         """
-        co = ConfigOption.objects.get(key=ConfigOption.CISCO_EOX_API_QUERIES)
+        co, _ = ConfigOption.objects.get_or_create(key=ConfigOption.CISCO_EOX_API_QUERIES)
         co.value = value
         co.save()
         self._rebuild_config_cache()
@@ -162,7 +162,7 @@ class AppSettings:
         """
         set Cisco EoX API queries
         """
-        co = ConfigOption.objects.get(key=ConfigOption.CISCO_EOX_PRODUCT_BLACKLIST_REGEX)
+        co, _ = ConfigOption.objects.get_or_create(key=ConfigOption.CISCO_EOX_PRODUCT_BLACKLIST_REGEX)
         co.value = value
         co.save()
         self._rebuild_config_cache()
@@ -177,7 +177,7 @@ class AppSettings:
         """
         set Cisco API Client ID
         """
-        co = ConfigOption.objects.get(key=ConfigOption.CISCO_API_CLIENT_ID)
+        co, _ = ConfigOption.objects.get_or_create(key=ConfigOption.CISCO_API_CLIENT_ID)
         co.value = value
         co.save()
         self._rebuild_config_cache()
@@ -192,7 +192,7 @@ class AppSettings:
         """
         set Cisco API Client secret
         """
-        co = ConfigOption.objects.get(key=ConfigOption.CISCO_API_CLIENT_SECRET)
+        co, _ = ConfigOption.objects.get_or_create(key=ConfigOption.CISCO_API_CLIENT_SECRET)
         co.value = value
         co.save()
         self._rebuild_config_cache()
@@ -207,7 +207,7 @@ class AppSettings:
         """
         set the last execution time value of the EoX API auto sync
         """
-        co = ConfigOption.objects.get(key=ConfigOption.CISCO_EOX_CRAWLER_LAST_EXECUTION_TIME)
+        co, _ = ConfigOption.objects.get_or_create(key=ConfigOption.CISCO_EOX_CRAWLER_LAST_EXECUTION_TIME)
         co.value = value
         co.save()
         self._rebuild_config_cache()
@@ -222,7 +222,7 @@ class AppSettings:
         """
         set the last execution result of the EoX API auto sync
         """
-        co = ConfigOption.objects.get(key=ConfigOption.CISCO_EOX_CRAWLER_LAST_EXECUTION_RESULT)
+        co, _ = ConfigOption.objects.get_or_create(key=ConfigOption.CISCO_EOX_CRAWLER_LAST_EXECUTION_RESULT)
         co.value = value
         co.save()
         self._rebuild_config_cache()
@@ -237,7 +237,7 @@ class AppSettings:
         """
         set the custom label for the internal product ID
         """
-        co = ConfigOption.objects.get(key=ConfigOption.GLOBAL_INTERNAL_PRODUCT_ID_LABEL)
+        co, _ = ConfigOption.objects.get_or_create(key=ConfigOption.GLOBAL_INTERNAL_PRODUCT_ID_LABEL)
         co.value = value
         co.save()
         self._rebuild_config_cache()
@@ -255,7 +255,7 @@ class AppSettings:
         :param value:
         :return:
         """
-        co = ConfigOption.objects.get(key=ConfigOption.CISCO_EOX_WAIT_TIME)
+        co, _ = ConfigOption.objects.get_or_create(key=ConfigOption.CISCO_EOX_WAIT_TIME)
         co.value = value
         co.save()
         self._rebuild_config_cache()

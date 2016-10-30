@@ -1,4 +1,5 @@
 {% extends '_base/page-with_nav-single_row.html' %}
+{% load cache %}
 {% load staticfiles %}
 {% load bootstrap3 %}
 
@@ -29,111 +30,113 @@
 
     {% bootstrap_messages %}
 
-    <div class="well">
-        {% if product_list.description %}
-            <p>
-                {{ product_list.description|safe }}
-            </p>
-            <hr>
-        {% endif %}
-        <p>
-            Last update on <strong>{{ product_list.update_date|date:"SHORT_DATE_FORMAT" }}</strong>, maintained by
-            <strong>
-                {% if product_list.update_user.email %}
-                    <a href="mailto:{{ product_list.update_user.email }}?Subject={{ product_list|escape }}%20Product%20List"><i class="fa fa-user"></i> {% if product_list.update_user.first_name %}{{ product_list.update_user.first_name }} {% endif %}{{ product_list.update_user.last_name|default:product_list.update_user.username }}</a>
-                {% else %}
-                    <i class="fa fa-user"></i> {% if product_list.update_user.first_name %}{{ product_list.update_user.first_name }} {% endif %}{{ product_list.update_user.last_name|default:product_list.update_user.username }}
-                {% endif %}
-            </strong>
-        </p>
-    </div>
-    <p>
-        <small>
-            {% if not share_link %}
-                You can share the product list with the following link <a href="{{ share_link_url }}">{{ share_link_url }}</a> or use the <i class="fa fa-envelope" aria-hidden="true"></i> button in the page title.
+    {% cache 900 productlist_detail product_list.id share_link %}
+        <div class="well">
+            {% if product_list.description %}
+                <p>
+                    {{ product_list.description|safe }}
+                </p>
+                <hr>
             {% endif %}
-        </small>
-    </p>
-    <div class="col-md-12">
-        <table id="product_table" class="table table-striped table-hover table-responsive" cellspacing="0" width="100%">
-            <thead>
-                <tr id="tour_table_head">
-                    <th class="searchable">Vendor</th>
-                    <th class="searchable">Product ID</th>
-                    <th class="searchable">Product Group</th>
-                    <th class="searchable">Description</th>
-                    <th class="searchable">List Price</th>
-                    <th class="searchable">Tags</th>
-                    <th>Lifecycle State</th>
-                    <th><abbr title="End-of-Life Announcement Date">EoL anno</abbr></th>
-                    <th><abbr title="End-of-Sale Date">EoS</abbr></th>
-                    <th><abbr title="End of New Service Attachment Date">EoNewSA</abbr></th>
-                    <th><abbr title="End of SW Maintenance Releases Date">EoSWM</abbr></th>
-                    <th><abbr title="End of Routine Failure Analysis Date">EoRFA</abbr></th>
-                    <th><abbr title="End of Service Contract Renewal Date">EoSCR</abbr></th>
-                    <th><abbr title="End of Vulnerability/Security Support date">EoVulnServ</abbr></th>
-                    <th>Last Date of Support</th>
-                    <th>Vendor Bulletin</th>
-                    <th><abbr title="Lifecycle state automatically synchronized">LC auto-sync</abbr></th>
-                    <th>{{ INTERNAL_PRODUCT_ID_LABEL }}</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for product in product_list.get_product_list_objects %}
-                    <tr>
-                        <td>{{ product.vendor.name }}</td>
-                        <td>
-                            {% if share_link %}
-                                {{ product.product_id }}
-                            {% else %}
-                                <a href="{% url 'productdb:product-detail' product_id=product.id %}?back_to={{ request.get_full_path|urlencode }}">{{ product.product_id }}</a>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {{ product.product_group.name }}
-                        </td>
-                        <td>{{ product.description }}</td>
-                        <td>
-                            {% if product.list_price %}
-                                {{ product.list_price|floatformat:2 }} {{ product.currency }}
-                            {% endif %}
-                        </td>
-                        <td>{{ product.tags|default:"" }}</td>
-                        <td>
-                            {% if product.current_lifecycle_states %}
-                                {{ product.current_lifecycle_states|join:", <br>" }}
-                            {% endif %}
-                        </td>
-                        <td>{{ product.eol_ext_announcement_date|date:"SHORT_DATE_FORMAT" }}</td>
-                        <td>{{ product.end_of_sale_date|date:"SHORT_DATE_FORMAT" }}</td>
-                        <td>{{ product.end_of_new_service_attachment_date|date:"SHORT_DATE_FORMAT" }}</td>
-                        <td>{{ product.end_of_sw_maintenance_date|date:"SHORT_DATE_FORMAT" }}</td>
-                        <td>{{ product.end_of_routine_failure_analysis|date:"SHORT_DATE_FORMAT" }}</td>
-                        <td>{{ product.end_of_service_contract_renewal|date:"SHORT_DATE_FORMAT" }}</td>
-                        <td>{{ product.end_of_sec_vuln_supp_date|date:"SHORT_DATE_FORMAT" }}</td>
-                        <td>{{ product.end_of_support_date|date:"SHORT_DATE_FORMAT" }}</td>
-                        <td>
-                            {% if product.eol_reference_url %}
-                                <a href="{{ product.eol_reference_url }}">{{ product.eol_reference_number|default:"Link" }}</a>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if product.lc_auto_sync %}
-                                Yes
-                            {% else %}
-                                No
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if product.internal_product_id %}
-                                {{ product.internal_product_id }}
-                            {% endif %}
-                        </td>
+            <p>
+                Last update on <strong>{{ product_list.update_date|date:"SHORT_DATE_FORMAT" }}</strong>, maintained by
+                <strong>
+                    {% if product_list.update_user.email %}
+                        <a href="mailto:{{ product_list.update_user.email }}?Subject={{ product_list|escape }}%20Product%20List"><i class="fa fa-user"></i> {% if product_list.update_user.first_name %}{{ product_list.update_user.first_name }} {% endif %}{{ product_list.update_user.last_name|default:product_list.update_user.username }}</a>
+                    {% else %}
+                        <i class="fa fa-user"></i> {% if product_list.update_user.first_name %}{{ product_list.update_user.first_name }} {% endif %}{{ product_list.update_user.last_name|default:product_list.update_user.username }}
+                    {% endif %}
+                </strong>
+            </p>
+        </div>
+        <p>
+            <small>
+                {% if not share_link %}
+                    You can share the product list with the following link <a href="{{ share_link_url }}">{{ share_link_url }}</a> or use the <i class="fa fa-envelope" aria-hidden="true"></i> button in the page title.
+                {% endif %}
+            </small>
+        </p>
+        <div class="col-md-12">
+            <table id="product_table" class="table table-striped table-hover table-responsive" cellspacing="0" width="100%">
+                <thead>
+                    <tr id="tour_table_head">
+                        <th class="searchable">Vendor</th>
+                        <th class="searchable">Product ID</th>
+                        <th class="searchable">Product Group</th>
+                        <th class="searchable">Description</th>
+                        <th class="searchable">List Price</th>
+                        <th class="searchable">Tags</th>
+                        <th>Lifecycle State</th>
+                        <th><abbr title="End-of-Life Announcement Date">EoL anno</abbr></th>
+                        <th><abbr title="End-of-Sale Date">EoS</abbr></th>
+                        <th><abbr title="End of New Service Attachment Date">EoNewSA</abbr></th>
+                        <th><abbr title="End of SW Maintenance Releases Date">EoSWM</abbr></th>
+                        <th><abbr title="End of Routine Failure Analysis Date">EoRFA</abbr></th>
+                        <th><abbr title="End of Service Contract Renewal Date">EoSCR</abbr></th>
+                        <th><abbr title="End of Vulnerability/Security Support date">EoVulnServ</abbr></th>
+                        <th>Last Date of Support</th>
+                        <th>Vendor Bulletin</th>
+                        <th><abbr title="Lifecycle state automatically synchronized">LC auto-sync</abbr></th>
+                        <th>{{ INTERNAL_PRODUCT_ID_LABEL }}</th>
                     </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+                </thead>
+                <tbody>
+                    {% for product in product_list.get_product_list_objects %}
+                        <tr>
+                            <td>{{ product.vendor.name }}</td>
+                            <td>
+                                {% if share_link %}
+                                    {{ product.product_id }}
+                                {% else %}
+                                    <a href="{% url 'productdb:product-detail' product_id=product.id %}?back_to={{ request.get_full_path|urlencode }}">{{ product.product_id }}</a>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {{ product.product_group.name }}
+                            </td>
+                            <td>{{ product.description }}</td>
+                            <td>
+                                {% if product.list_price %}
+                                    {{ product.list_price|floatformat:2 }} {{ product.currency }}
+                                {% endif %}
+                            </td>
+                            <td>{{ product.tags|default:"" }}</td>
+                            <td>
+                                {% if product.current_lifecycle_states %}
+                                    {{ product.current_lifecycle_states|join:", <br>" }}
+                                {% endif %}
+                            </td>
+                            <td>{{ product.eol_ext_announcement_date|date:"SHORT_DATE_FORMAT" }}</td>
+                            <td>{{ product.end_of_sale_date|date:"SHORT_DATE_FORMAT" }}</td>
+                            <td>{{ product.end_of_new_service_attachment_date|date:"SHORT_DATE_FORMAT" }}</td>
+                            <td>{{ product.end_of_sw_maintenance_date|date:"SHORT_DATE_FORMAT" }}</td>
+                            <td>{{ product.end_of_routine_failure_analysis|date:"SHORT_DATE_FORMAT" }}</td>
+                            <td>{{ product.end_of_service_contract_renewal|date:"SHORT_DATE_FORMAT" }}</td>
+                            <td>{{ product.end_of_sec_vuln_supp_date|date:"SHORT_DATE_FORMAT" }}</td>
+                            <td>{{ product.end_of_support_date|date:"SHORT_DATE_FORMAT" }}</td>
+                            <td>
+                                {% if product.eol_reference_url %}
+                                    <a href="{{ product.eol_reference_url }}">{{ product.eol_reference_number|default:"Link" }}</a>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if product.lc_auto_sync %}
+                                    Yes
+                                {% else %}
+                                    No
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if product.internal_product_id %}
+                                    {{ product.internal_product_id }}
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endcache %}
 {% endblock %}
 
 {% block additional_head_css %}

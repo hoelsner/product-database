@@ -378,7 +378,6 @@ class TestSyncLocalDatabaseWithCiscoEoxApi(BaseSeleniumTest):
         assert blacklist.text == "WS-C2960-24-S-RF\nWS-C2960-24-S-WS"
 
     @pytest.mark.usefixtures("redis_server_required")
-    @pytest.mark.usefixtures("clear_cache")
     def test_configure_periodic_cisco_api_eox_sync_and_trigger_the_execution_manually(self, browser, live_server):
         self.configure_cisco_api_for_test_case(browser, live_server)
 
@@ -418,7 +417,6 @@ class TestSyncLocalDatabaseWithCiscoEoxApi(BaseSeleniumTest):
         # end session
         self.logout_user(browser)
 
-    @pytest.mark.usefixtures("clear_cache")
     def test_configure_periodic_cisco_api_eox_sync_and_perform_initial_synchronization_using_testing_tool(self,
                                                                                                           browser,
                                                                                                           live_server):
