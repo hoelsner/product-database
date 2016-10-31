@@ -1,3 +1,4 @@
+from cacheops import invalidate_all
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
@@ -107,6 +108,15 @@ def status(request):
     context['worker_status'] = mark_safe(worker_status)
 
     return render(request, "config/status.html", context=context)
+
+
+@login_required()
+@permission_required('is_superuser', raise_exception=True)
+def flush_cache(request):
+    cache.clear()
+    invalidate_all()
+    messages.success(request, "cache successful flushed!")
+    return redirect(resolve_url("productdb_config:status"))
 
 
 @login_required()

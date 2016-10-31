@@ -36,8 +36,8 @@ MIDDLEWARE_CLASSES = [
     'reversion.middleware.RevisionMiddleware',
 ]
 
-if os.getenv("PDB_DEBUG"):
-    print("Use database caching and disable cacheops...")
+if os.getenv("PDB_DEBUG") and not os.getenv("PDB_DEBUG_CACHE"):
+    print("!!!!!!!! use database caching and disable cacheops...")
     CACHES = {
         'default': {
             'BACKEND': 'django.core.cache.backends.db.DatabaseCache',

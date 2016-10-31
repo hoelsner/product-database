@@ -3,7 +3,7 @@ Test suite for the config.views module
 """
 import pytest
 from html import escape
-from django.contrib.auth.models import AnonymousUser
+from django.contrib.auth.models import AnonymousUser, User
 from django.contrib.messages.storage.fallback import FallbackStorage
 from django.core.cache import cache
 from django.core.exceptions import PermissionDenied
@@ -532,4 +532,51 @@ class TestServerMessagesDetail:
         request.user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
 
         with pytest.raises(Http404):
-            response = views.server_message_detail(request, 9999)
+            views.server_message_detail(request, 9999)
+
+
+class TestFlushCache:
+    URL_NAME = "productdb_config:flush_cache"
+
+    def test_anonymous_default(self):
+        url = reverse(self.URL_NAME)
+        request = RequestFactory().get(url)
+        request.user = AnonymousUser()
+        response = views.flush_cache(request)
+
+        assert response.status_code == 302, "Should redirect to login page"
+        assert response.url == reverse("login") + "?next=" + url, \
+            "Should contain a next parameter for redirect"
+
+    @pytest.mark.usefixtures("enable_login_only_mode")
+    def test_anonymous_login_only_mode(self):
+        url = reverse(self.URL_NAME)
+        request = RequestFactory().get(url)
+        request.user = AnonymousUser()
+        response = views.flush_cache(request)
+
+        assert response.status_code == 302, "Should redirect to login page"
+        assert response.url == reverse("login") + "?next=" + url, \
+            "Should contain a next parameter for redirect"
+
+    def test_authenticated_user(self):
+        url = reverse(self.URL_NAME)
+        request = RequestFactory().get(url)
+        request.user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+
+        with pytest.raises(PermissionDenied):
+            views.flush_cache(request)
+
+    @pytest.mark.usefixtures("import_default_users")
+    @pytest.mark.usefixtures("import_default_vendors")
+    def test_superuser(self):
+        url = reverse(self.URL_NAME)
+        request = RequestFactory().get(url)
+        request.user = User.objects.get(username="pdb_admin")
+        msgs = patch_contrib_messages(request)
+        response = views.flush_cache(request)
+
+        assert response.status_code == 302, "Should redirect to status page"
+        assert msgs.added_new
+        assert response.url == reverse("productdb_config:status")
+

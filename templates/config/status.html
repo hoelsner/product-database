@@ -15,6 +15,17 @@
 
         <div class="panel panel-default">
             <div class="panel-heading">
+                <h3 class="panel-title">Common Operations</h3>
+            </div>
+            <div class="panel-body">
+                <a href="{% url 'productdb_config:flush_cache' %}" class="btn btn-warning">
+                    flush cache (be careful, this action cannot be undone)
+                </a>
+            </div>
+        </div>
+
+        <div class="panel panel-default">
+            <div class="panel-heading">
                 <h3 class="panel-title">Cisco API status</h3>
             </div>
             <div class="panel-body">
