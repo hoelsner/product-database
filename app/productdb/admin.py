@@ -134,7 +134,7 @@ class ProductMigrationOptionAdmin(CompareVersionAdmin, admin.ModelAdmin):
 admin.site.register(ProductMigrationOption, ProductMigrationOptionAdmin)
 
 
-class ProductListAdmin(admin.ModelAdmin):
+class ProductListAdmin(CompareVersionAdmin, admin.ModelAdmin):
     list_display = [
         'name',
         'description',

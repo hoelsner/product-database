@@ -108,21 +108,11 @@ class VendorProductListJson(BaseDatatableView, ColumnSearchMixin):
         json_data = []
 
         for item in qs:
-            product_group_id = ""
-            product_group_name = ""
-            try:
-                if item.product_group:
-                    product_group_id = item.product_group.id
-                    product_group_name = item.product_group.name
-
-            except ObjectDoesNotExist:
-                pass
-
             json_data.append({
                 "id": item.id,
                 "product_id": item.product_id,
-                "product_group": product_group_name,
-                "product_group_id": product_group_id,
+                "product_group": item.product_group.name if item.product_group else "",
+                "product_group_id": item.product_group.id if item.product_group else "",
                 "description": item.description,
                 "list_price": item.list_price,
                 "currency": item.currency,
@@ -342,30 +332,12 @@ class ListProductsJson(BaseDatatableView, ColumnSearchMixin):
         json_data = []
 
         for item in qs:
-            product_group_id = ""
-            product_group_name = ""
-            try:
-                if item.product_group:
-                    product_group_id = item.product_group.id
-                    product_group_name = item.product_group.name
-
-            except ObjectDoesNotExist:
-                pass
-
-            vendor_name = ""
-            try:
-                if item.vendor:
-                    vendor_name = item.vendor.name
-
-            except ObjectDoesNotExist:
-                pass
-
             json_data.append({
                 "id": item.id,
-                "vendor": vendor_name,
+                "vendor": item.vendor.name,
                 "product_id": item.product_id,
-                "product_group": product_group_name,
-                "product_group_id": product_group_id,
+                "product_group": item.product_group.name if item.product_group else "",
+                "product_group_id": item.product_group.id if item.product_group else "",
                 "description": item.description,
                 "list_price": item.list_price,
                 "currency": item.currency,

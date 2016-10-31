@@ -558,9 +558,17 @@ class ProductList(models.Model):
     description = models.TextField(
         max_length=4096,
         blank=True,
-        null=True,
+        null=False,
         verbose_name="Description",
         help_text="short description what's part of this Product List"
+    )
+
+    version_note = models.TextField(
+        max_length=16384,
+        blank=True,
+        null=False,
+        verbose_name="Version note",
+        help_text="some version information for the product list (markdown formatting supported)"
     )
 
     update_date = models.DateField(

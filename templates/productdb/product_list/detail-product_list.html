@@ -1,6 +1,7 @@
 {% extends '_base/page-with_nav-single_row.html' %}
 {% load cache %}
 {% load staticfiles %}
+{% load markdown %}
 {% load bootstrap3 %}
 
 {% block title %}
@@ -13,7 +14,7 @@
             <i class="fa fa-list-ul"></i>&nbsp;
             {{ product_list.name }}
             <small>Product List
-                {% if perms.productdb.edit_product_list %}
+                {% if perms.productdb.change_productlist %}
                     <a href="{% url "productdb:edit-product_list" product_list_id=product_list.id %}" data-toggle="tooltip" title="edit this Product List">
                         <i class="fa fa-pencil" aria-hidden="true"></i>
                     </a>
@@ -46,7 +47,12 @@
                     {% else %}
                         <i class="fa fa-user"></i> {% if product_list.update_user.first_name %}{{ product_list.update_user.first_name }} {% endif %}{{ product_list.update_user.last_name|default:product_list.update_user.username }}
                     {% endif %}
-                </strong>
+                </strong>&nbsp;
+                {% if product_list.version_note %}
+                    <a type="button" class="btn btn-default btn-xs " data-toggle="modal" data-target="#modal_show_version_notes" id="view_version_notes">
+                        <strong>show version notes</strong>
+                    </a>
+                {% endif %}
             </p>
         </div>
         <p>
@@ -135,6 +141,18 @@
                     {% endfor %}
                 </tbody>
             </table>
+        </div>
+        <div class="modal fade" id="modal_show_version_notes" tabindex="-1" role="dialog" aria-labelledby="version_notes">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title">Version Notes and Comments</h4>
+                    </div>
+                    <div class="modal-body">
+                        {{ product_list.version_note|render_markdown }}
+                    </div>
+                </div>
+            </div>
         </div>
     {% endcache %}
 {% endblock %}
