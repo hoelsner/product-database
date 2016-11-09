@@ -7,6 +7,7 @@ from app.productdb import api_views
 from app.productdb import views
 from rest_framework import routers
 import app.productdb.datatables as datatables
+from rest_framework_swagger.views import get_swagger_view
 
 router = routers.DefaultRouter()
 router.register(r'vendors', api_views.VendorViewSet, base_name="vendors")
@@ -16,10 +17,12 @@ router.register(r'productlists', api_views.ProductListViewSet, base_name="produc
 router.register(r'productmigrationsources', api_views.ProductMigrationSourceViewSet, base_name="productmigrationsources")
 router.register(r'productmigrationoptions', api_views.ProductMigrationOptionViewSet, base_name="productmigrationoptions")
 
+schema_view = get_swagger_view(title="Product Database REST API")
+
 # namespace: productdb
 urlpatterns = [
     # API related URLs
-    url(r'^api-docs/', include('rest_framework_swagger.urls', namespace="apidocs")),
+    url(r'^api-docs/', schema_view, name="apidocs"),
     url(r'^api/v0/', include(router.urls)),
     url(r'^api/$', RedirectView.as_view(url="v0/", permanent=False), name="api_redirect"),
 
