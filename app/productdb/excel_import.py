@@ -1,10 +1,11 @@
 import datetime
 import logging
 import pandas as pd
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from reversion import revisions as reversion
 from xlrd import XLRDError
-from app.productdb.models import Product, CURRENCY_CHOICES, ProductGroup
+from app.productdb.models import Product, CURRENCY_CHOICES, ProductGroup, ProductMigrationSource, ProductMigrationOption
 from app.productdb.models import Vendor
 
 logger = logging.getLogger(__name__)
@@ -20,22 +21,33 @@ class InvalidImportFormatException(Exception):
     pass
 
 
-class ImportProductsExcelFile:
+class BaseExcelImporter:
+    """
+    Base class for the Excel Import
+    """
+    sheetname = "products"
+    required_keys = {"product id", "description", "list price", "vendor"}
+    import_converter = None
+    drop_na_columns = None
     workbook = None
     path = None
     valid_file = False
     user_for_revision = None
-    import_result_messages = []
-    valid_imported_products = 0
-    invalid_products = 0
     __wb_data_frame__ = None
+    import_result_messages = None
 
     def __init__(self, path_to_excel_file=None, user_for_revision=None):
         self.path_to_excel_file = path_to_excel_file
+        if self.import_result_messages is None:
+            self.import_result_messages = []
+        if self.import_converter is None:
+            self.import_converter = {}
+        if self.drop_na_columns is None:
+            self.drop_na_columns = []
         if user_for_revision:
             self.user_for_revision = user_for_revision
 
-    def __load_workbook__(self):
+    def _load_workbook(self):
         try:
             self.workbook = pd.ExcelFile(self.path_to_excel_file)
 
@@ -47,60 +59,48 @@ class ImportProductsExcelFile:
             logger.fatal("unable to read workbook at '%s'" % self.path_to_excel_file)
             raise
 
-    def __create_data_frame__(self):
+    def _create_data_frame(self):
         self.__wb_data_frame__ = self.workbook.parse(
-            "products", converters={
-                "product id": str,
-                "description": str,
-                "list price": str,
-                "currency": str,
-                "vendor": str
-            }
+            self.sheetname, converters=self.import_converter
         )
 
         # normalize the column names (all lowercase, strip whitespace if any)
         self.__wb_data_frame__.columns = [x.lower() for x in self.__wb_data_frame__.columns]
         self.__wb_data_frame__.columns = [x.strip() for x in self.__wb_data_frame__.columns]
 
-        # drop all values that are null in the product id column
-        self.__wb_data_frame__.dropna(axis=0, subset=["product id"], inplace=True)
+        # drop NA columns if defined
+        if len(self.drop_na_columns) != 0:
+            self.__wb_data_frame__.dropna(axis=0, subset=self.drop_na_columns, inplace=True)
 
     def verify_file(self):
         if self.workbook is None:
-            self.__load_workbook__()
+            self._load_workbook()
         self.valid_file = False
 
         sheets = self.workbook.sheet_names
-        required_sheet = "products"
-        required_keys = {"product id", "description", "list price", "vendor"}
 
         # verify worksheet that is required
-        if required_sheet not in sheets:
-            raise InvalidImportFormatException("sheet '%s' not found" % required_sheet)
+        if self.sheetname not in sheets:
+            raise InvalidImportFormatException("sheet '%s' not found" % self.sheetname)
 
         # verify keys in file
-        dframe = self.workbook.parse("products")
+        dframe = self.workbook.parse(self.sheetname)
         keys = [x.lower() for x in set(dframe.keys())]
 
-        if len(required_keys.intersection(keys)) != len(required_keys):
-            req_key_str = ", ".join(sorted(required_keys))
+        if len(self.required_keys.intersection(keys)) != len(self.required_keys):
+            req_key_str = ", ".join(sorted(self.required_keys))
             raise InvalidImportFormatException("not all required keys are found in the Excel file, required keys "
                                                "are: %s" % req_key_str)
 
         self.valid_file = True
 
-    @property
-    def amount_of_products(self):
-        if self.__wb_data_frame__ is None:
-            self.__create_data_frame__()
-        return len(self.__wb_data_frame__)
-
     def is_valid_file(self):
         return self.valid_file
 
-    def _import_datetime_column_from_file(self, row_key, row, target_key, product):
+    @staticmethod
+    def _import_datetime_column_from_file(row_key, row, target_key, product):
         """
-        helper method to import an optional column from the excel file
+        helper method to import an optional columns from the excel file
         """
         changed = False
         faulty_entry = False
@@ -119,22 +119,50 @@ class ImportProductsExcelFile:
                         setattr(product, target_key, row[row_key].date())
                         changed = True
 
-        except Exception as ex:
+        except Exception as ex:  # catch any exception
             faulty_entry = True
             msg = "cannot set %s for <code>%s</code> (%s)" % (row_key, row["product id"], ex)
 
         return changed, faulty_entry, msg
 
-    def import_products_to_database(self, status_callback=None, update_only=False):
+    def import_to_database(self, status_callback=None, update_only=False):
+        """
+        Base method that is triggered for the update
+        """
+        pass
+
+
+class ProductsExcelImporter(BaseExcelImporter):
+    """
+    Excel Importer class for Products
+    """
+    sheetname = "products"
+    required_keys = {"product id", "description", "list price", "vendor"}
+    import_converter = {
+        "product id": str,
+        "description": str,
+        "list price": str,
+        "currency": str,
+        "vendor": str
+    }
+    drop_na_columns = ["product id"]
+    valid_imported_products = 0
+    invalid_products = 0
+
+    @property
+    def amount_of_products(self):
+        return len(self.__wb_data_frame__) if self.__wb_data_frame__ is not None else -1
+
+    def import_to_database(self, status_callback=None, update_only=False):
         """
         Import products from the associated excel sheet to the database
         :param status_callback: optional status message callback function
         :param update_only: don't create new entries
         """
         if self.workbook is None:
-            self.__load_workbook__()
+            self._load_workbook()
         if self.__wb_data_frame__ is None:
-            self.__create_data_frame__()
+            self._create_data_frame()
 
         self.valid_imported_products = 0
         self.invalid_products = 0
@@ -162,9 +190,9 @@ class ImportProductsExcelFile:
                     # element doesn't exist
                     skip = True
 
-                except Exception as ex:
-                    logger.warn("unexpected exception occured during the lookup "
-                                "of product %s (%s)" % (row["product id"], ex) )
+                except Exception as ex:  # catch any exception
+                    logger.warn("unexpected exception occurred during the lookup "
+                                "of product %s (%s)" % (row["product id"], ex))
 
             else:
                 p, created = Product.objects.get_or_create(product_id=row["product id"])
@@ -375,3 +403,103 @@ class ImportProductsExcelFile:
                         break
 
             current_entry += 1
+
+
+class ProductMigrationsExcelImporter(BaseExcelImporter):
+    """
+    Excel Importer class for Product Migrations
+    """
+    sheetname = "product_migrations"
+    required_keys = {"product id", "migration source"}
+    drop_na_columns = [
+        "product id",
+        "migration source"
+    ]
+    import_converter = {
+        "product id": str,
+        "migration source": str,
+        "replacement product id": str,
+        "comment": str,
+        "migration product info url": str
+    }
+
+    def import_to_database(self, status_callback=None, update_only=False):
+        """
+        Import products from the associated excel sheet to the database
+        :param status_callback: optional status message callback function
+        :param update_only: don't create new entries
+        """
+        if self.workbook is None:
+            self._load_workbook()
+        if self.__wb_data_frame__ is None:
+            self._create_data_frame()
+
+        # process entries in file
+        self.import_result_messages = []
+        current_entry = 1
+        amount_of_entries = len(self.__wb_data_frame__.index)
+        for index, row in self.__wb_data_frame__.iterrows():
+            # update status message if defined
+            if status_callback:
+                status_callback("Process entry <strong>%s</strong> of "
+                                "<strong>%s</strong>..." % (current_entry, amount_of_entries))
+
+            if row["product id"] == "" or row["product id"] is None:
+                continue
+
+            # check that product is part of the database
+            try:
+                # update element and add revision note
+                with transaction.atomic(), reversion.create_revision():
+                    product = Product.objects.get(product_id=row["product id"])
+                    migration_source, created = ProductMigrationSource.objects.get_or_create(
+                        name=row["migration source"]
+                    )
+
+                    if created:
+                        migration_source.preference = 10
+                        migration_source.save()
+                        self.import_result_messages.append("Product Migration Source \"%s\" was created with a "
+                                                           "preference of 10" % row["migration source"])
+
+                    pmo, created = ProductMigrationOption.objects.get_or_create(product=product,
+                                                                                migration_source=migration_source)
+                    row_key = "comment"
+                    if row_key in row:  # optional key
+                        if not pd.isnull(row[row_key]):
+                            if pmo.comment != row[row_key]:
+                                pmo.comment = row[row_key]
+
+                    row_key = "replacement product id"
+                    if row_key in row:  # optional key
+                        if not pd.isnull(row[row_key]):
+                            if pmo.replacement_product_id != row[row_key]:
+                                pmo.replacement_product_id = row[row_key]
+
+                    row_key = "migration product info url"
+                    if row_key in row:  # optional key
+                        if not pd.isnull(row[row_key]):
+                            if pmo.migration_product_info_url != row[row_key]:
+                                pmo.migration_product_info_url = row[row_key]
+
+                    pmo.save()
+
+                    if self.user_for_revision:
+                        reversion.set_user(self.user_for_revision)
+
+                    reversion.set_comment("manual product migration import")
+
+                if created:
+                    self.import_result_messages.append("create Product Migration path \"%s\" for Product "
+                                                       "\"%s\"" % (row["migration source"], row["product id"]))
+                else:
+                    self.import_result_messages.append("update Product Migration path \"%s\" for Product "
+                                                       "\"%s\"" % (row["migration source"], row["product id"]))
+
+            except ValidationError as ex:
+                self.import_result_messages.append("cannot save Product Migration for %s: %s" % (row["product id"],
+                                                                                                 str(ex)))
+
+            except Product.DoesNotExist:
+                self.import_result_messages.append("Product %s not found in database, skip entry" % row["product id"])
+

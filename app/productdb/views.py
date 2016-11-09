@@ -13,8 +13,9 @@ from django.utils.timezone import timedelta, datetime, get_current_timezone
 from django.contrib import messages
 from app.config.models import NotificationMessage, TextBlock
 from app.productdb import utils as app_util
-from app.productdb.forms import ImportProductsFileUploadForm, ProductListForm, UserProfileForm
-from app.productdb.models import Product, JobFile, ProductGroup, ProductList, UserProfile
+from app.productdb.forms import ImportProductsFileUploadForm, ProductListForm, UserProfileForm, \
+    ImportProductMigrationFileUploadForm
+from app.productdb.models import Product, JobFile, ProductGroup, ProductList, UserProfile, ProductMigrationSource
 from app.productdb.models import Vendor
 import app.productdb.tasks as tasks
 from django_project.celery import set_meta_data_for_task
@@ -233,30 +234,59 @@ def view_product_details(request, product_id=None):
 
     else:
         try:
-            view_product = Product.objects.get(id=product_id)
+            view_product = Product.objects.prefetch_related("productmigrationoption_set", "vendor").get(id=product_id)
         except:
             raise Http404("Product with ID %s not found in database" % product_id)
 
-    # identify migration options
-    link_to_preferred_option = None
-    preferred_replacement_option = None
+    # identify migration options and render to dictionary for template
+    dict_preferred_replacement_option = None
+    dict_migration_paths = {}
 
     if view_product.has_migration_options():
-        preferred_replacement_option = view_product.get_preferred_replacement_option()
-        if preferred_replacement_option.is_valid_replacement() and preferred_replacement_option.is_replacement_in_db():
-            link_to_preferred_option = reverse("productdb:product-detail", kwargs={
-                "product_id": preferred_replacement_option.get_valid_replacement_product().id
+        db_preferred_replacement_option = view_product.get_preferred_replacement_option()
+        valid_replacement_product = db_preferred_replacement_option.get_valid_replacement_product()
+        dict_preferred_replacement_option = {
+            "migration_source": db_preferred_replacement_option.migration_source.name,
+            "migration_product_info_url": db_preferred_replacement_option.migration_product_info_url,
+            "comment": db_preferred_replacement_option.comment,
+            "replacement_product_id": db_preferred_replacement_option.replacement_product_id,
+            "is_valid_replacement": db_preferred_replacement_option.is_valid_replacement(),
+            "is_replacement_in_db": db_preferred_replacement_option.is_replacement_in_db(),
+            "get_valid_replacement_product": valid_replacement_product.id if valid_replacement_product else None,
+            "link_to_preferred_option": None,
+        }
+        if dict_preferred_replacement_option["is_valid_replacement"] and \
+                dict_preferred_replacement_option["is_replacement_in_db"]:
+            dict_preferred_replacement_option["link_to_preferred_option"] = reverse("productdb:product-detail", kwargs={
+                "product_id": dict_preferred_replacement_option["get_valid_replacement_product"]
             })
 
-    migration_paths = {}
     for migration_source_name in view_product.get_product_migration_source_names_set():
-        migration_paths[migration_source_name] = view_product.get_migration_path(migration_source_name)
+        db_migration_path = view_product.get_migration_path(migration_source_name)
+        dict_migration_paths[migration_source_name] = []
+        for pmo in db_migration_path:
+            dict_migration_paths[migration_source_name].append({
+                "replacement_product_id": pmo.replacement_product_id,
+                "is_replacement_in_db": pmo.is_replacement_in_db(),
+                "get_product_replacement_id": pmo.get_product_replacement_id(),
+                "comment": pmo.comment,
+                "migration_product_info_url": pmo.migration_product_info_url,
+                "is_valid_replacement": pmo.is_valid_replacement(),
+            })
 
+    dict_migration_source_details = {}
+    for e in ProductMigrationSource.objects.all():
+        dict_migration_source_details[e.name] = {
+            "description": e.description,
+            "preference": e.preference
+        }
+
+    # process migration paths for the template
     context = {
         "product": view_product,
-        "preferred_replacement_option": preferred_replacement_option,
-        "link_to_preferred_option": link_to_preferred_option,
-        "migration_paths": migration_paths,
+        "preferred_replacement_option": dict_preferred_replacement_option,
+        "migration_paths": dict_migration_paths,
+        "migration_source_details": dict_migration_source_details,
         "back_to": request.GET.get("back_to") if request.GET.get("back_to") else reverse("productdb:all_products")
     }
 
@@ -493,6 +523,38 @@ def import_products(request):
     context['form'] = form
 
     return render(request, "productdb/import/import_products.html", context=context)
+
+
+@login_required()
+@permission_required('productdb.change_productmigrationoption', raise_exception=True)
+def import_product_migrations(request):
+    context = {}
+    if request.method == "POST":
+        form = ImportProductMigrationFileUploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            # file is valid, save and execute the import job
+            job_file = JobFile(file=request.FILES['excel_file'])
+            job_file.save()
+
+            task = tasks.import_product_migrations.delay(
+                job_file_id=job_file.id,
+                user_for_revision=request.user.username
+            )
+            set_meta_data_for_task(
+                task_id=task.id,
+                title="Import product migrations from Excel sheet",
+                auto_redirect=False,
+                redirect_to=reverse("productdb:import_product_migrations")
+            )
+
+            return redirect(reverse("task_in_progress", kwargs={"task_id": task.id}))
+
+    else:
+        form = ImportProductMigrationFileUploadForm()
+
+    context["form"] = form
+
+    return render(request, "productdb/import/import_product_migrations.html", context=context)
 
 
 @login_required()

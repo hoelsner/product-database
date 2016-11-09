@@ -62,7 +62,7 @@ class BaseSeleniumTest:
     @staticmethod
     def handle_upload_dialog(browser, filename, verify_that_file_exists=True,
                              suppress_notification=False, update_only=False):
-        """handle the Excel import dialog"""
+        """handle the Excel Import Dialogs (Product and Product Migration)"""
         if not os.path.isfile(filename) and verify_that_file_exists:
             pytest.fail("local file for upload not found: %s" % filename)
 

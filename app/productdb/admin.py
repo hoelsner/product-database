@@ -120,8 +120,13 @@ class ProductMigrationOptionAdmin(CompareVersionAdmin, admin.ModelAdmin):
         "replacement_product_id",
         "migration_source",
         "comment",
-        "migration_product_info_url"
+        "migration_product_info_url",
+        "is_replacement_in_db"
     )
+
+    readonly_fields = [
+        "is_replacement_in_db"
+    ]
 
     search_fields = (
         "product__product_id",

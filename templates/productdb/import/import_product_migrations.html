@@ -1,0 +1,38 @@
+{% extends '_base/page-with_nav-single_row.html' %}
+{% load staticfiles %}
+{% load bootstrap3 %}
+
+{% block title %}
+    Import Product Migrations - Product Database
+{% endblock %}
+
+{% block page_content %}
+    <div class="col-md-6 col-md-offset-3">
+        <div class="page-header">
+            <h1>Import Product Migrations</h1>
+        </div>
+
+        {% bootstrap_messages %}
+
+        <p>
+            You can use the following <a href="{% static 'file/import_product_migrations_template.xlsx' %}">Excel
+            Template</a> to import Product migrations to the database.
+        </p>
+
+        <div class="alert alert-info" role="alert">
+            <span class="fa fa-info-circle" aria-hidden="true"></span>&nbsp;
+            Empty Product IDs within the Excel file are ignored during the import.
+        </div>
+
+        <hr>
+        <form method="post" class="form" enctype="multipart/form-data">
+            {% csrf_token %}
+            {% bootstrap_form form %}
+            {% buttons %}
+                <button type="submit" class="btn btn-block btn-primary" id="submit">
+                    import product migrations
+                </button>
+            {% endbuttons %}
+        </form>
+    </div>
+{% endblock %}

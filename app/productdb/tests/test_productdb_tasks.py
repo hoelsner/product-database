@@ -8,25 +8,26 @@ from django.core.cache import cache
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.urlresolvers import reverse
 from django.test import Client
+from mixer.backend.django import mixer
 from app.config.settings import AppSettings
 from app.config.models import NotificationMessage
 from app.productdb import tasks
-from app.productdb.excel_import import ImportProductsExcelFile
-from app.productdb.models import JobFile, Product
+from app.productdb.excel_import import ProductsExcelImporter, ProductMigrationsExcelImporter
+from app.productdb.models import JobFile, Product, ProductMigrationSource, ProductMigrationOption, Vendor
 
 pytestmark = pytest.mark.django_db
 
 
-class BaseImportProductsExcelFileMock(ImportProductsExcelFile):
+class BaseProductsExcelImporterMock(ProductsExcelImporter):
     def verify_file(self):
         # set validation to true unconditional
         self.valid_file = True
 
-    def __load_workbook__(self):
+    def _load_workbook(self):
         # ignore the load workbook function
         return
 
-    def __create_data_frame__(self):
+    def _create_data_frame(self):
         # add a predefined DataFrame for the file import
         self.__wb_data_frame__ = pd.DataFrame([
             ["Product A", "description of Product A", "4000.00", "USD", "Cisco Systems"]
@@ -39,16 +40,82 @@ class BaseImportProductsExcelFileMock(ImportProductsExcelFile):
         ])
 
 
-class InvalidProductsImportProductsExcelFileMock(BaseImportProductsExcelFileMock):
+class BaseProductMigrationsExcelImporterMock(ProductMigrationsExcelImporter):
+    def verify_file(self):
+        # set validation to true unconditional
+        self.valid_file = True
+
+    def _load_workbook(self):
+        # ignore the load workbook function
+        return
+
+    def _create_data_frame(self):
+        # add a predefined DataFrame for the file import
+        self.__wb_data_frame__ = pd.DataFrame([
+            ["Product A", "Migration Source", "Replacement that is not in the database", "comment", ""],
+            ["Product A", "Other Migration Source", "Replacement that is not in the database", "comment", ""]
+        ], columns=[
+            "product id",
+            "migration source",
+            "replacement product id",
+            "comment",
+            "migration product info url"
+        ])
+
+
+class InvalidProductsImportProductsExcelFileMock(BaseProductsExcelImporterMock):
     invalid_products = 100
 
-    def import_products_to_database(self, **kwargs):
+    def import_to_database(self, **kwargs):
         pass
 
 
 @pytest.fixture
 def suppress_state_update_on_import(monkeypatch):
     monkeypatch.setattr(tasks.import_price_list, "update_state", lambda state, meta: None)
+    monkeypatch.setattr(tasks.import_product_migrations, "update_state", lambda state, meta: None)
+
+
+@pytest.mark.usefixtures("suppress_state_update_on_import")
+@pytest.mark.usefixtures("import_default_users")
+@pytest.mark.usefixtures("import_default_vendors")
+class TestImportProductMigrationsTask:
+    def test_successful_full_import_product_migration_task(self, monkeypatch):
+        # replace the ProductMigrationsExcelImporter class
+        monkeypatch.setattr(tasks, "ProductMigrationsExcelImporter", BaseProductMigrationsExcelImporterMock)
+        mixer.blend("productdb.Product", product_id="Product A", vendor=Vendor.objects.get(id=1))
+
+        jf = JobFile.objects.create(file=SimpleUploadedFile("myfile.xlsx", b"xyz"))
+        result = tasks.import_product_migrations(
+            job_file_id=jf.id,
+            user_for_revision=User.objects.get(username="api")
+        )
+
+        assert "status_message" in result, "If successful, a status message should be returned"
+        assert JobFile.objects.count() == 0, "Should be deleted after the task was completed"
+        assert ProductMigrationSource.objects.count() == 2, "One Product Migration Source was created"
+        assert ProductMigrationOption.objects.count() == 2, "One Product Migration Option was created"
+
+    def test_call_with_invalid_invalid_file_format(self):
+        jf = JobFile.objects.create(file=SimpleUploadedFile("myfile.xlsx", b"xyz"))
+        expected_message = "import failed, invalid file format ("
+
+        result = tasks.import_product_migrations(
+            job_file_id=jf.id,
+            user_for_revision=User.objects.get(username="api")
+        )
+
+        assert "error_message" in result
+        assert result["error_message"].startswith(expected_message)
+
+    def test_call_with_invalid_job_file_id(self):
+        result = tasks.import_product_migrations(
+            job_file_id=9999,
+            user_for_revision=User.objects.get(username="api")
+        )
+
+        assert "error_message" in result
+        assert "Cannot find file that was uploaded." == result["error_message"]
 
 
 @pytest.mark.usefixtures("suppress_state_update_on_import")
@@ -56,8 +123,8 @@ def suppress_state_update_on_import(monkeypatch):
 @pytest.mark.usefixtures("import_default_vendors")
 class TestImportPriceListTask:
     def test_successful_full_import_price_list_task(self, monkeypatch):
-        # replace the ImportProductsExcelFile class
-        monkeypatch.setattr(tasks, "ImportProductsExcelFile", BaseImportProductsExcelFileMock)
+        # replace the ProductsExcelImporter class
+        monkeypatch.setattr(tasks, "ProductsExcelImporter", BaseProductsExcelImporterMock)
 
         jf = JobFile.objects.create(file=SimpleUploadedFile("myfile.xlsx", b"xyz"))
         result = tasks.import_price_list(
@@ -72,8 +139,8 @@ class TestImportPriceListTask:
         assert Product.objects.count() == 1, "One Product was created"
 
     def test_successful_update_only_import_price_list_task(self, monkeypatch):
-        # replace the ImportProductsExcelFile class
-        monkeypatch.setattr(tasks, "ImportProductsExcelFile", BaseImportProductsExcelFileMock)
+        # replace the ProductsExcelImporter class
+        monkeypatch.setattr(tasks, "ProductsExcelImporter", BaseProductsExcelImporterMock)
 
         # import in update only mode
         jf = JobFile.objects.create(file=SimpleUploadedFile("myfile.xlsx", b"xyz"))
@@ -106,8 +173,8 @@ class TestImportPriceListTask:
         assert "description of Product A" == p.description
 
     def test_notification_message_on_import_price_list_task(self, monkeypatch):
-        # replace the ImportProductsExcelFile class
-        monkeypatch.setattr(tasks, "ImportProductsExcelFile", BaseImportProductsExcelFileMock)
+        # replace the ProductsExcelImporter class
+        monkeypatch.setattr(tasks, "ProductsExcelImporter", BaseProductsExcelImporterMock)
 
         jf = JobFile.objects.create(file=SimpleUploadedFile("myfile.xlsx", b"xyz"))
         result = tasks.import_price_list(
@@ -134,8 +201,8 @@ class TestImportPriceListTask:
         assert JobFile.objects.count() == 0, "Should be deleted after the task was completed"
 
     def test_call_with_invalid_products(self, monkeypatch):
-        # replace the ImportProductsExcelFile class
-        monkeypatch.setattr(tasks, "ImportProductsExcelFile", InvalidProductsImportProductsExcelFileMock)
+        # replace the ProductsExcelImporter class
+        monkeypatch.setattr(tasks, "ProductsExcelImporter", InvalidProductsImportProductsExcelFileMock)
 
         jf = JobFile.objects.create(file=SimpleUploadedFile("myfile.xlsx", b"xyz"))
         expected_message = "100 entries are invalid. Please check the following messages for more details."

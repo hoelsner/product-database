@@ -5,7 +5,8 @@ import pytest
 from django.contrib.auth.models import AnonymousUser, User
 from mixer.backend.django import mixer
 from django.core.files.uploadedfile import SimpleUploadedFile
-from app.productdb.forms import UserProfileForm, ProductListForm, ImportProductsFileUploadForm
+from app.productdb.forms import UserProfileForm, ProductListForm, ImportProductsFileUploadForm, \
+    ImportProductMigrationFileUploadForm
 
 pytestmark = pytest.mark.django_db
 
@@ -225,4 +226,43 @@ class TestImportProductsFileUploadForm:
             "update_existing_products_only": True
         }
         form = ImportProductsFileUploadForm(data=data, files=files)
+        assert form.is_valid() is True
+
+
+class TestImportProductMigrationFileUploadForm:
+    def test_form(self):
+        form = ImportProductMigrationFileUploadForm(data={}, files={})
+        assert form.is_valid() is False
+        assert "excel_file" in form.errors
+        assert "This field is required." in str(form.errors["excel_file"])
+
+        # verify only the file name, the content will raise an Exception in the further processing
+        files = {
+            "excel_file": SimpleUploadedFile("myfile", b"yxz")
+        }
+        form = ImportProductMigrationFileUploadForm(data={}, files=files)
+        assert form.is_valid() is False
+        assert "excel_file" in form.errors
+        assert "file type not supported" in str(form.errors["excel_file"])
+
+        files = {
+            "excel_file": SimpleUploadedFile("myfile.png", b"yxz")
+        }
+        form = ImportProductMigrationFileUploadForm(data={}, files=files)
+        assert form.is_valid() is False
+        assert "excel_file" in form.errors
+        assert "only .xlsx files are allowed" in str(form.errors["excel_file"])
+
+        files = {
+            "excel_file": SimpleUploadedFile("myfile.xlsx", b"")
+        }
+        form = ImportProductMigrationFileUploadForm(data={}, files=files)
+        assert form.is_valid() is False
+        assert "excel_file" in form.errors
+        assert "The submitted file is empty." in str(form.errors["excel_file"])
+
+        files = {
+            "excel_file": SimpleUploadedFile("myfile.xlsx", b"yxz")
+        }
+        form = ImportProductMigrationFileUploadForm(data={}, files=files)
         assert form.is_valid() is True

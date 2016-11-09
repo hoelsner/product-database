@@ -589,12 +589,20 @@ class TestProductMigrationOption:
             eol_ext_announcement_date=datetime.date(2016, 1, 1),
             end_of_sale_date=datetime.date(2016, 1, 1)
         )
+        mixer.blend(
+            "productdb.Product",
+            product_id="replacement_eol_product",
+            vendor=Vendor.objects.get(id=1),
+            eox_update_time_stamp=datetime.datetime.utcnow(),
+            eol_ext_announcement_date=datetime.date(2016, 1, 1),
+            end_of_sale_date=datetime.date(2016, 1, 1)
+        )
         assert p.current_lifecycle_states == [Product.END_OF_SALE_STR]
 
         pmo3 = ProductMigrationOption.objects.create(
             product=p,
             migration_source=promiggrp,
-            replacement_product_id="eol_product",
+            replacement_product_id="replacement_eol_product",
         )
 
         assert pmo3.is_valid_replacement() is False, "Should be False, because the product is EoL announced"
@@ -805,3 +813,105 @@ class TestProductMigrationOption:
         # test invalid call
         with pytest.raises(AttributeError):
             p11.get_migration_path(123)
+
+    def test_replacement_id_cannot_be_the_product_id_of_the_entry(self):
+        expected_error = "{'replacement_product_id': \['Product ID that should be replaced cannot be the same as the " \
+                         "suggested replacement Product ID'\]}"
+
+        # create basic object structure
+        group1 = ProductMigrationSource.objects.create(name="Group One")
+        root_product = mixer.blend(
+            "productdb.Product",
+            product_id="C2960XS",
+            vendor=Vendor.objects.get(id=1)
+        )
+
+        with pytest.raises(ValidationError) as exinfo:
+            ProductMigrationOption.objects.create(
+                product=root_product,
+                migration_source=group1,
+                replacement_product_id=root_product.product_id
+            )
+        assert exinfo.match(expected_error)
+
+        pmo = ProductMigrationOption.objects.create(
+            product=root_product,
+            migration_source=group1,
+            replacement_product_id="Not in Database"
+        )
+
+        with pytest.raises(ValidationError) as exinfo:
+            pmo.replacement_product_id = root_product.product_id
+            pmo.save()
+        assert exinfo.match(expected_error)
+
+    def test_update_replacement_db_product_field_in_product_migration_options(self):
+        # create basic object structure
+        group1 = ProductMigrationSource.objects.create(name="Group One")
+        root_product = mixer.blend(
+            "productdb.Product",
+            product_id="C2960XS",
+            vendor=Vendor.objects.get(id=1)
+        )
+        p11 = mixer.blend(
+            "productdb.Product",
+            product_id="C2960XL",
+            vendor=Vendor.objects.get(id=1)
+        )
+        p12 = mixer.blend(
+            "productdb.Product",
+            product_id="C2960XT",
+            vendor=Vendor.objects.get(id=1)
+        )
+
+        # add first replacement with a valid database option
+        pmo1 = ProductMigrationOption.objects.create(
+            product=root_product,
+            migration_source=group1,
+            replacement_product_id=p11.product_id
+        )
+
+        assert pmo1.is_replacement_in_db() is True
+        assert pmo1.get_product_replacement_id() == p11.id
+        assert pmo1.replacement_db_product == p11
+
+        # create a cascade
+        pmo2 = ProductMigrationOption.objects.create(
+            product=p11,
+            migration_source=group1,
+            replacement_product_id=p12.product_id
+        )
+
+        assert pmo2.is_replacement_in_db() is True
+        assert pmo2.get_product_replacement_id() == p12.id
+        assert pmo2.replacement_db_product == p12
+
+        # create a replacement product ID that is not part of the database for p12
+        pmo3 = ProductMigrationOption.objects.create(
+            product=p12,
+            migration_source=group1,
+            replacement_product_id="Not in the database"
+        )
+
+        assert pmo3.is_replacement_in_db() is False
+        assert pmo3.get_product_replacement_id() is None
+        assert pmo3.replacement_db_product is None
+
+        # drop p11 form database
+        p11.delete()
+
+        # update objects from DB, the migration chain is broken after the first migration option (because p11 will
+        # delete pmo2, bus pmo1 drops only the foreign key
+        pmo1.refresh_from_db()
+        with pytest.raises(ProductMigrationOption.DoesNotExist):
+            pmo2.refresh_from_db()
+        pmo3.refresh_from_db()
+
+        assert pmo1.is_replacement_in_db() is False
+        assert pmo1.get_product_replacement_id() is None
+        assert pmo1.replacement_db_product is None
+        assert pmo1.replacement_product_id == p11.product_id
+
+        assert pmo3.is_replacement_in_db() is False
+        assert pmo3.get_product_replacement_id() is None
+        assert pmo3.replacement_db_product is None

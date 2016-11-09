@@ -154,13 +154,14 @@
                             <li class="list-group-item list-group-item-success">
                                 <h4 class="list-group-item-heading">preferred migration option</h4>
                             </li>
+                            {# if a link to the product is defined, it must be valid #}
                             <li class="list-group-item{% if preferred_replacement_option.is_valid_replacement %} list-group-item-success{% else %} list-group-item-warning{% endif %}">
                                 <dl class="dl-horizontal">
                                     {% if preferred_replacement_option.replacement_product_id %}
                                         <dt>Product ID:</dt>
                                         <dd>
-                                            {% if link_to_preferred_option %}
-                                                <a href="{{ link_to_preferred_option }}">
+                                            {% if preferred_replacement_option.link_to_preferred_option %}
+                                                <a href="{{ preferred_replacement_option.link_to_preferred_option }}">
                                                     {{ preferred_replacement_option.replacement_product_id }}
                                                 </a>
                                             {% else %}
@@ -172,8 +173,16 @@
                                         <dt>comment:</dt>
                                         <dd>{{ preferred_replacement_option.comment }}</dd>
                                     {% endif %}
-                                    <dt>source</dt>
+                                    <dt>Source:</dt>
                                     <dd>{{ preferred_replacement_option.migration_source }}</dd>
+                                    {% for key, value in migration_source_details.items %}
+                                        {% if key == preferred_replacement_option.migration_source %}
+                                            {% if value.description %}
+                                                <dt>Source description:</dt>
+                                                <dd>{{ value.description }}</dd>
+                                            {% endif %}
+                                        {% endif %}
+                                    {% endfor %}
                                     {% if preferred_replacement_option.migration_product_info_url %}
                                         <dt></dt>
                                         <dd>
@@ -208,12 +217,19 @@
                             <h4 class="modal-title" id="{{ migration_source_name }}">detailed migration path by {{ migration_source_name }}</h4>
                         </div>
                         <div class="modal-body">
+                            {% for key, value in migration_source_details.items %}
+                                {% if key == migration_source_name %}
+                                    {% if value.description %}
+                                        <p>{{ value.description }}</p>
+                                    {% endif %}
+                                {% endif %}
+                            {% endfor %}
                             <p>The following replacement path was defined by <strong>{{ migration_source_name }}</strong>:</p>
                             <ul class="list-group">
-                            {% for pmo in path|slice:":-1" %}
+                            {% for pmo in path %}
                                 {# render invalid elements #}
-                                <del>
-                                    <li class="list-group-item disabled">
+                                {% if forloop.counter != path|length %}<del>{% endif %}
+                                    <li class="list-group-item{% if forloop.counter != path|length %} disabled{% else %}{% if preferred_replacement_option.is_valid_replacement %} list-group-item-success{% else %} list-group-item-warning{% endif %}{% endif %}">
                                         <dl class="dl-horizontal">
                                             {% if pmo.replacement_product_id %}
                                                 <dt>Product ID:</dt>
@@ -239,36 +255,8 @@
                                             {% endif %}
                                         </dl>
                                     </li>
-                                </del>
+                                {% if forloop.counter != path|length %}</del>{% endif %}
                             {% endfor %}
-                            {% with pmo=path|last %}
-                                <li class="list-group-item{% if preferred_replacement_option.is_valid_replacement %} list-group-item-success{% else %} list-group-item-warning{% endif %}">
-                                    <dl class="dl-horizontal">
-                                        {% if pmo.replacement_product_id %}
-                                            <dt>Product ID:</dt>
-                                            <dd>
-                                                {% if pmo.is_replacement_in_db %}
-                                                    <a href="{% url "productdb:product-detail" product_id=pmo.get_product_replacement_id %}">{{ pmo.replacement_product_id }}</a>
-                                                {% else %}
-                                                    {{ pmo.replacement_product_id }}
-                                                {% endif %}
-                                            </dd>
-                                        {% endif %}
-                                        {% if pmo.comment %}
-                                            <dt>comment:</dt>
-                                            <dd>{{ pmo.comment }}</dd>
-                                        {% endif %}
-                                        {% if pmo.migration_product_info_url %}
-                                            <dt></dt>
-                                            <dd>
-                                                <a href="{{ pmo.migration_product_info_url }}" target="_blank">
-                                                    Migration Info URL
-                                                </a>
-                                            </dd>
-                                        {% endif %}
-                                    </dl>
-                                </li>
-                            {% endwith %}
                             </ul>
                         </div>
                     </div>

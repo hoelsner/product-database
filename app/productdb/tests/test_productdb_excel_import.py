@@ -8,12 +8,13 @@ import datetime
 from reversion.models import Version
 from django.contrib.auth.models import User
 from mixer.backend.django import mixer
-from app.productdb.excel_import import ImportProductsExcelFile, InvalidImportFormatException, InvalidExcelFileFormat
-from app.productdb.models import Product, Vendor, ProductGroup
+from app.productdb.excel_import import ProductsExcelImporter, InvalidImportFormatException, InvalidExcelFileFormat, \
+    ProductMigrationsExcelImporter
+from app.productdb.models import Product, Vendor, ProductGroup, ProductMigrationSource, ProductMigrationOption
 
 pytestmark = pytest.mark.django_db
 
-TEST_DATA_COLUMNS = [
+PRODUCTS_TEST_DATA_COLUMNS = [
     "product id",
     "description",
     "list price",
@@ -29,7 +30,14 @@ TEST_DATA_COLUMNS = [
     "last date of support",
     "end of security/vulnerability support date",
 ]
-DEFAULT_TEST_DATA_FRAME = pd.DataFrame(
+PRODUCT_MIGRATION_TEST_DATA_COLUMNS = [
+    "product id",
+    "migration source",
+    "replacement product id",
+    "comment",
+    "migration product info url"
+]
+DEFAULT_PRODUCT_TEST_DATA = pd.DataFrame(
     [
         [
             "Product A",
@@ -63,42 +71,76 @@ DEFAULT_TEST_DATA_FRAME = pd.DataFrame(
             "",
             "",
         ]
-    ], columns=TEST_DATA_COLUMNS
+    ], columns=PRODUCTS_TEST_DATA_COLUMNS
 )
-CURRENT_TEST_DATA = DEFAULT_TEST_DATA_FRAME.copy()
+CURRENT_PRODUCT_MIGRATION_TEST_DATA = pd.DataFrame(
+    [
+        [
+            "Product A",
+            "New Migration Source",
+            "Replacement Product ID",
+            "comment of the migration",
+            "https://localhost"
+        ],
+        [
+            "Product A",
+            "Existing Migration Source",
+            "Replacement Product ID",
+            "comment of the migration",
+            "https://localhost"
+        ]
+    ], columns=PRODUCT_MIGRATION_TEST_DATA_COLUMNS
+)
+CURRENT_PRODUCT_TEST_DATA = DEFAULT_PRODUCT_TEST_DATA.copy()
 
 
-class BaseImportProductsExcelFileMock(ImportProductsExcelFile):
+class BaseProductsExcelImporterMock(ProductsExcelImporter):
     def verify_file(self):
         # set validation to true unconditional
         self.valid_file = True
 
-    def __load_workbook__(self):
+    def _load_workbook(self):
         # ignore the load workbook function
         return
 
-    def __create_data_frame__(self):
+    def _create_data_frame(self):
         # add a predefined DataFrame for the file import
-        self.__wb_data_frame__ = CURRENT_TEST_DATA
+        self.__wb_data_frame__ = CURRENT_PRODUCT_TEST_DATA
+
+
+class BaseProductMigrationsExcelImporterMock(ProductMigrationsExcelImporter):
+    def verify_file(self):
+        # set validation to true unconditional
+        self.valid_file = True
+
+    def _load_workbook(self):
+        # ignore the load workbook function
+        return
+
+    def _create_data_frame(self):
+        # add a predefined DataFrame for the file import
+        self.__wb_data_frame__ = CURRENT_PRODUCT_MIGRATION_TEST_DATA
 
 
 @pytest.fixture
 def apply_base_import_products_excel_file_mock(monkeypatch):
-    monkeypatch.setattr("test_productdb_excel_import.ImportProductsExcelFile", BaseImportProductsExcelFileMock)
+    monkeypatch.setattr("test_productdb_excel_import.ProductsExcelImporter", BaseProductsExcelImporterMock)
+    monkeypatch.setattr("test_productdb_excel_import.ProductMigrationsExcelImporter",
+                        BaseProductMigrationsExcelImporterMock)
 
 
 @pytest.mark.usefixtures("import_default_users")
 @pytest.mark.usefixtures("import_default_vendors")
-class TestImportProductsExcelFile:
+class TestProductsExcelImporter:
     @pytest.mark.usefixtures("apply_base_import_products_excel_file_mock")
     def test_valid_import(self):
-        product_file = ImportProductsExcelFile("virtual_file.xlsx")
+        product_file = ProductsExcelImporter("virtual_file.xlsx")
         assert product_file.is_valid_file() is False
 
         product_file.verify_file()
         assert product_file.is_valid_file() is True
 
-        product_file.import_products_to_database()
+        product_file.import_to_database()
         assert product_file.amount_of_products == 2
         assert Product.objects.count() == 2
 
@@ -135,8 +177,8 @@ class TestImportProductsExcelFile:
     @pytest.mark.usefixtures("apply_base_import_products_excel_file_mock")
     def test_import_with_list_price_of_zero(self):
         """Should ensure that a list price of 0 is saved as 0 value, not None/Null value"""
-        global CURRENT_TEST_DATA
-        CURRENT_TEST_DATA = pd.DataFrame(
+        global CURRENT_PRODUCT_TEST_DATA
+        CURRENT_PRODUCT_TEST_DATA = pd.DataFrame(
             [
                 [
                     "Product A",
@@ -218,15 +260,15 @@ class TestImportProductsExcelFile:
                     datetime.datetime(2016, 1, 8),
                     datetime.datetime(2016, 1, 9),
                 ]
-            ], columns=TEST_DATA_COLUMNS
+            ], columns=PRODUCTS_TEST_DATA_COLUMNS
         )
         user = User.objects.get(username="api")
-        product_file = ImportProductsExcelFile(
+        product_file = ProductsExcelImporter(
             "virtual_file.xlsx",
             user_for_revision=user
         )
         product_file.verify_file()
-        product_file.import_products_to_database()
+        product_file.import_to_database()
         assert Product.objects.count() == 5
 
         # verify imported data
@@ -252,8 +294,8 @@ class TestImportProductsExcelFile:
     @pytest.mark.usefixtures("apply_base_import_products_excel_file_mock")
     def test_import_with_list_price_without_leading_zero(self):
         """Should ensure that a list price of .xy is saved as 0.xy value, not None/Null value"""
-        global CURRENT_TEST_DATA
-        CURRENT_TEST_DATA = pd.DataFrame(
+        global CURRENT_PRODUCT_TEST_DATA
+        CURRENT_PRODUCT_TEST_DATA = pd.DataFrame(
             [
                 [
                     "Product A",
@@ -271,15 +313,15 @@ class TestImportProductsExcelFile:
                     datetime.datetime(2016, 1, 8),
                     datetime.datetime(2016, 1, 9),
                 ]
-            ], columns=TEST_DATA_COLUMNS
+            ], columns=PRODUCTS_TEST_DATA_COLUMNS
         )
         user = User.objects.get(username="api")
-        product_file = ImportProductsExcelFile(
+        product_file = ProductsExcelImporter(
             "virtual_file.xlsx",
             user_for_revision=user
         )
         product_file.verify_file()
-        product_file.import_products_to_database()
+        product_file.import_to_database()
         assert Product.objects.count() == 1
 
         # verify imported data
@@ -291,8 +333,8 @@ class TestImportProductsExcelFile:
     def test_import_with_internal_product_id(self):
         """Test the import of the internal product id column"""
         test_value = "some custom data"
-        global CURRENT_TEST_DATA
-        CURRENT_TEST_DATA = pd.DataFrame(
+        global CURRENT_PRODUCT_TEST_DATA
+        CURRENT_PRODUCT_TEST_DATA = pd.DataFrame(
             [
                 [
                     "Product A",
@@ -312,12 +354,12 @@ class TestImportProductsExcelFile:
             ]
         )
         user = User.objects.get(username="api")
-        product_file = ImportProductsExcelFile(
+        product_file = ProductsExcelImporter(
             "virtual_file.xlsx",
             user_for_revision=user
         )
         product_file.verify_file()
-        product_file.import_products_to_database()
+        product_file.import_to_database()
         assert Product.objects.count() == 1
 
         # verify imported data
@@ -327,16 +369,16 @@ class TestImportProductsExcelFile:
 
     @pytest.mark.usefixtures("apply_base_import_products_excel_file_mock")
     def test_valid_import_with_revision_user(self):
-        global CURRENT_TEST_DATA
-        CURRENT_TEST_DATA = DEFAULT_TEST_DATA_FRAME
+        global CURRENT_PRODUCT_TEST_DATA
+        CURRENT_PRODUCT_TEST_DATA = DEFAULT_PRODUCT_TEST_DATA
 
         user = User.objects.get(username="api")
-        product_file = ImportProductsExcelFile(
+        product_file = ProductsExcelImporter(
             "virtual_file.xlsx",
             user_for_revision=user
         )
         product_file.verify_file()
-        product_file.import_products_to_database()
+        product_file.import_to_database()
         assert Product.objects.count() == 2
 
         # verify reversion comment
@@ -347,12 +389,176 @@ class TestImportProductsExcelFile:
 
     def test_invalid_file(self):
         valid_test_file = os.path.join(os.getcwd(), "tests", "data", "file_not_found.xlsx")
-        product_file = ImportProductsExcelFile(valid_test_file)
+        product_file = ProductsExcelImporter(valid_test_file)
 
         with pytest.raises(Exception) as exinfo:
             product_file.verify_file()
 
         assert exinfo.match("No such file or directory:")
+
+
+@pytest.mark.usefixtures("import_default_users")
+@pytest.mark.usefixtures("import_default_vendors")
+class TestProductMigrationExcelImporter:
+    @pytest.mark.usefixtures("apply_base_import_products_excel_file_mock")
+    def test_valid_import(self):
+        mixer.blend("productdb.Product", product_id="Product A", vendor=Vendor.objects.get(id=1))
+        mixer.blend("productdb.ProductMigrationSource", name="Existing Migration Source")
+
+        product_migrations_file = ProductMigrationsExcelImporter("virtual_file.xlsx")
+        assert product_migrations_file.is_valid_file() is False
+
+        product_migrations_file.verify_file()
+        assert product_migrations_file.is_valid_file() is True
+
+        product_migrations_file.import_to_database()
+        assert ProductMigrationSource.objects.count() == 2
+        assert ProductMigrationOption.objects.count() == 2
+        assert len(product_migrations_file.import_result_messages) == 3
+        assert "Product Migration Source \"New Migration Source\" was created with a preference of 10" in product_migrations_file.import_result_messages
+        assert "create Product Migration path \"New Migration Source\" for Product \"Product A\"" in product_migrations_file.import_result_messages
+        assert "create Product Migration path \"Existing Migration Source\" for Product \"Product A\"" in product_migrations_file.import_result_messages
+
+        product_migrations_file.import_to_database()
+        assert ProductMigrationSource.objects.count() == 2
+        assert ProductMigrationOption.objects.count() == 2
+        assert len(product_migrations_file.import_result_messages) == 2
+        assert "update Product Migration path \"New Migration Source\" for Product \"Product A\"" in product_migrations_file.import_result_messages
+        assert "update Product Migration path \"Existing Migration Source\" for Product \"Product A\"" in product_migrations_file.import_result_messages
+
+        del product_migrations_file
+        Product.objects.all().delete()
+        ProductMigrationOption.objects.all().delete()
+        ProductMigrationSource.objects.all().delete()
+
+    @pytest.mark.usefixtures("apply_base_import_products_excel_file_mock")
+    def test_import_with_missing_migration_source(self):
+        """test import with missing migration source (ignore it)"""
+        global CURRENT_PRODUCT_MIGRATION_TEST_DATA
+        CURRENT_PRODUCT_MIGRATION_TEST_DATA = pd.DataFrame(
+            [
+                [
+                    "Product A",
+                    "",
+                    "Replacement Product ID",
+                    "comment of the migration",
+                    "Invalid URL"
+                ]
+            ], columns=PRODUCT_MIGRATION_TEST_DATA_COLUMNS
+        )
+        mixer.blend("productdb.Product", product_id="Product A", vendor=Vendor.objects.get(id=1))
+        mixer.blend("productdb.ProductMigrationSource", name="Existing Migration Source")
+
+        product_migrations_file = ProductMigrationsExcelImporter("virtual_file.xlsx")
+        assert product_migrations_file.is_valid_file() is False
+
+        product_migrations_file.verify_file()
+        assert product_migrations_file.is_valid_file() is True
+
+        product_migrations_file.import_to_database()
+        assert ProductMigrationOption.objects.count() == 0
+
+        Product.objects.all().delete()
+        ProductMigrationOption.objects.all().delete()
+        ProductMigrationSource.objects.all().delete()
+
+    @pytest.mark.usefixtures("apply_base_import_products_excel_file_mock")
+    def test_import_with_missing_product_value(self):
+        """test import with missing product (ignore it)"""
+        global CURRENT_PRODUCT_MIGRATION_TEST_DATA
+        CURRENT_PRODUCT_MIGRATION_TEST_DATA = pd.DataFrame(
+            [
+                [
+                    None,
+                    "Existing Migration Source",
+                    "Replacement Product ID",
+                    "comment of the migration",
+                    "Invalid URL"
+                ]
+            ], columns=PRODUCT_MIGRATION_TEST_DATA_COLUMNS
+        )
+        mixer.blend("productdb.Product", product_id="Product A", vendor=Vendor.objects.get(id=1))
+        mixer.blend("productdb.ProductMigrationSource", name="Existing Migration Source")
+
+        product_migrations_file = ProductMigrationsExcelImporter("no file.xlsx")
+        assert product_migrations_file.is_valid_file() is False
+
+        product_migrations_file.verify_file()
+        assert product_migrations_file.is_valid_file() is True
+
+        product_migrations_file.import_to_database()
+        assert ProductMigrationOption.objects.count() == 0
+        assert len(product_migrations_file.import_result_messages) == 0
+
+        Product.objects.all().delete()
+        ProductMigrationOption.objects.all().delete()
+        ProductMigrationSource.objects.all().delete()
+
+    @pytest.mark.usefixtures("apply_base_import_products_excel_file_mock")
+    def test_import_with_invalid_url_format(self):
+        """test what happens if the data contains invalid data"""
+        global CURRENT_PRODUCT_MIGRATION_TEST_DATA
+        CURRENT_PRODUCT_MIGRATION_TEST_DATA = pd.DataFrame(
+            [
+                [
+                    "Product A",
+                    "Existing Migration Source",
+                    "Replacement Product ID",
+                    "comment of the migration",
+                    "Invalid URL"
+                ]
+            ], columns=PRODUCT_MIGRATION_TEST_DATA_COLUMNS
+        )
+        mixer.blend("productdb.Product", product_id="Product A", vendor=Vendor.objects.get(id=1))
+        mixer.blend("productdb.ProductMigrationSource", name="Existing Migration Source")
+
+        product_migrations_file = ProductMigrationsExcelImporter("virtual_file.xlsx")
+        assert product_migrations_file.is_valid_file() is False
+
+        product_migrations_file.verify_file()
+        assert product_migrations_file.is_valid_file() is True
+
+        product_migrations_file.import_to_database()
+        assert ProductMigrationOption.objects.count() == 0
+        assert "cannot save Product Migration for Product A: {'migration_product_info_url': " \
+               "['Enter a valid URL.']}" in product_migrations_file.import_result_messages
+
+        Product.objects.all().delete()
+        ProductMigrationOption.objects.all().delete()
+        ProductMigrationSource.objects.all().delete()
+
+    @pytest.mark.usefixtures("apply_base_import_products_excel_file_mock")
+    def test_with_invalid_product_id(self):
+        """test the behavior of the import function if a product was not found in the database"""
+        global CURRENT_PRODUCT_MIGRATION_TEST_DATA
+        CURRENT_PRODUCT_MIGRATION_TEST_DATA = pd.DataFrame(
+            [
+                [
+                    "Product that is not in the Database",
+                    "Existing Migration Source",
+                    "Replacement Product ID",
+                    "comment of the migration",
+                    "Invalid URL"
+                ]
+            ], columns=PRODUCT_MIGRATION_TEST_DATA_COLUMNS
+        )
+        mixer.blend("productdb.Product", product_id="Product A", vendor=Vendor.objects.get(id=1))
+        mixer.blend("productdb.ProductMigrationSource", name="Existing Migration Source")
+
+        product_migrations_file = ProductMigrationsExcelImporter("virtual_file.xlsx")
+        assert product_migrations_file.is_valid_file() is False
+
+        product_migrations_file.verify_file()
+        assert product_migrations_file.is_valid_file() is True
+
+        product_migrations_file.import_to_database()
+        assert ProductMigrationOption.objects.count() == 0
+        assert "Product Product that is not in the Database not found in database, skip " \
+               "entry" in product_migrations_file.import_result_messages
+
+        Product.objects.all().delete()
+        ProductMigrationOption.objects.all().delete()
+        ProductMigrationSource.objects.all().delete()
 
 
 @pytest.mark.usefixtures("import_default_users")
@@ -364,11 +570,11 @@ class TestMigratedImportProductsExcelFile:
     def prepare_import_products_excel_file(filename, verify_file=True, start_import=True):
         valid_test_file = os.path.join(os.getcwd(), "tests", "data", filename)
 
-        product_file = ImportProductsExcelFile(valid_test_file)
+        product_file = ProductsExcelImporter(valid_test_file)
         if verify_file:
             product_file.verify_file()
             if start_import:
-                product_file.import_products_to_database()
+                product_file.import_to_database()
 
         return product_file
 
@@ -458,7 +664,7 @@ class TestMigratedImportProductsExcelFile:
         mixer.blend("productdb.Product", product_id="WS-C2960S-48FPD-L", vendor=Vendor.objects.get(id=1))
 
         product_file = self.prepare_import_products_excel_file("excel_import_products_test.xlsx", start_import=False)
-        product_file.import_products_to_database(update_only=True)
+        product_file.import_to_database(update_only=True)
 
         assert product_file.valid_imported_products == 1
         assert product_file.invalid_products == 0

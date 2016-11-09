@@ -922,6 +922,80 @@ class TestDeleteProductListView:
         assert ProductList.objects.count() == 0, "One element should be created in the database"
 
 
+class TestImportProductMigrationsView:
+    URL_NAME = "productdb:import_product_migrations"
+
+    def test_anonymous_default(self):
+        url = reverse(self.URL_NAME)
+        request = RequestFactory().get(url)
+        request.user = AnonymousUser()
+        response = views.import_product_migrations(request)
+
+        assert response.status_code == 302, "Should redirect to login page"
+        assert response.url == reverse("login") + "?next=" + url, \
+            "Should contain a next parameter for redirect"
+
+    @pytest.mark.usefixtures("enable_login_only_mode")
+    def test_anonymous_login_only_mode(self):
+        url = reverse(self.URL_NAME)
+        request = RequestFactory().get(url)
+        request.user = AnonymousUser()
+        response = views.import_product_migrations(request)
+
+        assert response.status_code == 302, "Should redirect to login page"
+        assert response.url == reverse("login") + "?next=" + url, \
+            "Should contain a next parameter for redirect"
+
+    def test_authenticated_user(self):
+        # the import product dialog requires the change_product permission
+        url = reverse(self.URL_NAME)
+        request = RequestFactory().get(url)
+        request.user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+
+        with pytest.raises(PermissionDenied):
+            views.import_product_migrations(request)
+
+        request = RequestFactory().get(url)
+        user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+        user.user_permissions.add(Permission.objects.get(codename="change_productmigrationoption"))
+        request.user = user
+        response = views.import_product_migrations(request)
+
+        assert response.status_code == 200, "Should be callable"
+
+    @pytest.mark.usefixtures("disable_import_product_migrations_task")
+    def test_post(self):
+        url = reverse(self.URL_NAME)
+        user = mixer.blend("auth.User", username="test", is_superuser=False, is_staff=False)
+        user.user_permissions.add(Permission.objects.get(codename="change_productmigrationoption"))
+        user.save()
+
+        # content is not relevant for this test
+        request = RequestFactory().post(url, data={"excel_file": SimpleUploadedFile("myfile.xlsx", b"yxz")})
+        request.user = user
+
+        response = views.import_product_migrations(request)
+
+        assert response.status_code == 302, "redirect to task in progress view"
+        assert response.url == reverse("task_in_progress", kwargs={"task_id": "mock_task_id"})
+
+    @pytest.mark.usefixtures("disable_import_product_migrations_task")
+    def test_post_as_superuser(self):
+        url = reverse(self.URL_NAME)
+        user = mixer.blend("auth.User", username="test", is_superuser=True, is_staff=False)
+        user.user_permissions.add(Permission.objects.get(codename="change_productmigrationoption"))
+        user.save()
+
+        # content is not relevant for this test
+        request = RequestFactory().post(url, data={"excel_file": SimpleUploadedFile("myfile.xlsx", b"yxz")})
+        request.user = user
+
+        response = views.import_product_migrations(request)
+
+        assert response.status_code == 302, "redirect to task in progress view"
+        assert response.url == reverse("task_in_progress", kwargs={"task_id": "mock_task_id"})
+
+
 class TestImportProductsView:
     URL_NAME = "productdb:import_products"
 

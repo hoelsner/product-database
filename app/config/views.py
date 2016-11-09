@@ -8,7 +8,6 @@ from django.http import Http404
 from django.shortcuts import resolve_url, redirect, render
 from django.utils.safestring import mark_safe
 from djcelery.models import WorkerState
-
 from app.config.settings import AppSettings
 from app.config.forms import SettingsForm, NotificationMessageForm
 from app.config.models import NotificationMessage, TextBlock

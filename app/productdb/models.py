@@ -8,7 +8,7 @@ from django.core.cache import cache
 from django.core.cache.utils import make_template_fragment_key
 from django.db import models
 from django.db.models import Q
-from django.db.models.signals import pre_delete, post_save
+from django.db.models.signals import pre_delete, post_save, pre_save
 from django.dispatch import receiver
 from django.utils.timezone import datetime
 from app.productdb.validators import validate_product_list_string
@@ -360,13 +360,13 @@ class Product(models.Model):
 
     def get_preferred_replacement_option(self):
         if self.has_migration_options():
-            return self.get_migration_path(self.productmigrationoption_set.all().first().migration_source.name)[-1]
+            return self.get_migration_path(self.productmigrationoption_set.first().migration_source.name)[-1]
         return None
 
     def get_migration_path(self, migration_source_name=None):
         """
         recursive lookup of the given migration source name, result is an ordered list, the first element
-        is the direct replacemet and the last one is the valid replacement
+        is the direct replacement and the last one is the valid replacement
         """
         if not migration_source_name:
             if not self.productmigrationoption_set.all().exists():
@@ -392,7 +392,9 @@ class Product(models.Model):
                         p = Product.objects.get(product_id=result[-1].replacement_product_id)
                         if p.productmigrationoption_set.filter(migration_source__name=migration_source_name).exists():
                             result.append(
-                                p.productmigrationoption_set.filter(migration_source__name=migration_source_name).first()
+                                p.productmigrationoption_set.filter(
+                                    migration_source__name=migration_source_name
+                                )[:1].first()
                             )
                         else:
                             break
@@ -458,6 +460,13 @@ class ProductMigrationOption(models.Model):
         null=False,
         blank=True
     )
+    replacement_db_product = models.ForeignKey(
+        Product,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="replacement_db_product"
+    )
     comment = models.TextField(
         max_length=4096,
         help_text="comment from the group (optional)",
@@ -473,24 +482,12 @@ class ProductMigrationOption(models.Model):
     )
 
     def is_replacement_in_db(self):
-        """True, if the replacement product is part of the database"""
-        try:
-            if self.replacement_product_id:
-                Product.objects.get(product_id=self.replacement_product_id)
-                return True
-
-        except models.ObjectDoesNotExist:
-            pass
-
-        return False
+        """True, if the replacement product exists in the database"""
+        return self.replacement_db_product is not None
 
     def get_product_replacement_id(self):
         """returns the product ID of the replacement, if not defined or not in the database, result is None"""
-        if self.is_replacement_in_db():
-            return Product.objects.get(product_id=self.replacement_product_id).id
-
-        else:
-            return None
+        return self.replacement_db_product.id if self.replacement_db_product else None
 
     def is_valid_replacement(self):
         """Check that the object is a valid replacement option. A replacement option is valid if
@@ -500,8 +497,8 @@ class ProductMigrationOption(models.Model):
         if self.replacement_product_id:
             if self.is_replacement_in_db():
                 # replacement product ID is part of the database
-                p = Product.objects.get(product_id=self.replacement_product_id)
-                if not p.end_of_sale_date or p.current_lifecycle_states == [Product.NO_EOL_ANNOUNCEMENT_STR]:
+                if not self.replacement_db_product.end_of_sale_date or \
+                                self.replacement_db_product.current_lifecycle_states == [Product.NO_EOL_ANNOUNCEMENT_STR]:
                     # product is not EoL and therefore valid
                     return True
 
@@ -515,15 +512,10 @@ class ProductMigrationOption(models.Model):
 
     def get_valid_replacement_product(self):
         """get a valid replacement product for this migration source"""
-        try:
-            if self.is_valid_replacement():
-                return Product.objects.get(product_id=self.replacement_product_id)
+        if self.is_valid_replacement():
+            return self.replacement_db_product
 
-            else:
-                return None
-
-        except models.ObjectDoesNotExist:
-            return None
+        return None
 
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
         self.full_clean()
@@ -663,6 +655,37 @@ def invalidate_page_cache(sender, instance, **kwargs):
 
 
 @receiver(post_save, sender=Product)
+def update_db_state_for_the_migration_options_with_product_id(sender, instance, **kwargs):
+    """save all Product Migration Options where the replacement product ID is the same as the Product ID that was
+    saved to update the replacement_in_db flag"""
+    for pmo in ProductMigrationOption.objects.filter(replacement_product_id=instance.product_id):
+        pmo.save()
+
+
+@receiver(post_save, sender=Product)
 def invalidate_product_related_cache_values(sender, instance, **kwargs):
     """delete cache values that are somehow related to the Product data model"""
     cache.delete("PDB_HOMEPAGE_CONTEXT")
+
+
+@receiver(pre_save, sender=ProductMigrationOption)
+def update_product_migration_replacement_id_relation_field(sender, instance, **kwargs):
+    """ensures that a database relation for a replacement product ID exists, if the replacement_product_id is part of
+    the database, validates that these two values cannot be the same"""
+    try:
+        # check that the replacement product id is not the same as the original product id (would create a loop
+        # within migration path computation)
+        if instance.replacement_product_id != instance.product.product_id:
+            instance.replacement_db_product = Product.objects.get(product_id=instance.replacement_product_id)
+
+        else:
+            raise ValidationError({
+                "replacement_product_id": "Product ID that should be replaced cannot be the same as the suggested "
+                                          "replacement Product ID"
+            })
+
+    except ValidationError:
+        raise  # propagate to the save method
+
+    except Exception:
+        instance.replacement_db_product = None

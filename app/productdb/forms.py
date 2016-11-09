@@ -77,3 +77,17 @@ class ImportProductsFileUploadForm(forms.Form):
 
         if uploaded_file.name.split('.')[-1] not in self.FILE_EXT_WHITELIST:
             raise forms.ValidationError("only .xlsx files are allowed")
+
+
+class ImportProductMigrationFileUploadForm(forms.Form):
+    excel_file = forms.FileField(label="Product Migration Excel File for import:")
+
+    def clean_excel_file(self):
+        # validation of the import products excel file
+        uploaded_file = self.cleaned_data.get("excel_file")
+
+        if len(uploaded_file.name.split('.')) == 1:
+            raise forms.ValidationError("file type not supported.")
+
+        if uploaded_file.name.split('.')[-1] not in ["xlsx"]:
+            raise forms.ValidationError("only .xlsx files are allowed")

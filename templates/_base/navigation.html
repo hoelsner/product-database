@@ -108,6 +108,14 @@
                                         </a>
                                     </li>
                                 {% endif %}
+                                {% if perms.productdb.change_productmigrationoption %}
+                                    <li role="presentation">
+                                        <a id="navbar_admin_import_product_migration_options" href="{% url 'productdb:import_product_migrations' %}">
+                                            <i class="fa fa-file-excel-o"></i>&nbsp;&nbsp;
+                                            Import Product Migrations
+                                        </a>
+                                    </li>
+                                {% endif %}
                                 {% if user.is_superuser %}
                                     <li role="presentation">
                                         <a href="{% url 'productdb_config:notification-add' %}" id="navbar_admin_notification_message">

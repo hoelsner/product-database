@@ -76,6 +76,7 @@ urlpatterns = [
 
     url(r'^do/bulkcheck/$', views.bulk_eol_check, name='bulk_eol_check'),
     url(r'^import/products/$', views.import_products, name='import_products'),
+    url(r'^import/productmigrations/$', views.import_product_migrations, name='import_product_migrations'),
     url(r'^about/$', views.about_view, name='about'),
     url(r'^$', views.home, name='home'),
 ]

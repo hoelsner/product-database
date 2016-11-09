@@ -1,12 +1,14 @@
 """
 Test suite for the selenium test cases
 """
+import datetime
 import json
 import pytest
 import os
 import time
 from django.core.urlresolvers import reverse
 from django.test import Client
+from mixer.backend.django import mixer
 from selenium.webdriver.common.keys import Keys
 from app.productdb.models import Product, Vendor
 from tests import BaseSeleniumTest, PRODUCTS_API_ENDPOINT
@@ -267,6 +269,56 @@ class TestExcelImportFeature(BaseSeleniumTest):
 
         # end session
         self.logout_user(browser)
+
+    @pytest.mark.usefixtures("set_celery_always_eager")
+    def test_import_product_migrations_procedure(self, browser, live_server):
+        # create some test data
+        product_a = mixer.blend("productdb.Product", product_id="Product A", vendor=Vendor.objects.get(id=1),
+                                eol_ext_announcement_date=datetime.date(2016, 1, 1),
+                                end_of_sale_date=datetime.date(2016, 1, 1),
+                                eox_update_time_stamp=datetime.datetime.utcnow())
+        mixer.blend("productdb.Product", product_id="Product B", vendor=Vendor.objects.get(id=1),
+                    eol_ext_announcement_date=datetime.date(2016, 1, 1), end_of_sale_date=datetime.date(2016, 1, 1),
+                    eox_update_time_stamp=datetime.datetime.utcnow())
+        mixer.blend("productdb.Product", product_id="Product C", vendor=Vendor.objects.get(id=1),
+                    eol_ext_announcement_date=datetime.date(2016, 1, 1), end_of_sale_date=datetime.date(2016, 1, 1),
+                    eox_update_time_stamp=datetime.datetime.utcnow())
+        mixer.blend("productdb.Product", product_id="Product D", vendor=Vendor.objects.get(id=1),
+                    eol_ext_announcement_date=datetime.date(2016, 1, 1), end_of_sale_date=datetime.date(2016, 1, 1),
+                    eox_update_time_stamp=datetime.datetime.utcnow())
+        mixer.blend("productdb.Product", product_id="Product E", vendor=Vendor.objects.get(id=1),
+                    eol_ext_announcement_date=datetime.date(2016, 1, 1), end_of_sale_date=datetime.date(2016, 1, 1),
+                    eox_update_time_stamp=datetime.datetime.utcnow())
+        mixer.blend("productdb.ProductMigrationSource", name="Someone", preference=75)
+
+        # login and go to the import products page
+        browser.get(live_server + reverse("productdb:import_product_migrations"))
+        self.login_user(browser, self.ADMIN_USERNAME, self.ADMIN_PASSWORD, "Import Product Migrations")
+
+        # upload an excel file with invalid keys
+        test_excel_file = os.path.join(os.getcwd(),
+                                       "tests",
+                                       "data",
+                                       "excel_import_product_migrations.xlsx")
+        # the button is not pressed in this case
+        self.handle_upload_dialog(browser, test_excel_file, suppress_notification=True)
+
+        # wait for task to complete
+        self.wait_for_text_to_be_displayed_in_id_tag(browser, "status_message", "Product migrations successful updated")
+
+        # check the message
+        expected_message = "create Product Migration path \"Someone\" for Product \"Product A\""
+        assert expected_message in browser.find_element_by_tag_name("body").text
+        browser.find_element_by_id("continue_button").click()
+
+        # go to Product A and verify that the expected preferred migration option was set
+        browser.get(live_server + reverse("productdb:product-detail", kwargs={"product_id": product_a.id}))
+
+        content = browser.find_element_by_tag_name("body").text
+        assert "Product ID:\nNot in Database\n" in content
+        assert "Source:\nSomeone\n" in content
+        assert "Someone (detailed)" in content
+        assert "Someone else (detailed)" in content
 
 
 @pytest.mark.usefixtures("base_data_for_test_case")
