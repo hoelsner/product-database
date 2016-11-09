@@ -6,7 +6,8 @@ from django.contrib.auth.models import AnonymousUser, User
 from mixer.backend.django import mixer
 from django.core.files.uploadedfile import SimpleUploadedFile
 from app.productdb.forms import UserProfileForm, ProductListForm, ImportProductsFileUploadForm, \
-    ImportProductMigrationFileUploadForm
+    ImportProductMigrationFileUploadForm, ProductMigrationOptionForm
+from app.productdb.models import Vendor
 
 pytestmark = pytest.mark.django_db
 
@@ -265,4 +266,45 @@ class TestImportProductMigrationFileUploadForm:
             "excel_file": SimpleUploadedFile("myfile.xlsx", b"yxz")
         }
         form = ImportProductMigrationFileUploadForm(data={}, files=files)
+        assert form.is_valid() is True
+
+
+@pytest.mark.usefixtures("import_default_vendors")
+class TestProductMigrationOptionForm:
+    def test_form(self):
+        p = mixer.blend("productdb.Product", product_id="Test", vendor=Vendor.objects.get(id=1))
+        mg = migration_source = mixer.blend("productdb.ProductMigrationSource", name="Test")
+
+        form = ProductMigrationOptionForm(data={
+            "migration_source": migration_source.id,
+            "product_id": "some value that is not part of the database",
+            "replacement_product_id": "Another Test"
+        })
+        assert form.is_valid() is False
+        assert "product_id" in form.errors
+        assert form.errors["product_id"] == ["Product not in database, please enter a valid Product ID"]
+
+        form = ProductMigrationOptionForm(data={
+            "migration_source": migration_source.id,
+            "product_id": "Test",
+            "replacement_product_id": "Test"
+        })
+        assert form.is_valid() is False
+        assert "replacement_product_id" in form.errors
+        assert form.errors["replacement_product_id"] == ["Product ID that should be replaced cannot be the same "
+                                                         "as the suggested replacement Product ID"]
+
+        form = ProductMigrationOptionForm(data={
+            "migration_source": migration_source.id,
+            "product_id": "Test",
+            "replacement_product_id": "Another Test"
+        })
+        assert form.is_valid() is True
+
+        pmo = mixer.blend("productdb.ProductMigrationOption", product=p, migration_source=mg)
+        form = ProductMigrationOptionForm(instance=pmo, data={
+            "migration_source": migration_source.id,
+            "product_id": "Test",
+            "replacement_product_id": "Another Test replacement"
+        })
         assert form.is_valid() is True

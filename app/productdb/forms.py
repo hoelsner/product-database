@@ -1,9 +1,64 @@
 import logging
 from django import forms
 from django.contrib.auth.models import AnonymousUser
-from app.productdb.models import ProductList, UserProfile
+from django.forms.utils import ErrorList
+
+from app.productdb.models import ProductList, UserProfile, Product, ProductMigrationOption
 
 logger = logging.getLogger("app.productdb.forms")
+
+
+class ProductMigrationOptionForm(forms.ModelForm):
+    """custom form for the admin page to create or update Product Migration Options"""
+    product_id = forms.CharField()
+    product = forms.CharField(
+        required=False,
+        widget=forms.HiddenInput
+    )
+
+    def __init__(self, data=None, files=None, auto_id='id_%s', prefix=None, initial=None, error_class=ErrorList,
+                 label_suffix=None, empty_permitted=False, instance=None):
+        super().__init__(data, files, auto_id, prefix, initial, error_class, label_suffix, empty_permitted, instance)
+        if instance:
+            self.fields["product_id"].initial = instance.product.product_id
+
+    def clean(self):
+        cleaned_data = super(ProductMigrationOptionForm, self).clean()
+        product_id = cleaned_data["product_id"]
+        replacement_product_id = cleaned_data["replacement_product_id"]
+
+        try:
+            product = Product.objects.get(product_id=product_id)
+            self.instance.product = product
+
+        except Product.DoesNotExist:
+            raise forms.ValidationError({"product_id": "Product not in database, please enter a valid Product ID"})
+
+        if replacement_product_id != self.instance.product.product_id:
+            try:
+                self.instance.replacement_db_product = Product.objects.get(
+                    product_id=self.instance.replacement_product_id
+                )
+
+            except Product.DoesNotExist:
+                pass
+
+        else:
+            raise forms.ValidationError({
+                "replacement_product_id": "Product ID that should be replaced cannot be the same as the suggested "
+                                          "replacement Product ID"
+            })
+
+    class Meta:
+        model = ProductMigrationOption
+        fields = {
+            "product_id",
+            "product",
+            "replacement_product_id",
+            "migration_source",
+            "comment",
+            "migration_product_info_url",
+        }
 
 
 class UserProfileForm(forms.ModelForm):

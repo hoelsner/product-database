@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import User
 from reversion_compare.admin import CompareVersionAdmin
+from app.productdb.forms import ProductMigrationOptionForm
 from app.productdb.models import Product, Vendor, ProductGroup, ProductList, ProductMigrationOption, \
     ProductMigrationSource
 from app.productdb.models import UserProfile
@@ -115,6 +116,7 @@ admin.site.register(ProductMigrationSource, ProductMigrationSourceAdmin)
 
 
 class ProductMigrationOptionAdmin(CompareVersionAdmin, admin.ModelAdmin):
+    form = ProductMigrationOptionForm
     list_display = (
         "product",
         "replacement_product_id",
@@ -123,6 +125,14 @@ class ProductMigrationOptionAdmin(CompareVersionAdmin, admin.ModelAdmin):
         "migration_product_info_url",
         "is_replacement_in_db"
     )
+
+    fields = [
+        "product_id",
+        "replacement_product_id",
+        "migration_source",
+        "comment",
+        "migration_product_info_url",
+    ]
 
     readonly_fields = [
         "is_replacement_in_db"
