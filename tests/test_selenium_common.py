@@ -702,16 +702,17 @@ class TestProductDatabaseViews(BaseSeleniumTest):
         browser.find_element_by_link_text("Product Group").click()
 
         # the table performs the search function and a defined amount of rows is displayed
-        expected_table_content = "Product ID\nProduct Group\nDescription\n" \
+        expected_table_content = "Product ID Product Group Description " \
                                  "List Price Lifecycle State Internal Product ID"
         table_rows = [
             "WS-C2960X-24PD-L Catalyst 2960X Catalyst 2960-X 24 GigE PoE 370W, 2 x 10G SFP+, "
             "LAN Base 4595.00 USD 2960x-24pd-l",
             "WS-C2960X-24PS-L Catalyst 2960X Catalyst 2960-X 24 GigE PoE 370W, 4 x 1G SFP, "
-            "LAN Base 3195.00 USD 2960x-24ps-l",
+            "LAN Base 3195.00 USD 2960x-24ps-l"
         ]
 
         table = browser.find_element_by_id('product_table')
+        print(table.text)
         assert expected_table_content in table.text
         for r in table_rows:
             print(table.text)
@@ -832,7 +833,7 @@ class TestProductDatabaseViews(BaseSeleniumTest):
         time.sleep(3)
 
         # the table performs the search function and a defined amount of rows is displayed
-        expected_table_content = """Vendor\nProduct ID\nDescription\nList Price Lifecycle State"""
+        expected_table_content = """Vendor Product ID Description List Price Lifecycle State"""
         table_rows = [
             'WS-C2960X-24PD-L Catalyst 2960-X 24 GigE PoE 370W, 2 x 10G SFP+, LAN Base 4595.00 USD',
             'WS-C2960X-24PS-L Catalyst 2960-X 24 GigE PoE 370W, 4 x 1G SFP, LAN Base 3195.00 USD',

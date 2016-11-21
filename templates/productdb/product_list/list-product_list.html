@@ -79,7 +79,7 @@
                 var title = $(this).text();
                 if($(this).hasClass("searchable")) {
                     $(this).html(
-                            '<input id="column_search_' + title + '" class="search_box" type="text" placeholder="Search '+ title + '" /><br>' +
+                            '<span class="hidden-xs"><input id="column_search_' + title + '" class="search_box" type="text" placeholder="Search '+ title + '" /></span>' +
                             $(this).html()
                     );
                 }
