@@ -2,8 +2,6 @@ import logging
 import re
 from django import forms
 from django.core.exceptions import ValidationError
-from django.forms import PasswordInput
-
 from app.config.models import NotificationMessage
 
 
@@ -35,13 +33,15 @@ class SettingsForm(forms.Form):
     homepage_text_before = forms.CharField(
         widget=forms.Textarea(attrs={'class': "form-control code"}),
         required=False,
-        label="Text before favorite actions:"
+        label="Text before favorite actions:",
+        help_text="HTML and/or markdown formatted text"
     )
 
     homepage_text_after = forms.CharField(
         widget=forms.Textarea(attrs={'class': "form-control code"}),
         required=False,
-        label="Text after favorite actions:"
+        label="Text after favorite actions:",
+        help_text="HTML and/or markdown formatted text"
     )
 
     cisco_api_enabled = forms.BooleanField(

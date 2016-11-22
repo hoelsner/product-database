@@ -35,7 +35,7 @@
         <div class="well">
             {% if product_list.description %}
                 <p>
-                    {{ product_list.description|safe }}
+                    {{ product_list.description|render_markdown }}
                 </p>
                 <hr>
             {% endif %}

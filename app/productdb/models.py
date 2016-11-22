@@ -543,7 +543,7 @@ class ProductList(models.Model):
     string_product_list = models.TextField(
         max_length=16384,
         help_text="Product IDs separated by word wrap or semicolon",
-        verbose_name="Unstructured Product ID list",
+        verbose_name="Unstructured Product IDs separated by line break",
         validators=[validate_product_list_string]
     )
 
@@ -552,7 +552,7 @@ class ProductList(models.Model):
         blank=True,
         null=False,
         verbose_name="Description",
-        help_text="short description what's part of this Product List"
+        help_text="short description what's part of this Product List (markdown and/or HTML)"
     )
 
     version_note = models.TextField(
@@ -560,7 +560,7 @@ class ProductList(models.Model):
         blank=True,
         null=False,
         verbose_name="Version note",
-        help_text="some version information for the product list (markdown formatting supported)"
+        help_text="some version information for the product list (markdown and/or HTML)"
     )
 
     update_date = models.DateField(

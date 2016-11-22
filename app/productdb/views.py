@@ -42,11 +42,6 @@ def home(request):
             "recent_events": NotificationMessage.objects.filter(
                 created__gte=datetime.now(get_current_timezone()) - timedelta(days=30)
             ).order_by('-created')[:5],
-            "TB_HOMEPAGE_TEXT_BEFORE_FAVORITE_ACTIONS":
-                TextBlock.objects.filter(name=TextBlock.TB_HOMEPAGE_TEXT_BEFORE_FAVORITE_ACTIONS).first(),
-            "TB_HOMEPAGE_TEXT_AFTER_FAVORITE_ACTIONS":
-                TextBlock.objects.filter(name=TextBlock.TB_HOMEPAGE_TEXT_AFTER_FAVORITE_ACTIONS).first(),
-            "vendors": [x.name for x in Vendor.objects.all() if x.name != "unassigned"],
             "vendors": [x.name for x in Vendor.objects.all() if x.name != "unassigned"],
             "product_count": all_products_query.count(),
             "product_lifecycle_count": all_products_query.filter(eox_update_time_stamp__isnull=False).count(),
@@ -68,6 +63,13 @@ def home(request):
             "product_price_count": all_products_query.filter(list_price__isnull=False).count(),
         }
         cache.set(HOMEPAGE_CONTEXT_CACHE_KEY, context, timeout=60*10)
+
+    context.update({
+        "TB_HOMEPAGE_TEXT_BEFORE_FAVORITE_ACTIONS":
+            TextBlock.objects.filter(name=TextBlock.TB_HOMEPAGE_TEXT_BEFORE_FAVORITE_ACTIONS).first(),
+        "TB_HOMEPAGE_TEXT_AFTER_FAVORITE_ACTIONS":
+            TextBlock.objects.filter(name=TextBlock.TB_HOMEPAGE_TEXT_AFTER_FAVORITE_ACTIONS).first(),
+    })
 
     return render(request, "productdb/home.html", context=context)
 

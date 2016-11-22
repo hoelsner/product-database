@@ -1,5 +1,6 @@
 {% extends '_base/page-with_nav.html' %}
 {% load bootstrap3 %}
+{% load markdown %}
 
 {% block title %}
     Product Database
@@ -16,7 +17,7 @@
                 </h1>
                 {% if TB_HOMEPAGE_TEXT_BEFORE_FAVORITE_ACTIONS %}
                     <div>
-                        {{ TB_HOMEPAGE_TEXT_BEFORE_FAVORITE_ACTIONS.html_content|safe }}
+                        {{ TB_HOMEPAGE_TEXT_BEFORE_FAVORITE_ACTIONS.html_content|render_markdown }}
                     </div>
                 {% endif %}
 
@@ -43,7 +44,7 @@
 
                 {% if TB_HOMEPAGE_TEXT_AFTER_FAVORITE_ACTIONS %}
                     <div>
-                        {{ TB_HOMEPAGE_TEXT_AFTER_FAVORITE_ACTIONS.html_content|safe }}
+                        {{ TB_HOMEPAGE_TEXT_AFTER_FAVORITE_ACTIONS.html_content|render_markdown }}
                     </div>
                 {% endif %}
             </div>
