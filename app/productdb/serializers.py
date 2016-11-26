@@ -167,6 +167,8 @@ class ProductSerializer(HyperlinkedModelSerializer):
             'eol_reference_url',
             'lc_state_sync',
             'internal_product_id',
+            'update_timestamp',
+            'list_price_timestamp',
         )
         extra_kwargs = {
             'url': {

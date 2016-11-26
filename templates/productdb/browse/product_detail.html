@@ -52,6 +52,14 @@
                     <dd>{{ product.list_price|floatformat:2 }} {{ product.currency }}</dd>
                 {% endif %}
 
+                <dt>Update Timestamp:</dt>
+                <dd>{{ product.update_timestamp|date:"SHORT_DATE_FORMAT" }}</dd>
+
+                {% if product.list_price_timestamp %}
+                    <dt>List Price Timestamp:</dt>
+                    <dd>{{ product.list_price_timestamp|date:"SHORT_DATE_FORMAT" }}</dd>
+                {% endif %}
+
                 <dt>Tags:</dt>
                 <dd>{{ product.tags|default:"<i>No tags defined</i>" }}</dd>
 

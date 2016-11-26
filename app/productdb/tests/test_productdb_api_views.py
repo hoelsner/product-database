@@ -3,9 +3,13 @@ Test suite for the productdb.api_views module
 """
 import pytest
 from urllib.parse import quote
+
+from django.utils.dateformat import DateFormat
+from django.utils.formats import get_format
+from django.conf import settings
 from django.contrib.auth.models import User, Permission
 from django.core.urlresolvers import reverse
-from django.utils.datetime_safe import date
+from django.utils.datetime_safe import date, datetime
 from mixer.backend.django import mixer
 from rest_framework import status
 from rest_framework.test import APIClient
@@ -1186,6 +1190,8 @@ class TestProductGroupAPIEndpoint:
 @pytest.mark.usefixtures("import_default_users")
 @pytest.mark.usefixtures("import_default_vendors")
 class TestProductAPIEndpoint:
+    today_string = DateFormat(datetime.now()).format(get_format(settings.SHORT_DATE_FORMAT))
+
     """Django REST Framework API endpoint tests for the Product model"""
     def test_read_access_with_authenticated_user(self):
         expected_result = {
@@ -1222,7 +1228,9 @@ class TestProductAPIEndpoint:
                     "end_of_new_service_attachment_date": None,
                     "currency": "USD",
                     "lc_state_sync": False,
-                    "internal_product_id": None
+                    "internal_product_id": None,
+                    "update_timestamp": self.today_string,
+                    "list_price_timestamp": self.today_string
                 }
             ]
         }
@@ -1274,7 +1282,9 @@ class TestProductAPIEndpoint:
             "id": 0,
             "product_id": test_product_id,
             "lc_state_sync": False,
-            "internal_product_id": None
+            "internal_product_id": None,
+            "update_timestamp": self.today_string,
+            "list_price_timestamp": None
         }
 
         u = User.objects.create_user(test_user, "", test_user)
@@ -1321,7 +1331,9 @@ class TestProductAPIEndpoint:
             "id": 0,
             "product_id": test_product_id,
             "lc_state_sync": False,
-            "internal_product_id": None
+            "internal_product_id": None,
+            "update_timestamp": self.today_string,
+            "list_price_timestamp": None
         }
 
         u = User.objects.create_user(test_user, "", test_user)
@@ -1367,7 +1379,9 @@ class TestProductAPIEndpoint:
             "id": 0,
             "product_id": p.product_id,
             "lc_state_sync": False,
-            "internal_product_id": None
+            "internal_product_id": None,
+            "update_timestamp": self.today_string,
+            "list_price_timestamp": None
         }
 
         # create a user with permissions
@@ -1417,7 +1431,9 @@ class TestProductAPIEndpoint:
             "id": 0,
             "product_id": test_renamed_product,
             "lc_state_sync": False,
-            "internal_product_id": None
+            "internal_product_id": None,
+            "update_timestamp": self.today_string,
+            "list_price_timestamp": None
         }
 
         # create a user with permissions
@@ -1467,7 +1483,9 @@ class TestProductAPIEndpoint:
             "id": p.id,
             "product_id": p.product_id,
             "lc_state_sync": False,
-            "internal_product_id": None
+            "internal_product_id": None,
+            "update_timestamp": self.today_string,
+            "list_price_timestamp": None
         }
 
         client = APIClient()
@@ -1560,7 +1578,9 @@ class TestProductAPIEndpoint:
                     "end_of_new_service_attachment_date": None,
                     "currency": "USD",
                     "lc_state_sync": False,
-                    "internal_product_id": None
+                    "internal_product_id": None,
+                    "update_timestamp": self.today_string,
+                    "list_price_timestamp": None
                 },
                 {
                     "id": 0,
@@ -1584,7 +1604,9 @@ class TestProductAPIEndpoint:
                     "end_of_new_service_attachment_date": None,
                     "currency": "USD",
                     "lc_state_sync": False,
-                    "internal_product_id": None
+                    "internal_product_id": None,
+                    "update_timestamp": self.today_string,
+                    "list_price_timestamp": None
                 }
             ]
         }
@@ -1644,7 +1666,9 @@ class TestProductAPIEndpoint:
                     "end_of_new_service_attachment_date": None,
                     "currency": "USD",
                     "lc_state_sync": False,
-                    "internal_product_id": None
+                    "internal_product_id": None,
+                    "update_timestamp": self.today_string,
+                    "list_price_timestamp": None
                 },
                 {
                     "id": 0,
@@ -1668,7 +1692,9 @@ class TestProductAPIEndpoint:
                     "end_of_new_service_attachment_date": None,
                     "currency": "USD",
                     "lc_state_sync": False,
-                    "internal_product_id": None
+                    "internal_product_id": None,
+                    "update_timestamp": self.today_string,
+                    "list_price_timestamp": None
                 }
             ]
         }
@@ -1732,7 +1758,9 @@ class TestProductAPIEndpoint:
                     "end_of_new_service_attachment_date": None,
                     "currency": "USD",
                     "lc_state_sync": False,
-                    "internal_product_id": None
+                    "internal_product_id": None,
+                    "update_timestamp": self.today_string,
+                    "list_price_timestamp": None
                 }
             ]
         }
@@ -1792,7 +1820,9 @@ class TestProductAPIEndpoint:
                     "end_of_new_service_attachment_date": None,
                     "currency": "USD",
                     "lc_state_sync": False,
-                    "internal_product_id": None
+                    "internal_product_id": None,
+                    "update_timestamp": self.today_string,
+                    "list_price_timestamp": None
                 }
             ]
         }
@@ -1861,7 +1891,9 @@ class TestProductAPIEndpoint:
                     "end_of_new_service_attachment_date": None,
                     "currency": "USD",
                     "lc_state_sync": False,
-                    "internal_product_id": None
+                    "internal_product_id": None,
+                    "update_timestamp": self.today_string,
+                    "list_price_timestamp": None
                 }
             ]
         }
@@ -1921,7 +1953,9 @@ class TestProductAPIEndpoint:
                     "end_of_new_service_attachment_date": None,
                     "currency": "USD",
                     "lc_state_sync": False,
-                    "internal_product_id": None
+                    "internal_product_id": None,
+                    "update_timestamp": self.today_string,
+                    "list_price_timestamp": None
                 }
             ]
         }

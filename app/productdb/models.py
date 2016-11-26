@@ -270,6 +270,20 @@ class Product(models.Model):
         blank=True
     )
 
+    update_timestamp = models.DateField(
+        verbose_name="update timestamp",
+        help_text="last changes to the product data",
+        auto_created=True,
+        auto_now=True
+    )
+
+    list_price_timestamp = models.DateField(
+        verbose_name="list price timestamp",
+        help_text="last change of the list price",
+        null=True,
+        blank=True
+    )
+
     @property
     def current_lifecycle_states(self):
         """
@@ -331,6 +345,10 @@ class Product(models.Model):
             else:
                 return None
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.__loaded_list_price = self.list_price
+
     def __str__(self):
         return self.product_id
 
@@ -338,6 +356,10 @@ class Product(models.Model):
         # strip URL value
         if self.eol_reference_url is not None:
             self.eol_reference_url = self.eol_reference_url.strip()
+
+        if self.__loaded_list_price != self.list_price:
+            # price has changed, update flag
+            self.list_price_timestamp = datetime.today()
 
         # clean the object before save
         self.full_clean()

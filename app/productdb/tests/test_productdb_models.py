@@ -373,6 +373,25 @@ class TestProduct:
 
         assert exinfo.match("eol_reference_url': \['Enter a valid URL.")
 
+    def test_timestamp_values(self):
+        p = mixer.blend("productdb.Product")
+        date = datetime.date.today()
+
+        assert p.update_timestamp == date
+        assert p.list_price_timestamp is None
+
+        p.description = "Test"
+        p.save()
+
+        assert p.update_timestamp == date
+        assert p.list_price_timestamp is None
+
+        p.list_price = 1000
+        p.save()
+
+        assert p.update_timestamp == date
+        assert p.list_price_timestamp == date
+
 
 class TestProductList:
     """Test ProductList model object"""
