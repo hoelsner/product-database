@@ -61,7 +61,9 @@ class AppSettings:
             ConfigOption.GLOBAL_INTERNAL_PRODUCT_ID_LABEL: "Internal Product ID",
             ConfigOption.CISCO_EOX_WAIT_TIME: "5",
             ConfigOption.CISCO_EOX_CRAWLER_LAST_EXECUTION_TIME: None,
-            ConfigOption.CISCO_EOX_CRAWLER_LAST_EXECUTION_RESULT: None
+            ConfigOption.CISCO_EOX_CRAWLER_LAST_EXECUTION_RESULT: None,
+            ConfigOption.STAT_AMOUNT_OF_PRODUCT_CHECKS: "0",
+            ConfigOption.STAT_AMOUNT_OF_UNIQUE_PRODUCT_CHECK_ENTRIES: "0"
         }
         for key, value in expected_defaults.items():
             if not ConfigOption.objects.filter(key=key).exists():
@@ -259,3 +261,47 @@ class AppSettings:
         co.value = value
         co.save()
         self._rebuild_config_cache()
+
+    def set_amount_of_product_checks(self, value):
+        """
+        set amount of product checks statistics counter
+        """
+        co, created = ConfigOption.objects.get_or_create(key=ConfigOption.STAT_AMOUNT_OF_PRODUCT_CHECKS)
+        co.value = str(int(value))
+        co.save()
+        self._rebuild_config_cache()
+
+    def get_amount_of_product_checks(self):
+        """
+        get amount of product checks statistics counter
+        :return:
+        """
+        try:
+            return int(self._config_options[ConfigOption.STAT_AMOUNT_OF_PRODUCT_CHECKS])\
+                if self._config_options[ConfigOption.STAT_AMOUNT_OF_PRODUCT_CHECKS] else 0
+        except:  # catch any exception
+            # may occur after update, after cleaning the cache value it should work
+            cache.delete(self.CONFIG_OPTIONS_DICT_CACHE_KEY)
+            return -1
+
+    def set_amount_of_unique_product_check_entries(self, value):
+        """
+        set amount of unique product check entries statistics counter
+        """
+        co, created = ConfigOption.objects.get_or_create(key=ConfigOption.STAT_AMOUNT_OF_UNIQUE_PRODUCT_CHECK_ENTRIES)
+        co.value = str(int(value))
+        co.save()
+        self._rebuild_config_cache()
+
+    def get_amount_of_unique_product_check_entries(self):
+        """
+        get amount of unique product check entries statistics counter
+        :return:
+        """
+        try:
+            return int(self._config_options[ConfigOption.STAT_AMOUNT_OF_UNIQUE_PRODUCT_CHECK_ENTRIES])\
+                if self._config_options[ConfigOption.STAT_AMOUNT_OF_UNIQUE_PRODUCT_CHECK_ENTRIES] else 0
+        except:  # catch any exception
+            # may occur after update, after cleaning the cache value it should work
+            cache.delete(self.CONFIG_OPTIONS_DICT_CACHE_KEY)
+            return -1

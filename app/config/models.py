@@ -132,6 +132,8 @@ class ConfigOption(models.Model):
     CISCO_EOX_API_QUERIES = "cisco_eox.api_queries"
     CISCO_EOX_PRODUCT_BLACKLIST_REGEX = "cisco_eox.product_blacklist_regex"
     CISCO_EOX_WAIT_TIME = "cisco_eox.wait_time_between_queries"
+    STAT_AMOUNT_OF_PRODUCT_CHECKS = "statistics.amount_product_check_runs"
+    STAT_AMOUNT_OF_UNIQUE_PRODUCT_CHECK_ENTRIES = "statistics.amount_unique_product_check_entries"
 
     key = models.CharField(
         max_length=256,

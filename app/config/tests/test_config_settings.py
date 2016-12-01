@@ -27,7 +27,7 @@ class TestConfigSettings:
     def test_create_default_config(self):
         # default configuration is created on object initialization
         AppSettings()
-        assert ConfigOption.objects.count() == 12
+        assert ConfigOption.objects.count() == 14
 
     def test_login_only_mode_configuration(self):
         # create new AppSettings object and create defaults
@@ -202,3 +202,41 @@ class TestConfigSettings:
         value = settings.get_cisco_eox_api_sync_wait_time()
 
         assert value == test_cisco_eox_wait_time
+
+    def test_statistics_counter(self):
+        settings = AppSettings()
+
+        # get value
+        value = settings.get_amount_of_product_checks()
+        assert type(value) is int
+        assert value == 0
+
+        value = settings.get_amount_of_unique_product_check_entries()
+        assert type(value) is int
+        assert value == 0
+
+        # set values
+        settings.set_amount_of_product_checks(40)
+        settings.set_amount_of_unique_product_check_entries(40)
+
+        # get value
+        value = settings.get_amount_of_product_checks()
+        assert type(value) is int
+        assert value == 40
+
+        value = settings.get_amount_of_unique_product_check_entries()
+        assert type(value) is int
+        assert value == 40
+
+        # set values
+        settings.set_amount_of_product_checks("40")
+        settings.set_amount_of_unique_product_check_entries("40")
+
+        # get value
+        value = settings.get_amount_of_product_checks()
+        assert type(value) is int
+        assert value == 40
+
+        value = settings.get_amount_of_unique_product_check_entries()
+        assert type(value) is int
+        assert value == 40

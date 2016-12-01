@@ -11,7 +11,7 @@ from django.core.files import File
 from django.db.models import QuerySet
 from mixer.backend.django import mixer
 from app.productdb.models import Vendor, ProductList, JobFile, Product, UserProfile, ProductGroup, ProductMigrationSource, \
-    ProductMigrationOption
+    ProductMigrationOption, ProductCheck, ProductCheckEntry
 
 pytestmark = pytest.mark.django_db
 
@@ -489,6 +489,35 @@ class TestProductList:
         assert pl.string_product_list == expected_product_list_string, \
             "String in DB should only contain a sorted list with line breaks"
 
+    @pytest.mark.usefixtures("import_default_vendors")
+    def test_hash_function(self):
+        mixer.blend("productdb.Product", product_id="myprod1")
+        mixer.blend("productdb.Product", product_id="myprod2")
+        mixer.blend("productdb.Product", product_id="myprod3")
+        pl = mixer.blend("productdb.ProductList", name="Test Product List", string_product_list="myprod1")
+        assert pl.hash is not None
+        hash = pl.hash
+
+        # change the name of the product list (should modify the hash)
+        pl.name = "My new Name"
+        pl.save()
+
+        assert hash != pl.hash
+        hash = pl.hash
+
+        # change the string product list (should modify the hash)
+        pl.string_product_list = "myprod1;myprod2;myprod3"
+        pl.save()
+
+        assert hash != pl.hash
+        hash = pl.hash
+
+        # change description (should not change the hash)
+        pl.description = "Some other value"
+        pl.save()
+
+        assert hash == pl.hash
+
 
 class TestUserProfile:
     """Test UserProfile model object"""
@@ -543,6 +572,206 @@ class TestProductMigrationSource:
             ProductMigrationSource.objects.create(name=test_name)
 
         assert exinfo.match("\'name\': \[\'Product migration source with this Name already exists.\'\]")
+
+
+@pytest.mark.usefixtures("import_default_vendors")
+class TestProductCheck:
+    """Test the ProductCheck and ProductCheckEntry model"""
+    def test_model(self):
+        test_product_string = "myprod"
+        mixer.blend(
+            "productdb.Product",
+            product_id=test_product_string,
+            vendor=Vendor.objects.get(id=1)
+        )
+
+        pc = ProductCheck.objects.create(name="Test", input_product_ids="TestTest")
+
+        assert pc.migration_source is None
+        assert pc.use_preferred_migration_source is True  # should be true, because no migration source is defined
+        assert pc.input_product_ids_list == ["TestTest"]
+        assert pc.last_change is not None
+        assert pc.create_user is None
+        assert pc.task_id is None   # used within the job scheduler
+        assert pc.is_public is True  # no user defined, Product Check is public
+        assert pc.in_progress is False  # no job
+        assert str(pc) == "Test"
+
+        # test list values
+        pc.input_product_ids = "TestTest;Test;Test\nasdf"
+        pc.save()
+
+        assert pc.input_product_ids_list == ["Test", "Test", "TestTest", "asdf"]
+
+        # test migration source
+        pc.migration_source = mixer.blend("productdb.ProductMigrationSource", name="Test")
+        pc.save()
+
+        assert pc.use_preferred_migration_source is False
+
+        # test create user
+        pc.create_user = mixer.blend("auth.User")
+        pc.save()
+
+        assert pc.is_public is False
+
+        # test in progress if task ID is set
+        pc.task_id = "1234"
+        pc.save()
+
+        assert pc.in_progress is True
+
+    def test_basic_product_check(self):
+        test_product_string = "myprod"
+        test_list = "myprod;myprod\nmyprod;myprod\n" \
+                    "Test;Test"
+        p = mixer.blend(
+            "productdb.Product",
+            product_id=test_product_string,
+            vendor=Vendor.objects.get(id=1)
+        )
+        pms1 = mixer.blend("productdb.ProductMigrationSource", name="Preferred Migration Source", preference=60)
+        pms2 = mixer.blend("productdb.ProductMigrationSource", name="Another Migration Source")
+        pmo1 = mixer.blend("productdb.ProductMigrationOption", product=p, migration_source=pms1,
+                           replacement_product_id="replacement")
+        pmo2 = mixer.blend("productdb.ProductMigrationOption", product=p, migration_source=pms2,
+                           replacement_product_id="other_replacement")
+        pl = mixer.blend(
+            "productdb.ProductList",
+            name="TestList",
+            string_product_list="myprod"
+        )
+        pl2 = mixer.blend(
+            "productdb.ProductList",
+            name="AnotherTestList",
+            string_product_list="myprod"
+        )
+
+        pc = ProductCheck.objects.create(name="Test", input_product_ids=test_list)
+        pc.perform_product_check()
+        assert pc.productcheckentry_set.count() == 2
+
+        in_db = pc.productcheckentry_set.get(input_product_id="myprod")
+        assert in_db.amount == 4
+        assert in_db.in_database is True
+        assert in_db.product_in_database is not None
+        assert in_db.part_of_product_list == pl2.hash + "\n" + pl.hash
+        assert in_db.migration_product.replacement_product_id == pmo1.replacement_product_id
+        assert str(in_db) == "Test: myprod (4)"
+
+        pl_names = in_db.get_product_list_names()
+        assert len(pl_names) == 2
+        assert "AnotherTestList" in pl_names
+        assert "TestList" in pl_names
+
+        not_in_db = pc.productcheckentry_set.get(input_product_id="Test")
+        assert not_in_db.amount == 2
+        assert not_in_db.in_database is False
+        assert not_in_db.product_in_database is None
+        assert not_in_db.part_of_product_list == ""
+        assert not_in_db.migration_product is None
+
+        # change product list (the name should not appear anymore in the product check)
+        pl.name = "RenamedTestList"
+        pl.save()
+
+        pl_names = in_db.get_product_list_names()
+        assert len(pl_names) == 1
+        assert "AnotherTestList" in pl_names
+
+        # run again (should reset and recreate the results)
+        pc.perform_product_check()
+        assert pc.productcheckentry_set.count() == 2
+        assert ProductCheckEntry.objects.all().count() == 2
+
+        # run again with a specific migration source
+        pc.migration_source = pms2  # use the less preferred migration source
+
+        pc.perform_product_check()
+        assert pc.productcheckentry_set.count() == 2
+
+        in_db = pc.productcheckentry_set.get(input_product_id="myprod")
+        assert in_db.amount == 4
+        assert in_db.in_database is True
+        assert in_db.product_in_database is not None
+        assert in_db.part_of_product_list == pl2.hash + "\n" + pl.hash
+        assert in_db.migration_product.replacement_product_id == pmo2.replacement_product_id
+
+        pl_names = in_db.get_product_list_names()
+        assert len(pl_names) == 2
+        assert "AnotherTestList" in pl_names
+        assert "RenamedTestList" in pl_names  # back after product check runs again
+
+        not_in_db = pc.productcheckentry_set.get(input_product_id="Test")
+        assert not_in_db.amount == 2
+        assert not_in_db.in_database is False
+        assert not_in_db.product_in_database is None
+        assert not_in_db.part_of_product_list == ""
+        assert not_in_db.migration_product is None
+
+    def test_recursive_product_check(self):
+        test_product_string = "myprod"
+        test_list = "myprod;myprod\nmyprod;myprod\n" \
+                    "Test;Test"
+        p = mixer.blend(
+            "productdb.Product",
+            product_id=test_product_string,
+            vendor=Vendor.objects.get(id=1),
+            eox_update_time_stamp=datetime.datetime.utcnow(),
+            eol_ext_announcement_date=datetime.date(2016, 1, 1),
+            end_of_sale_date=datetime.date(2016, 1, 1)
+        )
+        p2 = mixer.blend(
+            "productdb.Product",
+            product_id="replacement_pid",
+            vendor=Vendor.objects.get(id=1),
+            eox_update_time_stamp=datetime.datetime.utcnow(),
+            eol_ext_announcement_date=datetime.date(2016, 1, 1),
+            end_of_sale_date=datetime.date(2016, 1, 1)
+        )
+        mixer.blend(
+            "productdb.Product",
+            product_id="another_replacement_pid",
+            vendor=Vendor.objects.get(id=1)
+        )
+        pms = mixer.blend("productdb.ProductMigrationSource", name="Preferred Migration Source", preference=60)
+        mixer.blend("productdb.ProductMigrationOption", product=p, migration_source=pms,
+                    replacement_product_id="replacement_pid")
+        mixer.blend("productdb.ProductMigrationOption", product=p2, migration_source=pms,
+                    replacement_product_id="another_replacement_pid")
+        pl = mixer.blend(
+            "productdb.ProductList",
+            name="TestList",
+            string_product_list="myprod"
+        )
+        pl2 = mixer.blend(
+            "productdb.ProductList",
+            name="AnotherTestList",
+            string_product_list="myprod"
+        )
+
+        pc = ProductCheck.objects.create(name="Test", input_product_ids=test_list, migration_source=pms)
+        pc.perform_product_check()
+        assert pc.productcheckentry_set.count() == 2
+
+        in_db = pc.productcheckentry_set.get(input_product_id="myprod")
+        assert in_db.amount == 4
+        assert in_db.in_database is True
+        assert in_db.product_in_database is not None
+        assert in_db.part_of_product_list == pl2.hash + "\n" + pl.hash
+        assert in_db.migration_product.replacement_product_id == "another_replacement_pid"  # use the last element in the path
+
+        pl_names = in_db.get_product_list_names()
+        assert len(pl_names) == 2
+        assert "AnotherTestList" in pl_names
+        assert "TestList" in pl_names
+
+        not_in_db = pc.productcheckentry_set.get(input_product_id="Test")
+        assert not_in_db.amount == 2
+        assert not_in_db.in_database is False
+        assert not_in_db.product_in_database is None
+        assert not_in_db.part_of_product_list == ""
+        assert not_in_db.migration_product is None
 
 
 @pytest.mark.usefixtures("import_default_vendors")

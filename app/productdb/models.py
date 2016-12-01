@@ -1,3 +1,5 @@
+import hashlib
+from collections import Counter
 from datetime import timedelta
 from django.contrib.auth.models import User
 from django.conf import settings
@@ -11,6 +13,8 @@ from django.db.models import Q
 from django.db.models.signals import pre_delete, post_save, pre_save
 from django.dispatch import receiver
 from django.utils.timezone import datetime
+
+from app.config.settings import AppSettings
 from app.productdb.validators import validate_product_list_string
 
 CURRENCY_CHOICES = (
@@ -595,6 +599,13 @@ class ProductList(models.Model):
         on_delete=models.CASCADE
     )
 
+    hash = models.CharField(
+        max_length=64,
+        null=False,
+        blank=True,
+        default=""
+    )
+
     def get_string_product_list_as_list(self):
         result = []
         for line in self.string_product_list.splitlines():
@@ -614,6 +625,10 @@ class ProductList(models.Model):
         # normalize value in database, remove duplicates and sort the list
         values = self.get_string_product_list_as_list()
         self.string_product_list = "\n".join(sorted(list(set(values))))
+
+        # calculate hash value
+        s = "%s:%s" % (self.name, self.string_product_list)
+        self.hash = hashlib.sha256(s.encode()).hexdigest()
 
         super(ProductList, self).save(**kwargs)
 
@@ -657,6 +672,188 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return "User Profile for %s" % self.user.username
+
+
+class ProductCheck(models.Model):
+    name = models.CharField(
+        verbose_name="Name",
+        help_text="Name to identify the Product Check",
+        max_length=256
+    )
+
+    migration_source = models.ForeignKey(
+        ProductMigrationSource,
+        verbose_name="migration source",
+        help_text="migration source to identify the replacement options, if not selected the preferred migration path "
+                  "is used",
+        null=True,
+        blank=True
+    )
+
+    @property
+    def use_preferred_migration_source(self):
+        """if no migration source is choosen, always use the preferred one"""
+        return self.migration_source is None
+
+    input_product_ids = models.TextField(
+        verbose_name="Product ID list",
+        help_text="unordered Product IDs, separated by line breaks or semicolon",
+        max_length=65536
+    )
+
+    @property
+    def input_product_ids_list(self):
+        result = []
+        for line in self.input_product_ids.splitlines():
+            result += line.split(";")
+        return sorted([e.strip() for e in result])
+
+    last_change = models.DateTimeField(
+        auto_now=True
+    )
+
+    create_user = models.ForeignKey(
+        User,
+        help_text="if not null, the product check is available to all users",
+        null=True,
+        blank=True
+    )
+
+    @property
+    def is_public(self):
+        return self.create_user is None
+
+    task_id = models.CharField(
+        help_text="if set, the product check is currently executed",
+        max_length=64,
+        null=True,
+        blank=True
+    )
+
+    @property
+    def in_progress(self):
+        """product check is currently processed"""
+        return self.task_id is not None
+
+    def perform_product_check(self):
+        """perform the product check and populate the ProductCheckEntries"""
+        unique_products = set(self.input_product_ids_list)
+        amounts = Counter(self.input_product_ids_list)
+
+        # clean all entries
+        self.productcheckentry_set.all().delete()
+
+        for input_product_id in unique_products:
+            product_entry, _ = ProductCheckEntry.objects.get_or_create(
+                input_product_id=input_product_id,
+                product_check=self
+            )
+            product_entry.amount = amounts[input_product_id]
+            product_entry.discover_product_list_values()
+
+            product_entry.save()
+
+        # increments statistics
+        settings = AppSettings()
+        settings.set_amount_of_product_checks(settings.get_amount_of_product_checks() + 1)
+        settings.set_amount_of_unique_product_check_entries(settings.get_amount_of_unique_product_check_entries() +
+                                                            len(unique_products))
+
+        self.save()
+
+    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
+        self.full_clean()
+        super().save(force_insert, force_update, using, update_fields)
+
+    def __str__(self):
+        return self.name
+
+    def __repr__(self):
+        return "<Class 'ProductCheck' %d> %s" % (self.id, self.name)
+
+
+class ProductCheckEntry(models.Model):
+    product_check = models.ForeignKey(
+        ProductCheck
+    )
+
+    input_product_id = models.CharField(
+        verbose_name="Product ID",
+        max_length=256
+    )
+
+    product_in_database = models.ForeignKey(
+        Product,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL
+    )
+
+    @property
+    def in_database(self):
+        return self.product_in_database is not None
+
+    amount = models.PositiveIntegerField(
+        verbose_name="amount",
+        default=0
+    )
+
+    migration_product = models.ForeignKey(
+        ProductMigrationOption,
+        verbose_name="Migration Option",
+        null=True,
+        blank=True
+    )
+
+    part_of_product_list = models.CharField(
+        verbose_name="product list hash values",
+        help_text="hash values of product lists that contain the Product (at time of the check)",
+        max_length=512,
+        null=False,
+        blank=True,
+        default=""
+    )
+
+    @property
+    def product_list_hash_values(self):
+        """return an unordered list of hash strings that contains the Product at time of the check"""
+        return self.part_of_product_list.splitlines()
+
+    def get_product_list_names(self):
+        """return an list of Product List Names that contains the Product at time of the check"""
+        return ProductList.objects.filter(hash__in=self.product_list_hash_values).values_list("name", flat=True)
+
+    def discover_product_list_values(self):
+        """populate the part_of_product_list field"""
+        self.part_of_product_list = ""
+        query = ProductList.objects.filter(string_product_list__contains=self.input_product_id)
+        self.part_of_product_list += "\n".join(query.values_list("hash", flat=True))
+
+    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
+        self.full_clean()
+
+        # create relation to a database entry, if existing
+        query = Product.objects.filter(product_id=self.input_product_id)
+        if query.count() != 0:
+            self.product_in_database = query.first()
+
+            if self.product_check.migration_source:
+                # if the product check defines a migration source, try a lookup on this verison
+                replacement_product_list = self.product_in_database.get_migration_path(self.product_check.migration_source.name)
+                if len(replacement_product_list) != 0:
+                    self.migration_product = replacement_product_list[-1]
+
+            else:
+                # if nothing is specified, get the preferred replacement option
+                self.migration_product = self.product_in_database.get_preferred_replacement_option()
+
+        super().save(force_insert, force_update, using, update_fields)
+
+    def __str__(self):
+        return "%s: %s (%d)" % (self.product_check, self.input_product_id, self.amount)
+
+    def __repr__(self):
+        return "<Class 'ProductCheckEntry' %d> %s (ProductCheck '%d')" % (self.id, self.input_product_id, self.product_check_id)
 
 
 @receiver(post_save, sender=User)
