@@ -511,68 +511,6 @@ class TestProductDetailsView:
             assert response.status_code == 200, "Should be callable"
 
 
-class TestBulkEolCheckView:
-    URL_NAME = "productdb:bulk_eol_check"
-
-    def test_anonymous_default(self):
-        url = reverse(self.URL_NAME)
-        request = RequestFactory().get(url)
-        request.user = AnonymousUser()
-        response = views.bulk_eol_check(request)
-
-        assert response.status_code == 200, "Should be callable"
-
-    @pytest.mark.usefixtures("enable_login_only_mode")
-    @pytest.mark.usefixtures("import_default_vendors")
-    def test_anonymous_login_only_mode(self):
-        url = reverse(self.URL_NAME)
-        request = RequestFactory().get(url)
-        request.user = AnonymousUser()
-        response = views.bulk_eol_check(request)
-
-        assert response.status_code == 302, "Should redirect to login page"
-        assert response.url == reverse("login") + "?next=" + url, \
-            "Should contain a next parameter for redirect"
-
-    @pytest.mark.usefixtures("import_default_vendors")
-    def test_authenticated_user(self):
-        url = reverse(self.URL_NAME)
-        request = RequestFactory().get(url)
-        request.user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
-        response = views.bulk_eol_check(request)
-
-        assert response.status_code == 200, "Should be callable"
-
-    @pytest.mark.usefixtures("import_default_vendors")
-    def test_post(self):
-        p = mixer.blend("productdb.Product")
-        url = reverse(self.URL_NAME)
-        data = {"db_query": p.product_id}
-        request = RequestFactory().post(url, data=data)
-        request.user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
-        response = views.bulk_eol_check(request)
-
-        assert response.status_code == 200, "Should be callable"
-
-        p.eox_update_time_stamp = datetime.date(2016, 1, 1)
-        p.eol_ext_announcement_date = datetime.date(2016, 1, 1)
-        p.end_of_sale_date = datetime.date(2016, 1, 1)
-        url = reverse(self.URL_NAME)
-        data = {"db_query": p.product_id}
-        request = RequestFactory().post(url, data=data)
-        request.user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
-        response = views.bulk_eol_check(request)
-
-        assert response.status_code == 200, "Should be callable"
-
-        data = {"db_query": ""}
-        request = RequestFactory().post(url, data=data)
-        request.user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
-        response = views.bulk_eol_check(request)
-
-        assert response.status_code == 200, "Should be callable"
-
-
 class TestAddProductListView:
     URL_NAME = "productdb:add-product_list"
 

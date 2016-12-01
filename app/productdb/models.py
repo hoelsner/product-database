@@ -704,7 +704,7 @@ class ProductCheck(models.Model):
     @property
     def input_product_ids_list(self):
         result = []
-        for line in self.input_product_ids.splitlines():
+        for line in [line.strip() for line in self.input_product_ids.splitlines() if line.strip() != ""]:
             result += line.split(";")
         return sorted([e.strip() for e in result])
 
@@ -737,7 +737,7 @@ class ProductCheck(models.Model):
 
     def perform_product_check(self):
         """perform the product check and populate the ProductCheckEntries"""
-        unique_products = set(self.input_product_ids_list)
+        unique_products = [line.strip() for line in set(self.input_product_ids_list) if line.strip() != ""]
         amounts = Counter(self.input_product_ids_list)
 
         # clean all entries
