@@ -30,6 +30,11 @@ CELERYBEAT_SCHEDULE = {
         'task': 'ciscoeox.populate_product_lc_state_sync_field',
         'schedule': crontab(hour=2, minute=0)
     },
+    # remove all product checks every Sunday at midnight
+    'productdb.delete_all_product_checks': {
+        'task': 'productdb.delete_all_product_checks',
+        'schedule': crontab(hour=0, minute=0, day_of_week=0)
+    }
 }
 
 djcelery.setup_loader()

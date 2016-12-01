@@ -112,8 +112,9 @@
     <script type="text/javascript">
         $(document).ready(function() {
             var redirect_url = "{{ redirect_to }}";
+            var auto_redirect = {{ auto_redirect|lower }};
             var status_url = "{% url "task_state" task_id=task_id %}";
-            update_progress(status_url, redirect_url, 0)
+            update_progress(status_url, redirect_url, 0, auto_redirect)
         } );
 
         function set_status_message(html_message) {
@@ -132,7 +133,7 @@
             $("#fail_dialog").modal();
         }
 
-        function update_progress(status_url, redirect_url, counter) {
+        function update_progress(status_url, redirect_url, counter, auto_redirect) {
             // send GET request to status URL
             $.getJSON(status_url, function(data) {
                 var progress_sign = $("#progress_sign");
@@ -151,7 +152,7 @@
                         progress_sign.removeClass("fa-spin");
                         progress_sign.addClass("text-success");
                         $('#status_message').addClass("text-success");
-                        if (data["auto_redirect"]) {
+                        if (auto_redirect) {
                             window.setTimeout(window.location.replace(redirect_url), 3000);
                         }
                     }
@@ -181,7 +182,7 @@
                         // poll every second plus the poll_offset
                         counter++;
                         setTimeout(function() {
-                            update_progress(status_url, redirect_url, counter);
+                            update_progress(status_url, redirect_url, counter, auto_redirect);
                         }, (2000 + poll_offset));
                     }
                 }

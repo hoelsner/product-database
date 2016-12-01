@@ -3,7 +3,7 @@ from django import forms
 from django.contrib.auth.models import AnonymousUser
 from django.forms.utils import ErrorList
 
-from app.productdb.models import ProductList, UserProfile, Product, ProductMigrationOption
+from app.productdb.models import ProductList, UserProfile, Product, ProductMigrationOption, ProductCheck
 
 logger = logging.getLogger("app.productdb.forms")
 
@@ -146,3 +146,26 @@ class ImportProductMigrationFileUploadForm(forms.Form):
 
         if uploaded_file.name.split('.')[-1] not in ["xlsx"]:
             raise forms.ValidationError("only .xlsx files are allowed")
+
+
+class ProductCheckForm(forms.ModelForm):
+    public_product_check = forms.BooleanField(
+        label="public available",
+        label_suffix=":",
+        help_text="if enabled, everyone can see the Product Check (if not logged in, a Product Check is always "
+                  "visible)",
+        required=False,
+        initial=False
+    )
+
+    class Meta:
+        model = ProductCheck
+        fields = [
+            "name",
+            "migration_source",
+            "input_product_ids",
+            "create_user",
+        ]
+        widgets = {
+            "create_user": forms.HiddenInput()
+        }

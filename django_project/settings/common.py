@@ -175,6 +175,8 @@ if os.getenv("PDB_DEBUG"):
     INTERNAL_IPS = ["127.0.0.1"]
     INSTALLED_APPS += ['debug_toolbar']
     MIDDLEWARE_CLASSES += ['debug_toolbar.middleware.DebugToolbarMiddleware']
+    CELERY_ALWAYS_EAGER = True
+    CELERY_EAGER_PROPAGATES_EXCEPTIONS = True
 
 # Force HTTPs (should be used in production)
 if os.getenv("PDB_HTTPS_ONLY", False):

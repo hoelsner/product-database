@@ -33,5 +33,7 @@ def is_ldap_authenticated_user(request):
 def get_internal_product_id_label(request):
     app_config = AppSettings()
     return {
-        "INTERNAL_PRODUCT_ID_LABEL": app_config.get_internal_product_id_label()
+        "INTERNAL_PRODUCT_ID_LABEL": app_config.get_internal_product_id_label(),
+        "STAT_AMOUNT_OF_PRODUCT_CHECKS": app_config.get_amount_of_product_checks(),
+        "STAT_AMOUNT_OF_UNIQUE_PRODUCT_CHECK_ENTRIES": app_config.get_amount_of_unique_product_check_entries()
     }

@@ -12,7 +12,8 @@ from django.http import Http404
 from django.test import RequestFactory
 from mixer.backend.django import mixer
 from app.productdb import views
-from app.productdb.models import ProductList, Product, ProductMigrationOption, Vendor, ProductMigrationSource
+from app.productdb.models import ProductList, Product, ProductMigrationOption, Vendor, ProductMigrationSource, \
+    ProductCheck
 
 pytestmark = pytest.mark.django_db
 
@@ -1149,3 +1150,168 @@ class TestEditUserProfileView:
         assert response.status_code == 302, "redirect to task in progress view"
         assert msgs.added_new is True
         assert response.url == reverse("productdb:about"), "Should return to the back_to reference"
+
+
+class TestListProductCheckView:
+    URL_NAME = "productdb:list-product_checks"
+
+    def test_anonymous_default(self):
+        url = reverse(self.URL_NAME)
+        request = RequestFactory().get(url)
+        request.user = AnonymousUser()
+        response = views.list_product_checks(request)
+
+        assert response.status_code == 200, "Should be callable"
+
+    @pytest.mark.usefixtures("enable_login_only_mode")
+    @pytest.mark.usefixtures("import_default_vendors")
+    def test_anonymous_login_only_mode(self):
+        url = reverse(self.URL_NAME)
+        request = RequestFactory().get(url)
+        request.user = AnonymousUser()
+        response = views.list_product_checks(request)
+
+        assert response.status_code == 302, "Should redirect to login page"
+        assert response.url == reverse("login") + "?next=" + url, \
+            "Should contain a next parameter for redirect"
+
+    @pytest.mark.usefixtures("import_default_vendors")
+    def test_authenticated_user(self):
+        url = reverse(self.URL_NAME)
+        request = RequestFactory().get(url)
+        request.user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+        response = views.list_product_checks(request)
+
+        assert response.status_code == 200, "Should be callable"
+
+
+class TestDetailProductCheckView:
+    URL_NAME = "productdb:detail-product_check"
+
+    def test_anonymous_default(self):
+        pc = ProductCheck.objects.create(name="Test", input_product_ids="Test")
+        parameters = {"product_check_id": pc.id}
+        url = reverse(self.URL_NAME, kwargs=parameters)
+        request = RequestFactory().get(url)
+        request.user = AnonymousUser()
+        response = views.detail_product_check(request, **parameters)
+
+        assert response.status_code == 200, "Should be callable"
+
+    @pytest.mark.usefixtures("enable_login_only_mode")
+    @pytest.mark.usefixtures("import_default_vendors")
+    def test_anonymous_login_only_mode(self):
+        pc = ProductCheck.objects.create(name="Test", input_product_ids="Test")
+        parameters = {"product_check_id": pc.id}
+        url = reverse(self.URL_NAME, kwargs=parameters)
+        request = RequestFactory().get(url)
+        request.user = AnonymousUser()
+        response = views.detail_product_check(request, **parameters)
+
+        assert response.status_code == 302, "Should redirect to login page"
+        assert response.url == reverse("login") + "?next=" + url, \
+            "Should contain a next parameter for redirect"
+
+    @pytest.mark.usefixtures("import_default_vendors")
+    def test_authenticated_user(self):
+        pc = ProductCheck.objects.create(name="Test", input_product_ids="Test")
+        parameters = {"product_check_id": pc.id}
+        url = reverse(self.URL_NAME, kwargs=parameters)
+        request = RequestFactory().get(url)
+        request.user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+        response = views.detail_product_check(request, **parameters)
+
+        assert response.status_code == 200, "Should be callable"
+
+    def test_404(self):
+        parameters = {"product_check_id": 9999}
+        url = reverse(self.URL_NAME, kwargs=parameters)
+        request = RequestFactory().get(url)
+        request.user = AnonymousUser()
+        with pytest.raises(Http404):
+            views.detail_product_check(request, **parameters)
+
+    @pytest.mark.usefixtures("import_default_vendors")
+    def test_in_progress_redirect(self):
+        pc = ProductCheck.objects.create(name="Test", input_product_ids="Test")
+        pc.task_id = "1234"  # if task ID is set, a redirect to the task in progress should occur
+        pc.save()
+        assert pc.in_progress is True
+
+        parameters = {"product_check_id": pc.id}
+        url = reverse(self.URL_NAME, kwargs=parameters)
+        request = RequestFactory().get(url)
+        request.user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+        response = views.detail_product_check(request, **parameters)
+
+        assert response.status_code == 302
+        assert response.url.startswith("/productdb/task/")
+
+
+class TestCreateProductCheckView:
+    URL_NAME = "productdb:create-product_check"
+
+    def test_anonymous_default(self):
+        url = reverse(self.URL_NAME)
+        request = RequestFactory().get(url)
+        request.user = AnonymousUser()
+        response = views.create_product_check(request)
+
+        assert response.status_code == 200, "Should be callable without login"
+
+    @pytest.mark.usefixtures("enable_login_only_mode")
+    def test_anonymous_login_only_mode(self):
+        url = reverse(self.URL_NAME)
+        request = RequestFactory().get(url)
+        request.user = AnonymousUser()
+        response = views.create_product_check(request)
+
+        assert response.status_code == 302, "Should redirect to login page"
+        assert response.url == reverse("login") + "?next=" + url, \
+            "Should contain a next parameter for redirect"
+
+    def test_authenticated_user(self):
+        url = reverse(self.URL_NAME)
+        user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+
+        request = RequestFactory().get(url)
+        request.user = user
+        response = views.create_product_check(request)
+
+        assert response.status_code == 200, "Should be callable without permissions"
+
+    @pytest.mark.usefixtures("import_default_vendors")
+    @pytest.mark.usefixtures("set_celery_always_eager")
+    def test_post(self):
+        url = reverse(self.URL_NAME)
+        perm = Permission.objects.get(codename="add_productcheck")
+        p = mixer.blend("productdb.Product")
+        user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+        user.user_permissions.add(perm)
+        user.save()
+
+        data = {
+            "name": "My Product check",
+            "input_product_ids": "test"
+        }
+        request = RequestFactory().post(url, data=data, follow=True)
+        request.user = user
+        response = views.create_product_check(request)
+
+        assert response.status_code == 302
+        assert response.url.startswith("/productdb/task/")
+        assert ProductCheck.objects.count() == 1, "One element should be created in the database"
+
+        # test public product check
+        data = {
+            "name": "My Product check",
+            "input_product_ids": "test",
+            "public_product_check": "on"
+        }
+        request = RequestFactory().post(url, data=data, follow=True)
+        request.user = user
+        response = views.create_product_check(request)
+
+        assert response.status_code == 302
+        assert response.url.startswith("/productdb/task/")
+        assert ProductCheck.objects.count() == 2, "One element should be created in the database"

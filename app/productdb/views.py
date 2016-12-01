@@ -14,8 +14,9 @@ from django.contrib import messages
 from app.config.models import NotificationMessage, TextBlock
 from app.productdb import utils as app_util
 from app.productdb.forms import ImportProductsFileUploadForm, ProductListForm, UserProfileForm, \
-    ImportProductMigrationFileUploadForm
-from app.productdb.models import Product, JobFile, ProductGroup, ProductList, UserProfile, ProductMigrationSource
+    ImportProductMigrationFileUploadForm, ProductCheckForm
+from app.productdb.models import Product, JobFile, ProductGroup, ProductList, UserProfile, ProductMigrationSource, \
+    ProductCheck
 from app.productdb.models import Vendor
 import app.productdb.tasks as tasks
 from django_project.celery import set_meta_data_for_task
@@ -381,6 +382,100 @@ def bulk_eol_check(request):
             context['query_no_result'] = True
 
     return render(request, "productdb/do/bulk_eol_check.html", context=context)
+
+
+def list_product_checks(request):
+    """
+    list all Product Checks that are available for the current user
+    :param request:
+    :return:
+    """
+    if login_required_if_login_only_mode(request):
+        return redirect('%s?next=%s' % (settings.LOGIN_URL, request.path))
+
+    product_checks = ProductCheck.objects.filter(
+        Q(create_user__isnull=True)|
+        Q(create_user__username=request.user.username)
+    ).prefetch_related("productcheckentry_set", "productcheckentry_set__product_in_database")
+
+    return render(request, "productdb/product_check/list-product_check.html", context={
+        "product_checks": product_checks
+    })
+
+
+def detail_product_check(request, product_check_id):
+    """
+    detail view of a Product Check
+    :param request:
+    :param product_check_id:
+    :return:
+    """
+    if login_required_if_login_only_mode(request):
+        return redirect('%s?next=%s' % (settings.LOGIN_URL, request.path))
+
+    try:
+        product_check = ProductCheck.objects.prefetch_related(
+            "productcheckentry_set",
+            "productcheckentry_set__product_in_database",
+            "productcheckentry_set__migration_product",
+        ).get(id=product_check_id)
+
+    except:
+        raise Http404("Product check with ID %s not found in database" % product_check_id)
+
+    # if the product check is in progress, redirect to task-watch page
+    if product_check.in_progress:
+        return redirect(reverse("task_in_progress", kwargs={"task_id": product_check.task_id}))
+
+    return render(request, "productdb/product_check/detail-product_check.html", context={
+        "product_check": product_check
+    })
+
+
+def create_product_check(request):
+    """
+    create a Product Check and schedule task
+    :param request:
+    :return:
+    """
+    if login_required_if_login_only_mode(request):
+        return redirect('%s?next=%s' % (settings.LOGIN_URL, request.path))
+
+    if request.method == "POST":
+        form = ProductCheckForm(request.POST)
+
+        if form.is_valid():
+            if form.cleaned_data["public_product_check"]:
+                form.instance.create_user = None
+
+            form.save()
+
+            # dispatch task
+            task = tasks.perform_product_check.delay(form.instance.id)
+            set_meta_data_for_task(
+                task_id=task.id,
+                title="Product check",
+                auto_redirect=True,
+                redirect_to=reverse("productdb:detail-product_check", kwargs={
+                    "product_check_id": form.instance.id
+                })
+            )
+
+            return redirect(reverse("task_in_progress", kwargs={"task_id": task.id}))
+
+    else:
+        form = ProductCheckForm(initial={
+            "create_user": request.user.id,
+            "public_product_check": False if request.user.id else True
+        })
+
+        # if user is not logged in, create always a public check
+        if not request.user.id:
+            form.fields["public_product_check"].widget.attrs['disabled'] = True
+
+    return render(request, "productdb/product_check/create-product_check.html", context={
+        "form": form
+    })
 
 
 @login_required()

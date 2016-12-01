@@ -42,4 +42,5 @@ def set_meta_data_for_task(task_id, title, redirect_to=None, auto_redirect=True)
     }
     if redirect_to:
         meta_data["redirect_to"] = redirect_to
+
     cache.set("task_meta_%s" % task_id, meta_data, 60 * 60 * 8)

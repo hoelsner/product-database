@@ -13,7 +13,8 @@ from app.config.settings import AppSettings
 from app.config.models import NotificationMessage
 from app.productdb import tasks
 from app.productdb.excel_import import ProductsExcelImporter, ProductMigrationsExcelImporter
-from app.productdb.models import JobFile, Product, ProductMigrationSource, ProductMigrationOption, Vendor
+from app.productdb.models import JobFile, Product, ProductMigrationSource, ProductMigrationOption, Vendor, ProductCheck, \
+    ProductCheckEntry
 
 pytestmark = pytest.mark.django_db
 
@@ -71,12 +72,32 @@ class InvalidProductsImportProductsExcelFileMock(BaseProductsExcelImporterMock):
 
 
 @pytest.fixture
-def suppress_state_update_on_import(monkeypatch):
+def suppress_state_update_in_tasks(monkeypatch):
     monkeypatch.setattr(tasks.import_price_list, "update_state", lambda state, meta: None)
     monkeypatch.setattr(tasks.import_product_migrations, "update_state", lambda state, meta: None)
+    monkeypatch.setattr(tasks.perform_product_check, "update_state", lambda state, meta: None)
 
 
-@pytest.mark.usefixtures("suppress_state_update_on_import")
+@pytest.mark.usefixtures("suppress_state_update_in_tasks")
+@pytest.mark.usefixtures("import_default_users")
+@pytest.mark.usefixtures("import_default_vendors")
+class TestRunProductCheckTask:
+    def test_successful_execution(self):
+        pc = ProductCheck.objects.create(name="Test", input_product_ids="Test")
+
+        result = tasks.perform_product_check(product_check_id=pc.id)
+
+        assert "status_message" in result
+        assert ProductCheckEntry.objects.all().count() == 1
+
+    def test_failed_execution(self):
+        result = tasks.perform_product_check(product_check_id=9999)
+
+        assert "error_message" in result
+        assert ProductCheckEntry.objects.all().count() == 0
+
+
+@pytest.mark.usefixtures("suppress_state_update_in_tasks")
 @pytest.mark.usefixtures("import_default_users")
 @pytest.mark.usefixtures("import_default_vendors")
 class TestImportProductMigrationsTask:
@@ -118,7 +139,7 @@ class TestImportProductMigrationsTask:
         assert "Cannot find file that was uploaded." == result["error_message"]
 
 
-@pytest.mark.usefixtures("suppress_state_update_on_import")
+@pytest.mark.usefixtures("suppress_state_update_in_tasks")
 @pytest.mark.usefixtures("import_default_users")
 @pytest.mark.usefixtures("import_default_vendors")
 class TestImportPriceListTask:
@@ -262,3 +283,10 @@ def test_trigger_manual_cisco_eox_synchronization():
     # verify that task ID is saved in the cache (set by the schedule call)
     task_id = cache.get("CISCO_EOX_API_SYN_IN_PROGRESS", "")
     assert task_id != ""
+
+
+def test_delete_all_product_checks():
+    ProductCheck.objects.create(name="Test", input_product_ids="Test")
+    tasks.delete_all_product_checks()
+
+    assert ProductCheck.objects.all().count() == 0

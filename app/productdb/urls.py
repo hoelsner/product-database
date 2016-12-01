@@ -71,6 +71,10 @@ urlpatterns = [
 
     url(r'^share/productlist/(?P<product_list_id>\d+)/$', views.share_product_list, name='share-product_list'),
 
+    url(r'^productcheck/(?P<product_check_id>\d+)/$', views.detail_product_check, name="detail-product_check"),
+    url(r'^productcheck/create/$', views.create_product_check, name="create-product_check"),
+    url(r'^productcheck/$', views.list_product_checks, name="list-product_checks"),
+
     url(r'^products/$', views.browse_all_products, name='all_products'),
     url(r'^product/$', views.view_product_details, name='product-list'),
     url(r'^product/(?P<product_id>\d+)/$', views.view_product_details, name='product-detail'),

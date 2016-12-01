@@ -1,0 +1,39 @@
+{% extends '_base/page-with_nav-single_row.html' %}
+{% load staticfiles %}
+{% load bootstrap3 %}
+
+{% block title %}
+Create Product Check
+{% endblock %}
+
+{% block page_content %}
+    <div class="col-md-10 col-md-offset-1">
+        <div class="page-header">
+            <h1>Create Product Check</h1>
+        </div>
+
+        {% bootstrap_alert content="Every Product Check is temporary stored in the database. All Product Checks are deleted every week on Sunday." alert_type="warning" %}
+        {% bootstrap_messages %}
+
+        <p>On this page, you can execute a bulk Product check of multiple Products against the local
+        database. Please enter a list of Product IDs in the following text field separated
+        by line breaks, e.g.</p>
+            <p style="margin-left: 25px;">
+                WS-C2960-48TT-L<br>
+                WS-C2950-24<br>
+                Not Found<br>
+                WS-C2960S-24TS-S<br>
+                WS-C3850-24P-S<br>
+                WS-C3850-24P-S
+            </p>
+
+        <form method="post" class="form">
+            {% csrf_token %}
+            {% bootstrap_form form layout="horizontal" %}
+            <hr>
+            {% buttons %}
+                <button type="submit" class="btn btn-primary btn-block">Create Product Check</button>
+            {% endbuttons %}
+        </form>
+    </div>
+{% endblock %}

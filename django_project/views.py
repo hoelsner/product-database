@@ -146,15 +146,18 @@ def task_progress_view(request, task_id):
     # redirect after task is completed
     if "redirect_to" in meta_data.keys():
         redirect_to = meta_data["redirect_to"]
+        auto_redirect = meta_data.get("auto_redirect", False)
 
     else:
         logger.warn("Cannot find redirect link to task meta data, use homepage")
         redirect_to = redirect_default
+        auto_redirect = False
 
     context = {
         "task_id": task_id,
         "title": title,
-        "redirect_to": redirect_to
+        "redirect_to": redirect_to,
+        "auto_redirect": auto_redirect
     }
     return render(request, "django_project/task_progress_view.html", context=context)
 

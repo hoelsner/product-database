@@ -23,10 +23,6 @@
 
                 <div class="btn-toolbar" role="toolbar" style="margin-top: 25px; margin-bottom: 25px;">
                     <div class="btn-group" role="group">
-                        <a class="btn btn-default" role="button" href="{% url 'productdb:all_products' %}">
-                            <i class="fa fa-search"></i>&nbsp;&nbsp;
-                            All Products
-                        </a>
                         <a class="btn btn-default" role="button" href="{% url 'productdb:browse_vendor_products' %}">
                             <i class="fa fa-cube"></i>&nbsp;&nbsp;
                             Products by Vendor
@@ -35,9 +31,13 @@
                             <i class="fa fa-list-ul"></i>&nbsp;&nbsp;
                             Product Lists
                         </a>
-                        <a class="btn btn-default" role="button" href="{% url 'productdb:bulk_eol_check' %}">
+                        <a class="btn btn-default" role="button" href="{% url 'productdb:list-product_checks' %}">
+                            <i class="fa fa-list-ul"></i>&nbsp;&nbsp;
+                            Product Checks
+                        </a>
+                        <a class="btn btn-default" role="button" href="{% url 'productdb:create-product_check' %}">
                             <i class="fa fa-cogs"></i>&nbsp;&nbsp;
-                            Bulk EoL check
+                            Create Product/EoL check
                         </a>
                     </div>
                 </div>
@@ -151,6 +151,24 @@
                     </span>
                     <span class="pull-right">
                         {{ product_price_count }}
+                    </span>
+                    <div class="clearfix"></div>
+                </div>
+                <div class="panel-footer">
+                    <span class="pull-left">
+                        <i class="fa fa-bar-chart" aria-hidden="true"></i>&nbsp;
+                        Performed Product Checks
+                    </span>
+                    <span class="pull-right">
+                        {{ STAT_AMOUNT_OF_PRODUCT_CHECKS }}
+                    </span>
+                    <div class="clearfix"></div>
+                    <span class="pull-left">
+                        <i class="fa fa-bar-chart" aria-hidden="true"></i>&nbsp;
+                        Unique Products checked
+                    </span>
+                    <span class="pull-right">
+                        {{ STAT_AMOUNT_OF_UNIQUE_PRODUCT_CHECK_ENTRIES }}
                     </span>
                     <div class="clearfix"></div>
                 </div>

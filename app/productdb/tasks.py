@@ -3,10 +3,60 @@ from django.contrib.auth.models import User
 from app.config.models import NotificationMessage
 from app.productdb.excel_import import ProductsExcelImporter, InvalidImportFormatException, InvalidExcelFileFormat, \
     ProductMigrationsExcelImporter
-from app.productdb.models import JobFile
+from app.productdb.models import JobFile, ProductCheck
 from django_project.celery import app, TaskState
 
 logger = logging.getLogger(__name__)
+
+
+@app.task(name="productdb.delete_all_product_checks")
+def delete_all_product_checks():
+    ProductCheck.objects.all().delete()
+
+
+@app.task(serializer="json", name="productdb.perform_product_check", bind=True)
+def perform_product_check(self, product_check_id):
+    """
+    process the Product Check
+    :param self:
+    :param product_check_id:
+    :return:
+    """
+    def update_task_state(status_message):
+        """Update the status message of the task, which is displayed in the watch view"""
+        self.update_state(state=TaskState.PROCESSING, meta={
+            "status_message": status_message
+        })
+
+    update_task_state("Load Product Check...")
+
+    try:
+        product_check = ProductCheck.objects.get(id=product_check_id)
+        product_check.task_id = self.request.id
+        product_check.save()
+
+    except:
+        msg = "Cannot load product check, ID not found in database."
+        logger.error(msg, exc_info=True)
+        result = {
+            "error_message": msg
+        }
+        return result
+
+    update_task_state("Product Check in progress, please wait...")
+
+    product_check.perform_product_check()
+    result = {
+        "status_message": "Product check successful finished."
+    }
+    product_check.task_id = None
+    product_check.save()
+
+    # if the task was executed eager, set state to SUCCESS (required for testing)
+    if self.request.is_eager:
+        self.update_state(state=TaskState.SUCCESS, meta=result)
+
+    return result
 
 
 @app.task(serializer='json', name="productdb.import_product_migrations", bind=True)

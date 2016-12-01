@@ -4,10 +4,12 @@ from django.contrib.auth.models import User
 from reversion_compare.admin import CompareVersionAdmin
 from app.productdb.forms import ProductMigrationOptionForm
 from app.productdb.models import Product, Vendor, ProductGroup, ProductList, ProductMigrationOption, \
-    ProductMigrationSource
+    ProductMigrationSource, ProductCheck, ProductCheckEntry
 from app.productdb.models import UserProfile
 from django.contrib.auth.models import Permission
+
 admin.site.register(Permission)
+admin.site.unregister(User)
 
 
 class UserProfileInline(admin.StackedInline):
@@ -16,14 +18,22 @@ class UserProfileInline(admin.StackedInline):
     verbose_name = "user profile"
     verbose_name_plural = 'user profiles'
 
-
+@admin.register(User)
 class UserAdmin(BaseUserAdmin):
+    list_display = [
+        "username",
+        "email",
+        "first_name",
+        "last_name",
+        "is_active",
+        "is_staff",
+        "is_superuser",
+        "last_login",
+    ]
     inlines = (UserProfileInline, )
 
-admin.site.unregister(User)
-admin.site.register(User, UserAdmin)
 
-
+@admin.register(Product)
 class ProductAdmin(CompareVersionAdmin, admin.ModelAdmin):
     list_display = (
         'product_id',
@@ -71,9 +81,8 @@ class ProductAdmin(CompareVersionAdmin, admin.ModelAdmin):
     history_latest_first = True
     ignore_duplicate_revisions = True
 
-admin.site.register(Product, ProductAdmin)
 
-
+@admin.register(ProductGroup)
 class ProductGroupAdmin(CompareVersionAdmin, admin.ModelAdmin):
     list_display = (
         'name',
@@ -88,9 +97,8 @@ class ProductGroupAdmin(CompareVersionAdmin, admin.ModelAdmin):
     history_latest_first = True
     ignore_duplicate_revisions = True
 
-admin.site.register(ProductGroup, ProductGroupAdmin)
 
-
+@admin.register(Vendor)
 class VendorAdmin(CompareVersionAdmin, admin.ModelAdmin):
     fields = (
         'name',
@@ -99,9 +107,8 @@ class VendorAdmin(CompareVersionAdmin, admin.ModelAdmin):
     history_latest_first = True
     ignore_duplicate_revisions = True
 
-admin.site.register(Vendor, VendorAdmin)
 
-
+@admin.register(ProductMigrationSource)
 class ProductMigrationSourceAdmin(CompareVersionAdmin, admin.ModelAdmin):
     list_display = (
         "name",
@@ -112,9 +119,8 @@ class ProductMigrationSourceAdmin(CompareVersionAdmin, admin.ModelAdmin):
     history_latest_first = True
     ignore_duplicate_revisions = True
 
-admin.site.register(ProductMigrationSource, ProductMigrationSourceAdmin)
 
-
+@admin.register(ProductMigrationOption)
 class ProductMigrationOptionAdmin(CompareVersionAdmin, admin.ModelAdmin):
     form = ProductMigrationOptionForm
     list_display = (
@@ -146,9 +152,8 @@ class ProductMigrationOptionAdmin(CompareVersionAdmin, admin.ModelAdmin):
     history_latest_first = True
     ignore_duplicate_revisions = True
 
-admin.site.register(ProductMigrationOption, ProductMigrationOptionAdmin)
 
-
+@admin.register(ProductList)
 class ProductListAdmin(CompareVersionAdmin, admin.ModelAdmin):
     list_display = [
         'name',
@@ -172,4 +177,58 @@ class ProductListAdmin(CompareVersionAdmin, admin.ModelAdmin):
     ignore_duplicate_revisions = True
 
 
-admin.site.register(ProductList, ProductListAdmin)
+@admin.register(ProductCheck)
+class ProductCheckAdmin(CompareVersionAdmin, admin.ModelAdmin):
+    list_display = [
+        "name",
+        "migration_source",
+        "last_change",
+        "create_user",
+        "in_progress"
+    ]
+    fields = [
+        "name",
+        "migration_source",
+        "input_product_ids",
+        "last_change",
+        "create_user",
+        "task_id"
+    ]
+
+    readonly_fields = [
+        "last_change",
+        "in_progress"
+    ]
+
+    history_latest_first = True
+    ignore_duplicate_revisions = True
+
+
+@admin.register(ProductCheckEntry)
+class ProductCheckEntryAdmin(CompareVersionAdmin, admin.ModelAdmin):
+    list_display = [
+        "product_check",
+        "input_product_id",
+        "product_in_database",
+        "in_database",
+        "amount",
+        "migration_product_id",
+    ]
+    fields = [
+        "product_check",
+        "input_product_id",
+        "product_in_database",
+        "in_database",
+        "amount",
+        "migration_product_id",
+    ]
+
+    readonly_fields = [
+        "product_in_database",
+        "in_database",
+        "migration_product_id",
+        "part_of_product_list"
+    ]
+
+    history_latest_first = True
+    ignore_duplicate_revisions = True
