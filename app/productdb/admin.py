@@ -165,6 +165,7 @@ class ProductListAdmin(CompareVersionAdmin, admin.ModelAdmin):
         'name',
         'description',
         'string_product_list',
+        'version_note',
         'update_user',
         'update_date'
     ]

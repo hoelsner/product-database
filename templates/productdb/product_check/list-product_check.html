@@ -32,10 +32,10 @@
                         <td><a href="{% url "productdb:detail-product_check" product_check_id=product_check.id %}">
                             {{ product_check.name }} (created by
                             {% if product_check.create_user.username %}
-                                <i class="fa fa-user"></i> {% if product_check.create_user.first_name %}{{ product_check.create_user.first_name }} {{ product_check.create_user.last_name }}{% else %}{{ product_check.create_user.username }}{% endif %}
+                                <i class="fa fa-user"></i> {% if product_check.create_user.first_name %}{{ product_check.create_user.first_name }} {{ product_check.create_user.last_name }}{% else %}{{ product_check.create_user.username }}{% endif %})
                             {% else %}
-                                Anonymous User
-                            {% endif %})
+                                Anonymous User)
+                            {% endif %}
                         </td>
                     </tr>
                 {% endfor %}
@@ -87,6 +87,7 @@
                      "<'row'<'col-sm-5'i><'col-sm-7'p>>",
                 "pagingType": "full_numbers",
                 "lengthMenu": [[50, 10, 25, 100, 250], [50, 10, 25, 100, 250]],
+                "order": [[0, "asc"]],
                 "fixedHeader": {
                     "headerOffset": 50
                 },

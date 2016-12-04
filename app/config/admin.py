@@ -1,6 +1,15 @@
 from django.contrib import admin
 
-from app.config.models import NotificationMessage, TextBlock
+from app.config.models import NotificationMessage, TextBlock, ConfigOption
+
+
+class ConfigOptionAdmin(admin.ModelAdmin):
+    list_display = (
+        "key",
+        "value"
+    )
+
+admin.site.register(ConfigOption, ConfigOptionAdmin)
 
 
 class NotificationMessageAdmin(admin.ModelAdmin):
