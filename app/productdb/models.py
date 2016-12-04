@@ -662,9 +662,15 @@ class UserProfile(models.Model):
 
     regex_search = models.BooleanField(
         default=False,
-        verbose_name="use regex search",
+        verbose_name="use regular expressions in search fields",
         help_text="Use regular expression in any search field (fallback to simple search if no valid "
                   "regular expression is used)"
+    )
+
+    choose_migration_source = models.BooleanField(
+        default=False,
+        verbose_name="choose Migration Source in Product Check",
+        help_text="specify the Migration Source for a Product Check (don't use the preferred migration path)"
     )
 
     def natural_key(self):

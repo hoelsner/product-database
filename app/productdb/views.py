@@ -332,7 +332,7 @@ def detail_product_check(request, product_check_id):
             "productcheckentry_set__migration_product",
         ).get(id=product_check_id)
 
-    except:
+    except ProductCheck.DoesNotExist:
         raise Http404("Product check with ID %s not found in database" % product_check_id)
 
     # if the product check is in progress, redirect to task-watch page
@@ -340,7 +340,8 @@ def detail_product_check(request, product_check_id):
         return redirect(reverse("task_in_progress", kwargs={"task_id": product_check.task_id}))
 
     return render(request, "productdb/product_check/detail-product_check.html", context={
-        "product_check": product_check
+        "product_check": product_check,
+        "back_to": request.GET.get("back_to") if request.GET.get("back_to") else reverse("productdb:list-product_checks")
     })
 
 
@@ -385,8 +386,11 @@ def create_product_check(request):
         if not request.user.id:
             form.fields["public_product_check"].widget.attrs['disabled'] = True
 
+    choose_migration_source = request.user.profile.choose_migration_source if request.user.is_authenticated() else False
+
     return render(request, "productdb/product_check/create-product_check.html", context={
-        "form": form
+        "form": form,
+        "choose_migration_source": choose_migration_source
     })
 
 

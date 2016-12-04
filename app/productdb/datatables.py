@@ -1,4 +1,3 @@
-from django.core.exceptions import ObjectDoesNotExist
 from django_datatables_view.base_datatable_view import BaseDatatableView
 from .models import Product, ProductGroup
 from django.db.models import Q

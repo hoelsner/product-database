@@ -24,7 +24,7 @@
 
             <div class="panel panel-default">
                 <div class="panel-heading">
-                    <h3 class="panel-title">Personal Data</h3>
+                    <h3 class="panel-title">User Information</h3>
                 </div>
                 <div class="panel-body">
                     {% bootstrap_field form.email layout="horizontal"  %}
@@ -33,11 +33,20 @@
 
             <div class="panel panel-default">
                 <div class="panel-heading">
-                     <h3 class="panel-title">User Interface Settings</h3>
+                     <h3 class="panel-title">UI Settings</h3>
                 </div>
                 <div class="panel-body">
                     {% bootstrap_field form.preferred_vendor layout="horizontal" %}
                     {% bootstrap_field form.regex_search layout="horizontal" %}
+                </div>
+            </div>
+
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                     <h3 class="panel-title">Other settings</h3>
+                </div>
+                <div class="panel-body">
+                {% bootstrap_field form.choose_migration_source layout="horizontal" %}
                 </div>
             </div>
 

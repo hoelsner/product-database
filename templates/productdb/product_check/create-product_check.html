@@ -9,7 +9,7 @@ Create Product Check
 {% block page_content %}
     <div class="col-md-10 col-md-offset-1">
         <div class="page-header">
-            <h1>Create Product Check</h1>
+            <h1>New Product Check</h1>
         </div>
 
         {% bootstrap_alert content="Every Product Check is temporary stored in the database. All Product Checks are deleted every week on Sunday." alert_type="warning" %}
@@ -29,7 +29,15 @@ Create Product Check
 
         <form method="post" class="form">
             {% csrf_token %}
-            {% bootstrap_form form layout="horizontal" %}
+
+            {% bootstrap_field form.name layout="horizontal" %}
+            {% if choose_migration_source %}
+                {% bootstrap_field form.migration_source layout="horizontal" %}
+            {% endif %}
+            {% bootstrap_field form.input_product_ids layout="horizontal" %}
+            {% bootstrap_field form.public_product_check layout="horizontal" %}
+
+            {% bootstrap_field form.create_user layout="horizontal" %}
             <hr>
             {% buttons %}
                 <button type="submit" id="submit" class="btn btn-primary btn-block">Create Product Check</button>
