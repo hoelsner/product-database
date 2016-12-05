@@ -24,6 +24,7 @@
     celery_concurrency: 8
 
     enable_ldap: false
+    enable_sentry: false
 
     # SSL certificate configuration
     selfsigned_certs: true
@@ -39,12 +40,15 @@
     #   ssl_certificate_key_file: "server.key"
 
     # only required if enable_ldap is set to true
-    ldap_server_url: ""
-    ldap_bind_dn: ""
-    ldap_bind_password: ""
-    ldap_user_search: ""
-    ldap_group_search: ""
-    ldap_require_group: ""
+    #   ldap_server_url: ""
+    #   ldap_bind_dn: ""
+    #   ldap_bind_password: ""
+    #   ldap_user_search: ""
+    #   ldap_group_search: ""
+    #   ldap_require_group: ""
+
+    # only required if enable_sentry is set to true
+    #   sentry_dsn: "https://<key>:<secret>@sentry.io/<project>"
 
   tasks:
    - include: ../appliance/setup-productdb.yaml

@@ -52,11 +52,11 @@ class BaseExcelImporter:
             self.workbook = pd.ExcelFile(self.path_to_excel_file)
 
         except XLRDError as ex:
-            logger.error("invalid format of excel file '%s' (%s)" % (self.path_to_excel_file, ex))
+            logger.error("invalid format of excel file '%s' (%s)" % (self.path_to_excel_file, ex), exc_info=True)
             raise InvalidExcelFileFormat("invalid file format") from ex
 
         except Exception:
-            logger.fatal("unable to read workbook at '%s'" % self.path_to_excel_file)
+            logger.fatal("unable to read workbook at '%s'" % self.path_to_excel_file, exc_info=True)
             raise
 
     def _create_data_frame(self):

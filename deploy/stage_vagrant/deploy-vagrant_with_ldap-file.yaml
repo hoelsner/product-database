@@ -24,6 +24,7 @@
     cert_organization: "Vagrant"
 
     enable_ldap: true
+    enable_sentry: false
 
   tasks:
    - debug: msg="Before running this script, please create a ldap-parameters.yaml file in the deploy directory that contains your LDAP configuration parameters."

@@ -355,6 +355,12 @@
     when: enable_ldap == true
 
   #
+  # add Sentry configuration if required
+  - name: include the Sentry configuration if required
+    include: add-sentry-configuration.yaml
+    when: enable_sentry == true
+
+  #
   # collect static files
   - name: update static files
     command: "/var/www/productdb/virtualenv/bin/python3 manage.py collectstatic --noinput"

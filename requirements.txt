@@ -29,3 +29,4 @@ django-bootstrap3==7.1.0
 django-reversion==2.0.7
 django-reversion-compare==0.7.2
 django-filter==0.15.3
+raven==5.32.0

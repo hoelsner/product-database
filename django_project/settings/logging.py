@@ -1,7 +1,7 @@
 from django_project.settings.common import *
 
 
-def configure_logging(log_level, basedir, filename):
+def configure_logging(log_level, basedir, filename, enable_sentry=False):
     u_logfile_size = 2 * 1024 * 1024
     u_logfile_count = 5
     #
@@ -69,6 +69,16 @@ def configure_logging(log_level, basedir, filename):
                 'handlers': ['catch_all'],
                 'propagate': False,
                 'level': log_level,
+            },
+            'raven': {
+                'level': 'DEBUG',
+                'handlers': ['console'],
+                'propagate': False,
+            },
+            'sentry.errors': {
+                'level': 'DEBUG',
+                'handlers': ['console'],
+                'propagate': False,
             }
         },
         'root': {
@@ -77,5 +87,13 @@ def configure_logging(log_level, basedir, filename):
             'propagate': True,
         }
     }
+
+    if enable_sentry:
+        logging_config["handlers"]["sentry"] = {
+            'level': 'WARNING',
+            'class': 'raven.contrib.django.raven_compat.handlers.SentryHandler'
+        }
+        logging_config["loggers"]["app"]["handlers"] += ["sentry"]
+        logging_config["loggers"][""]["handlers"] += ["sentry"]
 
     return logging_config

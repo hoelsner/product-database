@@ -24,6 +24,7 @@
     cert_organization: "Vagrant"
 
     enable_ldap: false
+    enable_sentry: false
 
   tasks:
    - include: ../appliance/setup-productdb.yaml

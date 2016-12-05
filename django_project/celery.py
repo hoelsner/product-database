@@ -2,9 +2,26 @@ from __future__ import absolute_import
 
 import logging
 import os
-from celery import Celery, states
+import celery
+import raven
+from celery import states
 from django.conf import settings
 from django.core.cache import cache
+from raven.contrib.celery import register_signal, register_logger_signal
+
+
+class Celery(celery.Celery):
+
+    def on_configure(self):
+        if settings.PDB_ENABLE_SENTRY:
+            client = raven.Client(settings.PDB_SENTRY_DSN)
+
+            # register a custom filter to filter out duplicate logs
+            register_logger_signal(client)
+
+            # hook into the Celery error handler
+            register_signal(client)
+
 
 # set the default Django settings module for the 'celery' program.
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'django_project.settings')
@@ -32,6 +49,7 @@ def get_meta_data_for_task(task_id):
     except Exception:  # catch any exception
         logging.debug("no meta information for task '%s' found" % task_id, exc_info=True)
         meta_data = {}
+
     return meta_data
 
 
