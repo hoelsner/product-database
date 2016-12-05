@@ -37,7 +37,7 @@
          - libsasl2-dev
          - libldap2-dev
 
-  - name: create .bash_profile for user
+  - name: create .bash_profile for the application user
     command: touch /home/{{ site_user }}/.bash_profile
     args:
       creates: /home/{{ site_user }}/.bash_profile
@@ -85,6 +85,15 @@
       group={{ site_group }}
       recurse=yes
       mode=0775
+    become: true
+  - name: create etc config directory
+    file:
+      path=/etc/productdb
+      state=directory
+      owner={{ site_user }}
+      group={{ site_group }}
+      recurse=yes
+      mode=0770
     become: true
   - name: create python virtualenv for the product database
     command:
@@ -151,7 +160,7 @@
     register: POSTGRES_KEY
 
   #
-  # get frontend dependencies (bootstrap etc.) via node
+  # get frontend dependencies (bootstrap etc.) via npm
   - name: install npm dependencies
     npm: path=/var/www/productdb/source
          global=no
@@ -220,29 +229,70 @@
     become_user: postgres
 
   #
-  # configure GUNICORN
-  - name: create gunicorn service (with LDAP)
+  # create productdb configuration file
+  - name: create global configuration file
     become: true
     copy:
-      src=/var/www/productdb/source/deploy/appliance/templates/gunicorn.ldap.template.service
-      dest=/etc/systemd/system/productdb-gunicorn.service
+      src=/var/www/productdb/source/deploy/appliance/templates/config_defaults
+      dest=/etc/productdb/productdb
       remote_src=True
-    when: enable_ldap == true
+  - name: set secret key configuration value
+    become: true
+    lineinfile:
+      dest: /etc/productdb/productdb
+      regexp: '^DJANGO_SECRET_KEY='
+      line: 'DJANGO_SECRET_KEY={{ SECRET_KEY.stdout }}'
+  - name: set database name configuration value
+    become: true
+    lineinfile:
+      dest: /etc/productdb/productdb
+      regexp: '^PDB_DATABASE_NAME='
+      line: 'PDB_DATABASE_NAME={{ db_name }}'
+  - name: set database user configuration value
+    become: true
+    lineinfile:
+      dest: /etc/productdb/productdb
+      regexp: '^PDB_DATABASE_USER='
+      line: 'PDB_DATABASE_USER={{ db_user }}'
+  - name: set database password configuration value
+    become: true
+    lineinfile:
+      dest: /etc/productdb/productdb
+      regexp: '^PDB_DATABASE_PASSWORD='
+      line: 'PDB_DATABASE_PASSWORD={{ POSTGRES_KEY.stdout }}'
+  - name: set database host configuration value
+    become: true
+    lineinfile:
+      dest: /etc/productdb/productdb
+      regexp: '^PDB_DATABASE_HOST='
+      line: 'PDB_DATABASE_HOST={{ db_host }}'
+  - name: set database port configuration value
+    become: true
+    lineinfile:
+      dest: /etc/productdb/productdb
+      regexp: '^PDB_DATABASE_PORT='
+      line: 'PDB_DATABASE_PORT={{ db_port }}'
+  - name: set gunicorn worker configuration value
+    become: true
+    lineinfile:
+      dest: /etc/productdb/productdb
+      regexp: '^PDB_GUNICORN_WORKER='
+      line: 'PDB_GUNICORN_WORKER={{ gunicorn_worker }}'
+  - name: set gunicorn worker configuration value
+    become: true
+    lineinfile:
+      dest: /etc/productdb/productdb
+      regexp: '^PDB_CELERY_CONCURRENCY='
+      line: 'PDB_CELERY_CONCURRENCY={{ celery_concurrency }}'
 
-  - name: create gunicorn service (without LDAP)
+  #
+  # configure GUNICORN
+  - name: create gunicorn service
     become: true
     copy:
       src=/var/www/productdb/source/deploy/appliance/templates/gunicorn.template.service
       dest=/etc/systemd/system/productdb-gunicorn.service
       remote_src=True
-    when: enable_ldap != true
-
-  - name: set secret key on gunicorn environment configuration
-    become: true
-    replace:
-      dest=/etc/systemd/system/productdb-gunicorn.service
-      regexp='__DJANGO_SECRET_KEY__'
-      replace='{{ SECRET_KEY.stdout }}'
   - name: set username on gunicorn environment configuration
     become: true
     replace:
@@ -255,67 +305,15 @@
       dest=/etc/systemd/system/productdb-gunicorn.service
       regexp='__GROUP__'
       replace={{ site_group }}
-  - name: set database name on gunicorn environment configuration
-    become: true
-    replace:
-      dest=/etc/systemd/system/productdb-gunicorn.service
-      regexp='__PDB_DATABASE_NAME__'
-      replace={{ db_name }}
-  - name: set database user on gunicorn environment configuration
-    become: true
-    replace:
-      dest=/etc/systemd/system/productdb-gunicorn.service
-      regexp='__PDB_DATABASE_USER__'
-      replace={{ db_user }}
-  - name: set database password on gunicorn environment configuration
-    become: true
-    replace:
-      dest=/etc/systemd/system/productdb-gunicorn.service
-      regexp='__PDB_DATABASE_PASSWORD__'
-      replace={{ POSTGRES_KEY.stdout }}
-  - name: set database host on gunicorn environment configuration
-    become: true
-    replace:
-      dest=/etc/systemd/system/productdb-gunicorn.service
-      regexp='__PDB_DATABASE_HOST__'
-      replace={{ db_host }}
-  - name: set database port on gunicorn environment configuration
-    become: true
-    replace:
-      dest=/etc/systemd/system/productdb-gunicorn.service
-      regexp='__PDB_DATABASE_PORT__'
-      replace={{ db_port }}
-  - name: set worker threads on gunicorn environment configuration
-    become: true
-    replace:
-      dest=/etc/systemd/system/productdb-gunicorn.service
-      regexp='_GUNICORN_WORKER_'
-      replace='{{ gunicorn_worker }}'
 
   #
   # configure CELERY WORKER service
-  - name: create celery_worker service (with LDAP)
-    become: true
-    copy:
-      src=/var/www/productdb/source/deploy/appliance/templates/celery_worker.ldap.template.service
-      dest=/etc/systemd/system/productdb-celeryworker.service
-      remote_src=True
-    when: enable_ldap == true
-
-  - name: create celery_worker service (without LDAP)
+  - name: create celery_worker service
     become: true
     copy:
       src=/var/www/productdb/source/deploy/appliance/templates/celery_worker.template.service
       dest=/etc/systemd/system/productdb-celeryworker.service
       remote_src=True
-    when: enable_ldap != true
-
-  - name: set secret key on celery_worker environment configuration
-    become: true
-    replace:
-      dest=/etc/systemd/system/productdb-celeryworker.service
-      regexp='__DJANGO_SECRET_KEY__'
-      replace='{{ SECRET_KEY.stdout }}'
   - name: set username on celery_worker environment configuration
     become: true
     replace:
@@ -328,67 +326,15 @@
       dest=/etc/systemd/system/productdb-celeryworker.service
       regexp='__GROUP__'
       replace={{ site_group }}
-  - name: set database name on celery_worker environment configuration
-    become: true
-    replace:
-      dest=/etc/systemd/system/productdb-celeryworker.service
-      regexp='__PDB_DATABASE_NAME__'
-      replace={{ db_name }}
-  - name: set database user on celery_worker environment configuration
-    become: true
-    replace:
-      dest=/etc/systemd/system/productdb-celeryworker.service
-      regexp='__PDB_DATABASE_USER__'
-      replace={{ db_user }}
-  - name: set database password on celery_worker environment configuration
-    become: true
-    replace:
-      dest=/etc/systemd/system/productdb-celeryworker.service
-      regexp='__PDB_DATABASE_PASSWORD__'
-      replace={{ POSTGRES_KEY.stdout }}
-  - name: set database host on celery_worker environment configuration
-    become: true
-    replace:
-      dest=/etc/systemd/system/productdb-celeryworker.service
-      regexp='__PDB_DATABASE_HOST__'
-      replace={{ db_host }}
-  - name: set database port on celery_worker environment configuration
-    become: true
-    replace:
-      dest=/etc/systemd/system/productdb-celeryworker.service
-      regexp='__PDB_DATABASE_PORT__'
-      replace={{ db_port }}
-  - name: set worker threads on celery_worker environment configuration
-    become: true
-    replace:
-      dest=/etc/systemd/system/productdb-celeryworker.service
-      regexp='_CELERY_CONCURRENCY_'
-      replace={{ celery_concurrency }}
 
   #
   # configure CELERYCAM service
-  - name: create celery_camera service (with LDAP)
-    become: true
-    copy:
-      src=/var/www/productdb/source/deploy/appliance/templates/celery_camera.ldap.template.service
-      dest=/etc/systemd/system/productdb-celerycamera.service
-      remote_src=True
-    when: enable_ldap == true
-
-  - name: create celery_camera service (without LDAP)
+  - name: create celery_camera service
     become: true
     copy:
       src=/var/www/productdb/source/deploy/appliance/templates/celery_camera.template.service
       dest=/etc/systemd/system/productdb-celerycamera.service
       remote_src=True
-    when: enable_ldap != true
-
-  - name: set secret key on celery_camera environment configuration
-    become: true
-    replace:
-      dest=/etc/systemd/system/productdb-celerycamera.service
-      regexp='__DJANGO_SECRET_KEY__'
-      replace='{{ SECRET_KEY.stdout }}'
   - name: set username on celery_camera environment configuration
     become: true
     replace:
@@ -401,74 +347,6 @@
       dest=/etc/systemd/system/productdb-celerycamera.service
       regexp='__GROUP__'
       replace={{ site_group }}
-  - name: set database name on celery_camera environment configuration
-    become: true
-    replace:
-      dest=/etc/systemd/system/productdb-celerycamera.service
-      regexp='__PDB_DATABASE_NAME__'
-      replace={{ db_name }}
-  - name: set database user on celery_camera environment configuration
-    become: true
-    replace:
-      dest=/etc/systemd/system/productdb-celerycamera.service
-      regexp='__PDB_DATABASE_USER__'
-      replace={{ db_user }}
-  - name: set database password on celery_camera environment configuration
-    become: true
-    replace:
-      dest=/etc/systemd/system/productdb-celerycamera.service
-      regexp='__PDB_DATABASE_PASSWORD__'
-      replace={{ POSTGRES_KEY.stdout }}
-  - name: set database host on celery_camera environment configuration
-    become: true
-    replace:
-      dest=/etc/systemd/system/productdb-celerycamera.service
-      regexp='__PDB_DATABASE_HOST__'
-      replace={{ db_host }}
-  - name: set database port on celery_camera environment configuration
-    become: true
-    replace:
-      dest=/etc/systemd/system/productdb-celerycamera.service
-      regexp='__PDB_DATABASE_PORT__'
-      replace={{ db_port }}
-
-  #
-  # add configuration parameters to bash profile of the app user
-  - name: set secret key in bash profile
-    lineinfile:
-      dest: /home/{{ site_user }}/.bash_profile
-      regexp: ^export DJANGO_SECRET_KEY=
-      line: export DJANGO_SECRET_KEY="{{ SECRET_KEY.stdout }}"
-  - name: set database name in bash profile
-    lineinfile:
-      dest: /home/{{ site_user }}/.bash_profile
-      regexp: ^export PDB_DATABASE_NAME={{ db_name }}
-      line: export PDB_DATABASE_NAME={{ db_name }}
-  - name: set database user in bash profile
-    lineinfile:
-      dest: /home/{{ site_user }}/.bash_profile
-      regexp: ^export PDB_DATABASE_NAME={{ db_user }}
-      line: export PDB_DATABASE_USER={{ db_user }}
-  - name: set database password in bash profile
-    lineinfile:
-      dest: /home/{{ site_user }}/.bash_profile
-      regexp: ^export PDB_DATABASE_PASSWORD={{ POSTGRES_KEY.stdout }}
-      line: export PDB_DATABASE_PASSWORD={{ POSTGRES_KEY.stdout }}
-  - name: set database host in bash profile
-    lineinfile:
-      dest: /home/{{ site_user }}/.bash_profile
-      regexp: ^export PDB_DATABASE_HOST={{ db_host }}
-      line: export PDB_DATABASE_HOST={{ db_host }}
-  - name: set database port in bash profile
-    lineinfile:
-      dest: /home/{{ site_user }}/.bash_profile
-      regexp: ^export PDB_DATABASE_PORT={{ db_port }}
-      line: export PDB_DATABASE_PORT={{ db_port }}
-  - name: set HTTPs only mode
-    lineinfile:
-      dest: /home/{{ site_user }}/.bash_profile
-      regexp: ^export PDB_HTTPS_ONLY=1
-      line: export PDB_HTTPS_ONLY=1
 
   #
   # add LDAP configuration if required
