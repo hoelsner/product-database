@@ -59,7 +59,7 @@ else:
         'socket_timeout': 3,
     }
     CACHEOPS_DEFAULTS = {
-        'timeout': 60 * 60
+        'timeout': 2 * 60 * 60
     }
     CACHEOPS = {
         'auth.user': {'ops': 'get', 'timeout': 60*15},
@@ -71,6 +71,8 @@ else:
         'productdb.ProductMigrationOption': {'ops': 'all'},
         'productdb.ProductMigrationSource': {'ops': 'all'},
         'productdb.ProductList': {'ops': 'all'},
+        'productdb.ProductCheck': {'ops': 'all'},
+        'productdb.ProductCheckEntry': {'ops': 'all'},
     }
 
 ROOT_URLCONF = 'django_project.urls'
