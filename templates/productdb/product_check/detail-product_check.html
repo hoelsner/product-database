@@ -33,16 +33,20 @@
             <dt>execute time:</dt>
             <dd>{{ product_check.last_change|date:"SHORT_DATETIME_FORMAT" }}</dd>
         </dl>
+        <p class="text-muted small">Move the mouse over the price information (if displayed and defined) to see the update timestamp for the list price.</p>
         <table id="product_check_table_{{ product_check.id }}" class="table table-striped table-hover table-responsive" cellspacing="0" width="100%">
             <thead>
                 <tr id="tour_table_head">
+                    <th class="searchable">Vendor</th>
                     <th class="searchable">Product ID</th>
                     <th class="searchable">Amount</th>
                     <th class="searchable">Description</th>
+                    <th class="searchable" title="Move the mouse over the list price to see the last update date">List Price</th>
                     <th class="searchable">Lifecycle State</th>
                     <th class="searchable">Replacement Product ID</th>
                     <th class="searchable">Replacement suggested by</th>
                     <th class="searchable">Replacement comment</th>
+                    <th class="searchable" title="Move the mouse over the list price to see the last update date">Replacement Product List Price</th>
                     <th class="searchable">Part of Product List</th>
                     <th><abbr title="End-of-Life Announcement Date">EoL anno</abbr></th>
                     <th><abbr title="End-of-Sale Date">EoS</abbr></th>
@@ -62,6 +66,11 @@
                     <tr{% if not product_check_entry.in_database %} class="danger"{% endif %}>
                         <td>
                             {% if product_check_entry.in_database %}
+                                {{ product_check_entry.product_in_database.vendor.name }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if product_check_entry.in_database %}
                                 <a href="{% url "productdb:product-detail" product_id=product_check_entry.product_in_database_id %}?back_to={{ request.path|urlencode }}">
                                     {{ product_check_entry.input_product_id }}
                                 </a>
@@ -74,6 +83,13 @@
                         {% if product_check_entry.in_database %}
                             {% with product=product_check_entry.product_in_database %}
                                 <td>{{ product.description }}</td>
+                                <td>
+                                    {% if product_check_entry.product_in_database.list_price %}
+                                        <span {% if product_check_entry.product_in_database.list_price_timestamp %} data-toggle="tooltip" title="last price update at {{ product_check_entry.product_in_database.list_price_timestamp|date:"SHORT_DATE_FORMAT" }}"{% endif %}>
+                                            {{ product_check_entry.product_in_database.list_price|floatformat:2 }} {{ product_check_entry.product_in_database.currency }}
+                                        </span>
+                                    {% endif %}
+                                </td>
                                 <td>
                                     {% if product.current_lifecycle_states %}
                                         {{ product.current_lifecycle_states|join:", <br>" }}
@@ -90,6 +106,16 @@
                                 </td>
                                 <td>{{ product_check_entry.migration_product.migration_source.name }}</td>
                                 <td>{{ product_check_entry.migration_product.migration_source.comment }}</td>
+
+                                {% if product_check_entry.migration_product.replacement_db_product %}
+                                    <td>
+                                        <span {% if product_check_entry.migration_product.replacement_db_product.list_price_timestamp %} data-toggle="tooltip" title="last price update at {{ product_check_entry.migration_product.replacement_db_product.list_price_timestamp|date:"SHORT_DATE_FORMAT" }}"{% endif %}>
+                                            {{ product_check_entry.migration_product.replacement_db_product.list_price }} {{ product_check_entry.migration_product.replacement_db_product.currency }}
+                                        </span>
+                                    </td>
+                                {% else %}
+                                    <td></td>
+                                {% endif %}
 
                                 <td>{{ product_check_entry.get_product_list_names|join:", <br>" }}</td>
                                 <td>{{ product.eol_ext_announcement_date|date:"SHORT_DATE_FORMAT" }}</td>
@@ -120,7 +146,9 @@
                             {% endwith %}
                         {% else %}
                             <td>---</td>
+                            <td>---</td>
                             <td>Not found in Database</td>
+                            <td>---</td>
                             <td>---</td>
                             <td>---</td>
                             <td>---</td>
@@ -206,9 +234,9 @@
                 },
                 "stateSave": true,
                 "columnDefs": [
-                    { "targets": 2, "visible": false, "searchable": true },
-                    { "targets": 6, "visible": false, "searchable": true },
-                    { "targets": 7, "visible": false, "searchable": true },
+                    { "targets": 0, "visible": false, "searchable": true },
+                    { "targets": 3, "visible": false, "searchable": true },
+                    { "targets": 4, "visible": false, "searchable": true },
                     { "targets": 8, "visible": false, "searchable": true },
                     { "targets": 9, "visible": false, "searchable": true },
                     { "targets": 10, "visible": false, "searchable": true },
@@ -217,14 +245,17 @@
                     { "targets": 13, "visible": false, "searchable": true },
                     { "targets": 14, "visible": false, "searchable": true },
                     { "targets": 15, "visible": false, "searchable": true },
-                    { "targets": 16, "visible": false, "searchable": true,
+                    { "targets": 16, "visible": false, "searchable": true },
+                    { "targets": 17, "visible": false, "searchable": true },
+                    { "targets": 18, "visible": false, "searchable": true },
+                    { "targets": 19, "visible": false, "searchable": true,
                         render: function (data, type, row) {
                             return type === 'export' ?
-                                    getLinkValue(row[16]) :
+                                    getLinkValue(row[19]) :
                                     data;
                         }
                     },
-                    { "targets": 18, "visible": false, "searchable": true }
+                    { "targets": 21, "visible": false, "searchable": true }
                 ],
                 buttons: [
                     {
