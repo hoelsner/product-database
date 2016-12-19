@@ -53,27 +53,37 @@ else:
             'LOCATION': 'localhost:6379',
         },
     }
-    CACHEOPS_REDIS = {
-        'host': 'localhost',
-        'port': 6379,
-        'socket_timeout': 3,
-    }
-    CACHEOPS_DEFAULTS = {
-        'timeout': 2 * 60 * 60
-    }
-    CACHEOPS = {
-        'auth.user': {'ops': 'get', 'timeout': 60*15},
-        'auth.*': {'ops': ('fetch', 'get')},
-        'auth.permission': {'ops': 'all'},
-        'productdb.Vendor': {'ops': 'get'},
-        'productdb.Product': {'ops': 'all'},
-        'productdb.ProductGroup': {'ops': 'all'},
-        'productdb.ProductMigrationOption': {'ops': 'all'},
-        'productdb.ProductMigrationSource': {'ops': 'all'},
-        'productdb.ProductList': {'ops': 'all'},
-        'productdb.ProductCheck': {'ops': 'all'},
-        'productdb.ProductCheckEntry': {'ops': 'all'},
-    }
+
+    if os.getenv("PDB_DISABLE_CACHE", False):
+        print("!!!!!!!! use redis caching and disable cacheops...")
+        CACHEOPS_ENABLED = False  # disable cacheops for debugging
+
+    else:
+        CACHEOPS_REDIS = {
+            'host': 'localhost',
+            'port': 6379,
+            'socket_timeout': 3,
+        }
+        CACHEOPS_DEFAULTS = {
+            'timeout': 4 * 60 * 60
+        }
+        CACHEOPS = {
+            'auth.user': {
+                'ops': 'all',
+                'timeout': 15 * 60
+            },
+            'productdb.ProductList': {
+                'ops': 'all',
+                'timeout': 48 * 60 * 60
+            },
+            'config.*': {
+                'ops': 'all',
+                'timeout': 24 * 60 * 60
+            },
+            '*.*': {
+                'ops': 'all'
+            },
+        }
 
 ROOT_URLCONF = 'django_project.urls'
 

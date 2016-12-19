@@ -235,6 +235,9 @@
     copy:
       src=/var/www/productdb/source/deploy/appliance/templates/config_defaults
       dest=/etc/productdb/productdb
+      owner={{ site_user }}
+      group={{ site_group }}
+      mode=0770
       remote_src=True
   - name: set secret key configuration value
     become: true

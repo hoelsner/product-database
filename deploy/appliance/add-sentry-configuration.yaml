@@ -13,5 +13,5 @@
     lineinfile:
       dest: /etc/productdb/productdb
       regexp: '^PDB_SENTRY_DSN='
-      line: 'PDB_SENTRY_DSN={{ sentry_dsn }}'
+      line: 'PDB_SENTRY_DSN="{{ sentry_dsn }}"'
     when: enable_sentry == true

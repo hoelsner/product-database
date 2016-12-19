@@ -6,6 +6,7 @@ exclude_lines =
     .* logger.debug\(.*
     if self.request.is_eager:
     .* # catch any exception
+    .* # ignore for coverage
 [run]
 omit =
   *apps.py,

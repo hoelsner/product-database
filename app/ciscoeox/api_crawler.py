@@ -47,12 +47,16 @@ def clean_api_url_response(url_response):
     clean_response = url_response.strip()
     if url_response != "":
         clean_response = clean_response if ";" not in clean_response else clean_response.split(";")[0]
+        clean_response = clean_response if " or http://" not in clean_response \
+            else clean_response.split(" or http://")[0]
         clean_response = clean_response if " and http://" not in clean_response \
             else clean_response.split(" and http://")[0]
         clean_response = clean_response if " http://" not in clean_response \
             else clean_response.split(" http://")[0]
         clean_response = clean_response if " and https://" not in clean_response \
             else clean_response.split(" and https://")[0]
+        clean_response = clean_response if " or https://" not in clean_response \
+            else clean_response.split(" or https://")[0]
         clean_response = clean_response if " https://" not in clean_response \
             else clean_response.split(" https://")[0]
     return clean_response

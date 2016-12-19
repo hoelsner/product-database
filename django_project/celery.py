@@ -13,8 +13,9 @@ from raven.contrib.celery import register_signal, register_logger_signal
 class Celery(celery.Celery):
 
     def on_configure(self):
-        if settings.PDB_ENABLE_SENTRY:
+        if settings.PDB_ENABLE_SENTRY: # ignore for coverage
             client = raven.Client(settings.PDB_SENTRY_DSN)
+            client.release = raven.fetch_git_sha(os.path.dirname(os.pardir))
 
             # register a custom filter to filter out duplicate logs
             register_logger_signal(client)

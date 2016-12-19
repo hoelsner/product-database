@@ -86,6 +86,7 @@
                 }
             });
 
+            {% if perms.productdb.add_productlist or permis.productdb.change_productlist or perms.productdb.delete_productlist %}
             $('#product_list_table tbody').on( 'click', 'tr', function () {
                 if ( $(this).hasClass('selected') ) {
                     $(this).removeClass('selected');
@@ -95,6 +96,7 @@
                     $(this).addClass('selected');
                 }
             } );
+            {% endif %}
 
             var table = $('#product_list_table').DataTable( {
                 dom: "<'row'<'col-sm-4'l><'col-sm-4'<'text-center'B>><'col-sm-4'f>>" +

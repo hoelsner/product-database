@@ -836,6 +836,10 @@ class TestUpdateCiscoEoxDatabase:
             "https://localhost; and https://another_localhost": "https://localhost",
             "https://localhost http://another_localhost": "https://localhost",
             "https://localhost https://another_localhost": "https://localhost",
+            "https://localhost or http://another_localhost": "https://localhost",
+            "https://localhost or https://another_localhost": "https://localhost",
+            "https://localhost; or http://another_localhost": "https://localhost",
+            "https://localhost; or https://another_localhost": "https://localhost",
         }
 
         for input, exp_output in test_sets.items():

@@ -72,19 +72,23 @@ class BaseCiscoApiConsole:
     def __check_response_for_errors__(self, respone):
         """check for common errors on the API endpoints"""
         if respone.status_code == 401:
-            logger.error("cannot claim access token, Invalid client or client credentials")
+            logger.error("cannot claim access token, Invalid client or client credentials (%s)" % respone.url)
             raise InvalidClientCredentialsException("Invalid client or client credentials")
 
+        if respone.status_code == 500:
+            logger.error("API response invalid, result was HTTP 500 (%s)" % respone.url)
+            raise CiscoApiCallFailed("API response invalid, result was HTTP 500")
+
         if respone.text == "<h1>Not Authorized</h1>":
-            logger.error("cannot claim access token, authorization failed")
+            logger.error("cannot claim access token, authorization failed (%s)" % respone.url)
             raise AuthorizationFailedException("User authorization failed")
 
         elif respone.text == "<h1>Developer Inactive</h1>":
-            logger.error("cannot claim access token, developer inactive")
+            logger.error("cannot claim access token, developer inactive (%s)" % respone.url)
             raise AuthorizationFailedException("Insufficient Permissions on API endpoint")
 
         elif respone.text == "<h1>Gateway Timeout</h1>":
-            logger.error("cannot claim access token, Gateway timeout")
+            logger.error("cannot claim access token, Gateway timeout (%s)" % respone.url)
             raise AuthorizationFailedException("API endpoint temporary unreachable")
 
     def load_client_credentials(self):

@@ -123,12 +123,13 @@ class TestBulkEolCheckFunction(BaseSeleniumTest):
         # The file should download automatically (firefox is configured this way)
 
         # verify that the file is a CSV formatted field (with ";" as delimiter)
-        # verfiy that the first line contains a link (not the Bulletin number)
+        # verfiy that the second line contains a link (not the Bulletin number)
         file = os.path.join(test_download_dir, "product check - Test.csv")
         header_line = "\ufeffProduct ID;Amount;Lifecycle State;Replacement Product ID;Replacement suggested by;" \
                       "Vendor Bulletin;LC auto-sync\n"
         with open(file, "r") as f:
             assert header_line == f.readline()
+            f.readline()
             assert "http://www.cisco.com/en/" in f.readline()
 
         # test that the table view is stored

@@ -227,6 +227,22 @@ class TestCiscoHelloApi:
             cisco_hello_api.create_temporary_access_token()
         assert exinfo.match("Insufficient Permissions on API endpoint")
 
+    def test_api_500(self, monkeypatch):
+        def get_invalid_authentication_response():
+            r = Response()
+            r.status_code = 500
+            r._content = "".encode("utf-8")
+            return r
+
+        monkeypatch.setattr(requests, "post", lambda x, params: get_invalid_authentication_response())
+
+        cisco_hello_api = CiscoHelloApi()
+        cisco_hello_api.load_client_credentials()
+
+        with pytest.raises(CiscoApiCallFailed) as exinfo:
+            cisco_hello_api.create_temporary_access_token()
+        assert exinfo.match("API response invalid, result was HTTP 500")
+
     def test_gateway_timeout(self, monkeypatch):
         def get_invalid_authentication_response():
             r = Response()

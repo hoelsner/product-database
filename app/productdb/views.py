@@ -12,7 +12,6 @@ from django.utils.html import escape
 from django.utils.timezone import timedelta, datetime, get_current_timezone
 from django.contrib import messages
 from app.config.models import NotificationMessage, TextBlock
-from app.productdb import utils as app_util
 from app.productdb.forms import ImportProductsFileUploadForm, ProductListForm, UserProfileForm, \
     ImportProductMigrationFileUploadForm, ProductCheckForm
 from app.productdb.models import Product, JobFile, ProductGroup, ProductList, UserProfile, ProductMigrationSource, \
@@ -373,6 +372,7 @@ def create_product_check(request):
                     "product_check_id": form.instance.id
                 })
             )
+            logger.info("create product check with ID %d on task %s" % (form.instance.id, task.id))
 
             return redirect(reverse("task_in_progress", kwargs={"task_id": task.id}))
 
