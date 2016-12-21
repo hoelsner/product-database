@@ -1,17 +1,7 @@
 
 # Product Database
 
-*Version 0.4 (development) - see [Changelog](CHANGELOG.md) for details*
-
-**This is the Product Database development branch. I recommend to use the latest [stable version 0.3](https://github.com/hoelsner/product-database/tree/v0.3) 
-for production.**
-
-**Before updating to Version 0.4 (or this development version), please save your current configuration values. Version 0.4 
-uses the database to store the configuration values, not the configuration file. After updating, you must reconfigure 
-the Product Database settings.**
-
-This version is currently in development and contains multiple major changes to the underlying operating system and the
-application . **Please note that an update path from Version 0.2 is not maintained.**
+*Version 0.4 - see [Changelog](CHANGELOG.md) for details*
 
 This web service provides a central point of management for product information, which targets primarily
 network products. It currently focuses on the following use cases:
@@ -27,12 +17,7 @@ This web service is based on python 3.5.1 and Django 1.9. A detailed list with a
 
 See the [license](LICENSE.md) file for license rights and limitations (MIT).
 
-## Server requirements
-
-* recommend 4 vCPU's
-* min. 2 GB RAM
-
-## Product Database Installation
+# Setup and installation
 
 The entire setup of the Product Database is based on an Ansible playbook. This playbook contains all parameters and setup
 to setup a new instance of the web-service. There are multiple ways to deploy a new instance of the Product Database:
@@ -45,6 +30,11 @@ Two users are created during the installation process: one superuser with the us
 password **pdb_admin** and one **api** user with the password **api** as a normal user. Any read action on the web-site
 is permitted without authentication by default. To change this behavior, you can enable the "login-only mode". The
 REST API is only available to registered users.
+
+## Server requirements
+
+* 4 vCPU's (recommended)
+* min. 2 GB RAM
 
 ### Dedicated Server setup
 
@@ -77,8 +67,8 @@ Now you can start the installation on the local host using the following command
 invoke deploy_local -u <username> -p <password>
 ```
 
-Please note that the user must be permitted to use SSH (to get Ansible working). Furthermore, this user requires sudo
-permissions and is used to run the application as a service.
+Please note that the user must be able to connect via SSH (to get Ansible working). Furthermore, this user requires sudo
+permissions for the installation and is used to run the application as a service.
 
 #### Setup using an Ansible control node
 
@@ -107,15 +97,14 @@ The `password` is only required if you're using SSH password-based authenticatio
 
 ### Vagrant VM
 
-This repository contains a Vagrant file that describes a Product Database VM for testing, demo and development purpose.
-To create a VM using Vagrant, you simply need to clone (or copy) the repository to your laptop.
+This repository contains a Vagrant file that is used to stage a Product Database VM for testing, demo and development purpose.
 Before continue, you need to install [Vagrant](https://www.vagrantup.com/) and a an virtualization software like VirtualBox.
-You need to run the following command within the local code repository:
+
+You need to run the following command within the code repository:
 
     $ vagrant up productdb
 
-After a successful provisioning process, the Product Database runs inside the VM and is available on
-**http://localhost:16000**.
+After a successful provisioning process, the Product Database runs inside the VM and is available at **http://localhost:16000**.
 
 # Cisco EoX APIs within the Product Database
 
@@ -156,5 +145,5 @@ Every test case requires a local postgres database connection using the followin
 
 There are two additional options available when executing the test cases:
 
-* the parameter `--online` will add test cases that use the online Cisco API (otherwise the test cases are mocked)
-* the parameter `--selenium` will add the selenium test cases (Firefox required)
+* the parameter `--online` will add test cases that use the online Cisco API (otherwise the access is mocked)
+* the parameter `--selenium` will execute additional selenium test cases (Firefox required)
