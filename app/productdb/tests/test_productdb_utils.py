@@ -160,3 +160,66 @@ def test_login_required_if_login_only_mode(monkeypatch):
     assert login_required_if_login_only_mode(request) is False, \
         "Authenticated users are logged in and should not be redirected"
 
+
+def test_parse_cisco_show_inventory():
+    with pytest.raises(AttributeError):
+        # test invalid parameter
+        utils.parse_cisco_show_inventory([])
+
+    # returns a list
+    assert type(utils.parse_cisco_show_inventory("asdf")) is list
+
+    example_string = """\
+NAME: "1", DESCR: "WS-C3750X-24"
+PID: WS-C3750X-24T-S , VID: V04 , SN: 12345ABCD
+NAME: "Switch 1 - Power Supply 0", DESCR: "FRU Power Supply"
+PID: C3KX-PWR-350WAC , VID: V02 , SN: 12345ABCD
+NAME: "Switch 1 - FRULink Slot 1 - FRULink Module", DESCR: "FRULink 1G Module"
+PID: C3KX-NM-1G , VID: V01 , SN: 12345ABCD"""
+
+    expected_list = [
+        "WS-C3750X-24T-S",
+        "C3KX-PWR-350WAC",
+        "C3KX-NM-1G",
+    ]
+
+    assert utils.parse_cisco_show_inventory(example_string) == expected_list
+
+    example_string_with_whitespace = """\
+    NAME: "1", DESCR: "WS-C3750X-24"
+    PID: WS-C3750X-24T-S , VID: V04 , SN: 12345ABCD
+    NAME: "Switch 1 - Power Supply 0", DESCR: "FRU Power Supply"
+    PID: C3KX-PWR-350WAC , VID: V02 , SN: 12345ABCD
+    NAME: "Switch 1 - FRULink Slot 1 - FRULink Module", DESCR: "FRULink 1G Module"
+    PID: C3KX-NM-1G , VID: V01 , SN: 12345ABCD"""
+
+    assert utils.parse_cisco_show_inventory(example_string_with_whitespace) == expected_list
+
+    example_string_with_empty_lines = """\
+NAME: "1", DESCR: "WS-C3750X-24"
+PID: WS-C3750X-24T-S , VID: V04 , SN: 12345ABCD
+
+NAME: "Switch 1 - Power Supply 0", DESCR: "FRU Power Supply"
+PID: C3KX-PWR-350WAC , VID: V02 , SN: 12345ABCD
+
+NAME: "Switch 1 - FRULink Slot 1 - FRULink Module", DESCR: "FRULink 1G Module"
+PID: C3KX-NM-1G , VID: V01 , SN: 12345ABCD"""
+
+    assert utils.parse_cisco_show_inventory(example_string_with_empty_lines) == expected_list
+
+    example_string_with_empty_product_id = """\
+NAME: "1", DESCR: "WS-C3750X-24"
+PID:      VID: V04 , SN: 12345ABCD
+
+NAME: "Switch 1 - Power Supply 0", DESCR: "FRU Power Supply"
+PID: C3KX-PWR-350WAC , VID: V02 , SN: 12345ABCD
+
+NAME: "Switch 1 - FRULink Slot 1 - FRULink Module", DESCR: "FRULink 1G Module"
+PID: C3KX-NM-1G , VID: V01 , SN: 12345ABCD"""
+
+    expected_list = [
+        "C3KX-PWR-350WAC",
+        "C3KX-NM-1G",
+    ]
+
+    assert utils.parse_cisco_show_inventory(example_string_with_empty_product_id) == expected_list

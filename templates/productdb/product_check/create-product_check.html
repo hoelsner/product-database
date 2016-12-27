@@ -18,17 +18,17 @@ Create Product Check
         <p>On this page, you can execute a bulk Product check of multiple Products against the local
         database. Please enter a list of Product IDs in the following text field separated
         by line breaks, e.g.</p>
-            <p style="margin-left: 25px;">
-                WS-C2960-48TT-L<br>
-                WS-C2950-24<br>
-                Not Found<br>
-                WS-C2960S-24TS-S<br>
-                WS-C3850-24P-S<br>
-                WS-C3850-24P-S
-            </p>
-
+            <pre style="font-size: x-small">
+WS-C2960-48TT-L
+WS-C2950-24
+Not Found
+WS-C2960S-24TS-S
+WS-C3850-24P-S
+WS-C3850-24P-S</pre>
+        <hr>
         <form method="post" class="form">
             {% csrf_token %}
+            {% bootstrap_field form.create_user %}
 
             {% bootstrap_field form.name layout="horizontal" %}
             {% if choose_migration_source %}
@@ -36,9 +36,8 @@ Create Product Check
             {% endif %}
             {% bootstrap_field form.input_product_ids layout="horizontal" %}
             {% bootstrap_field form.public_product_check layout="horizontal" %}
+            {% bootstrap_field form.is_cisco_show_inventory_output layout="horizontal" %}
 
-            {% bootstrap_field form.create_user layout="horizontal" %}
-            <hr>
             {% buttons %}
                 <button type="submit" id="submit" class="btn btn-primary btn-block">Create Product Check</button>
             {% endbuttons %}

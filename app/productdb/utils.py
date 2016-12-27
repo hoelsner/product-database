@@ -1,4 +1,6 @@
 import re
+import jtextfsm as textfsm
+import io
 from django.core.cache import cache
 from app.config.settings import AppSettings
 
@@ -82,3 +84,35 @@ def login_required_if_login_only_mode(request):
             return True
 
     return False
+
+
+def parse_cisco_show_inventory(content):
+    """
+    convert the output of a show inventory command to a list of product IDs
+    :param content:
+    :return:
+    """
+    if type(content) is not str:
+        raise AttributeError("content must be a string data type")
+
+    # remove empty lines and leading and trailing whitespace
+    sanitized_content = "\n".join([line.strip() for line in content.splitlines() if line != ""])
+
+    template = io.StringIO()
+    template.write("""\
+Value name (.+)
+Value description (.*)
+Value productid (\S*)
+Value vid (\S*)
+Value Required serialnumber (\S+)
+
+Start
+  ^NAME: "${name}", DESCR: "${description}"
+  ^PID: ${productid}.*VID: ${vid}.*SN: ${serialnumber} -> Record
+""")
+    template.seek(0)
+
+    show_inventory_template = textfsm.TextFSM(template)
+    fsm_results = show_inventory_template.ParseText(sanitized_content)
+
+    return [line[2] for line in fsm_results if line[2] != ""]

@@ -4,6 +4,7 @@ from django.contrib.auth.models import AnonymousUser
 from django.forms.utils import ErrorList
 
 from app.productdb.models import ProductList, UserProfile, Product, ProductMigrationOption, ProductCheck
+from app.productdb import utils
 
 logger = logging.getLogger("app.productdb.forms")
 
@@ -153,10 +154,29 @@ class ProductCheckForm(forms.ModelForm):
         label="public available",
         label_suffix=":",
         help_text="if enabled, everyone can see the Product Check (if not logged in, a Product Check is always "
-                  "visible)",
+                  "visible to everyone)",
         required=False,
         initial=False
     )
+
+    is_cisco_show_inventory_output = forms.BooleanField(
+        label="input list is Cisco IOS <code>show inventory</code> command(s)",
+        help_text="output of one or multiple <code>show inventory</code> commands is used in the product ID list field."
+                  " The product IDs are automatically extracted from the command output and any other information are "
+                  "withdrawn.",
+        required=False,
+    )
+
+    def clean(self):
+        cleaned_data = super().clean()
+
+        # check if the output is provided as show inventory output
+        if cleaned_data.get("is_cisco_show_inventory_output", False):
+            cleaned_data["input_product_ids"] = "\n".join(utils.parse_cisco_show_inventory(
+                cleaned_data["input_product_ids"])
+            )
+
+        return cleaned_data
 
     class Meta:
         model = ProductCheck

@@ -2,11 +2,13 @@
 Test suite for the productdb.forms module
 """
 import pytest
-from django.contrib.auth.models import AnonymousUser, User
+from django.contrib.auth.models import AnonymousUser
 from mixer.backend.django import mixer
 from django.core.files.uploadedfile import SimpleUploadedFile
+
+from app.productdb import utils
 from app.productdb.forms import UserProfileForm, ProductListForm, ImportProductsFileUploadForm, \
-    ImportProductMigrationFileUploadForm, ProductMigrationOptionForm
+    ImportProductMigrationFileUploadForm, ProductMigrationOptionForm, ProductCheckForm
 from app.productdb.models import Vendor
 
 pytestmark = pytest.mark.django_db
@@ -308,3 +310,29 @@ class TestProductMigrationOptionForm:
             "replacement_product_id": "Another Test replacement"
         })
         assert form.is_valid() is True
+
+
+class TestProductCheckForm:
+    def test_form(self, monkeypatch):
+        # patch the parse_cisco_show_inventory method
+        monkeypatch.setattr(utils, "parse_cisco_show_inventory", lambda content: ["a", "b", "c"])
+
+        form = ProductCheckForm()
+        assert form.is_valid() is False
+
+        form = ProductCheckForm(data={
+            "name": "test",
+            "input_product_ids": "Test",
+        })
+
+        assert form.is_valid() is True
+        assert form.instance.input_product_ids == "Test"
+
+        form = ProductCheckForm(data={
+            "name": "test",
+            "input_product_ids": "output of show inventory",
+            "is_cisco_show_inventory_output": "True"
+        })
+
+        assert form.is_valid() is True
+        assert form.instance.input_product_ids == "a\nb\nc"
