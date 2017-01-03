@@ -174,10 +174,10 @@ class ProductCheckForm(forms.ModelForm):
     )
 
     is_cisco_show_inventory_output = forms.BooleanField(
-        label="input list is Cisco IOS <code>show inventory</code> command(s)",
-        help_text="output of one or multiple <code>show inventory</code> commands is used in the product ID list field."
-                  " The product IDs are automatically extracted from the command output and any other information are "
-                  "withdrawn.",
+        label="Product ID list is Cisco IOS <code>show inventory</code> command(s)",
+        help_text="The output of one or multiple <code>show inventory</code> commands is used in the Product ID list "
+                  "field. The Product IDs are automatically extracted from the command output and any other "
+                  "information are discarded.",
         required=False,
     )
 
