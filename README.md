@@ -1,7 +1,10 @@
 
 # Product Database
 
-*Version 0.4 - see [Changelog](CHANGELOG.md) for details*
+*Version 0.5 (development) - see [changelog](CHANGELOG.md) for details*
+
+**This is the Product Database development branch. I recommend to use the latest [stable version 0.4](https://github.com/hoelsner/product-database/tree/v0.4) 
+for production deployments.**
 
 This web service provides a central point of management for product information, which targets primarily
 network products. It currently focuses on the following use cases:

@@ -1,5 +1,12 @@
 # changelog
 
+## Version 0.5 (development)
+
+* add ```show inventory``` parser to the new Product Check
+* preferred migration options must have a preference greater than 25
+* REST API authentication is now possible with user specific tokens (available in the User Profile, 
+[see Django REST framework for details](http://www.django-rest-framework.org/api-guide/authentication/#tokenauthentication)) 
+
 ## Version 0.4
 
 **Before updating from Version 0.3 to Version 0.4, please save your current configuration values. Version 0.4 
