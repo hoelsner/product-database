@@ -2,7 +2,7 @@ import logging
 from django import forms
 from django.contrib.auth.models import AnonymousUser
 from django.forms.utils import ErrorList
-
+from rest_framework.authtoken.models import Token
 from app.productdb.models import ProductList, UserProfile, Product, ProductMigrationOption, ProductCheck
 from app.productdb import utils
 
@@ -68,11 +68,25 @@ class UserProfileForm(forms.ModelForm):
         help_text="eMail address that is associated to your account"
     )
 
+    regenerate_api_auth_token = forms.BooleanField(
+        label="re-create REST API authentication token",
+        help_text="re-create the authentication token, only required if you need to invalidate your current token",
+        required=False
+    )
+
     def __init__(self, user, *args, **kwargs):
         super(UserProfileForm, self).__init__(*args, **kwargs)
         self.user = user
         if self.user:
             self.fields["email"].initial = self.user.email
+
+    def save(self, commit=True):
+        # drop and recreate the token if the flag is set
+        if self.cleaned_data.get("regenerate_api_auth_token", False):
+            token, _ = Token.objects.get_or_create(user=self.user)
+            token.delete()
+            token, _ = Token.objects.get_or_create(user=self.user)
+        return super().save(commit)
 
     class Meta:
         model = UserProfile

@@ -43,6 +43,16 @@
 
             <div class="panel panel-default">
                 <div class="panel-heading">
+                     <h3 class="panel-title">REST API authentication token</h3>
+                </div>
+                <div class="panel-body">
+                    <button type="button" class="btn btn-default btn-block" data-toggle="modal" data-target="#rest_api_auth_token"> show personal REST API authentication token</button>
+                    {% bootstrap_field form.regenerate_api_auth_token layout="horizontal" %}
+                </div>
+            </div>
+
+            <div class="panel panel-default">
+                <div class="panel-heading">
                      <h3 class="panel-title">Other settings</h3>
                 </div>
                 <div class="panel-body">
@@ -57,4 +67,32 @@
             {% endbuttons %}
         </form>
     </div>
+
+<div class="modal fade" id="rest_api_auth_token" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title">REST API authentication token</h4>
+            </div>
+            <div class="modal-body">
+                <p>Your current personal REST API authentication token is <code>{{ api_auth_token }}</code>.</p>
+                <p class="text-danger">Don't share this token with other Users! You can change the token on the User Profile Page.</p>
+                <p>
+                    You can use the token as an authentication mechanism for the REST API. This allows a separation between
+                    the API and the User authentication. Every API endpoint allows the use of the HTTP base authentication (with
+                    username and password) or using the following header entry:
+                    <code>Authentication</code> header field:
+                    <div class="well code">
+                        Authorization: Token <code>{{ api_auth_token }}</code>
+                    </div>
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}

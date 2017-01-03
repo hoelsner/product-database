@@ -6,6 +6,7 @@ from django.views.generic.base import RedirectView
 from app.productdb import api_views
 from app.productdb import views
 from rest_framework import routers
+from rest_framework.authtoken import views as authtoken_views
 import app.productdb.datatables as datatables
 from rest_framework_swagger.views import get_swagger_view
 
@@ -24,6 +25,7 @@ urlpatterns = [
     # API related URLs
     url(r'^api-docs/', schema_view, name="apidocs"),
     url(r'^api/v0/', include(router.urls)),
+    url(r'^api/token-auth/', authtoken_views.obtain_auth_token, name="api-token-auth"),
     url(r'^api/$', RedirectView.as_view(url="v0/", permanent=False), name="api_redirect"),
 
     # Datatables endpoints

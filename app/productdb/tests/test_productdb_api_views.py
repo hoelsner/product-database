@@ -4,6 +4,7 @@ Test suite for the productdb.api_views module
 import pytest
 from urllib.parse import quote
 
+import requests
 from django.utils.dateformat import DateFormat
 from django.utils.formats import get_format
 from django.conf import settings
@@ -12,6 +13,7 @@ from django.core.urlresolvers import reverse
 from django.utils.datetime_safe import date, datetime
 from mixer.backend.django import mixer
 from rest_framework import status
+from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient
 from app.productdb.models import Vendor, ProductGroup, Product, ProductList, ProductMigrationOption, \
     ProductMigrationSource
@@ -27,6 +29,7 @@ SUPER_USER = {
     "username": "pdb_admin",
     "password": "pdb_admin"
 }
+REST_TOKEN_AUTH = reverse("productdb:api-token-auth")
 REST_VENDOR_LIST = reverse("productdb:vendors-list")
 REST_VENDOR_DETAIL = REST_VENDOR_LIST + "%d/"
 REST_PRODUCT_GROUP_LIST = reverse("productdb:productgroups-list")
@@ -119,6 +122,19 @@ class TestCommonAPIEndpoint:
         assert jdata["pagination"]["page_records"] == 40, "should contain 40 elements"
         assert jdata["pagination"]["total_records"] == 50, "total records should be all products"
 
+    def test_token_authentication(self):
+        for e in range(1, 50):
+            mixer.blend("productdb.Product")
+
+        client = APIClient()
+        client.login(**AUTH_USER)
+
+        # get a token by posting the username and password to the API endpoint
+        response = client.post(REST_TOKEN_AUTH, data=dict(**AUTH_USER))
+        assert response.status_code == status.HTTP_200_OK
+
+        assert "token" in response.json()
+
 
 @pytest.mark.usefixtures("import_default_users")
 @pytest.mark.usefixtures("import_default_vendors")
@@ -126,6 +142,21 @@ class TestVendorAPIEndpoint:
     """
     Django REST Framework API endpoint tests for the Vendor model
     """
+    def test_token_authentication(self, live_server):
+        token, _ = Token.objects.get_or_create(user=User.objects.get(username=AUTH_USER["username"]))
+
+        response = requests.get(live_server + REST_VENDOR_LIST, headers={
+            "Authorization": "Token %s" % token.key
+        })
+
+        assert response.status_code == status.HTTP_200_OK, response.text
+
+        response = requests.get(live_server + REST_VENDOR_LIST, headers={
+            "Authorization": "Token invalid_token"
+        })
+
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
     def test_read_access_with_authenticated_user(self):
         expected_result = {
             "pagination": {
@@ -330,6 +361,21 @@ class TestProductMigrationOptionAPIEndpoint:
     """
     Django REST Framework API endpoint tests for the ProductMigrationOption model
     """
+    def test_token_authentication(self, live_server):
+        token, _ = Token.objects.get_or_create(user=User.objects.get(username=AUTH_USER["username"]))
+
+        response = requests.get(live_server + REST_PRODUCTMIGRATIONOPTION_LIST, headers={
+            "Authorization": "Token %s" % token.key
+        })
+
+        assert response.status_code == status.HTTP_200_OK, response.text
+
+        response = requests.get(live_server + REST_PRODUCTMIGRATIONOPTION_LIST, headers={
+            "Authorization": "Token invalid_token"
+        })
+
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
     def test_read_access_with_authenticated_user(self):
         expected_result = {
             "pagination": {
@@ -636,6 +682,21 @@ class TestProductMigrationSourceAPIEndpoint:
     """
     Django REST Framework API endpoint tests for the ProductMigrationSource model
     """
+    def test_token_authentication(self, live_server):
+        token, _ = Token.objects.get_or_create(user=User.objects.get(username=AUTH_USER["username"]))
+
+        response = requests.get(live_server + REST_PRODUCTMIGRATIONSOURCE_LIST, headers={
+            "Authorization": "Token %s" % token.key
+        })
+
+        assert response.status_code == status.HTTP_200_OK, response.text
+
+        response = requests.get(live_server + REST_PRODUCTMIGRATIONSOURCE_LIST, headers={
+            "Authorization": "Token invalid_token"
+        })
+
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
     def test_read_access_with_authenticated_user(self):
         expected_result = {
             "pagination": {
@@ -843,6 +904,21 @@ class TestProductMigrationSourceAPIEndpoint:
 @pytest.mark.usefixtures("import_default_vendors")
 class TestProductGroupAPIEndpoint:
     """Django REST Framework API endpoint tests for the Product Group model"""
+    def test_token_authentication(self, live_server):
+        token, _ = Token.objects.get_or_create(user=User.objects.get(username=AUTH_USER["username"]))
+
+        response = requests.get(live_server + REST_PRODUCT_GROUP_LIST, headers={
+            "Authorization": "Token %s" % token.key
+        })
+
+        assert response.status_code == status.HTTP_200_OK, response.text
+
+        response = requests.get(live_server + REST_PRODUCT_GROUP_LIST, headers={
+            "Authorization": "Token invalid_token"
+        })
+
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
     def test_read_access_with_authenticated_user(self):
         expected_result = {
             "data": [
@@ -1190,9 +1266,24 @@ class TestProductGroupAPIEndpoint:
 @pytest.mark.usefixtures("import_default_users")
 @pytest.mark.usefixtures("import_default_vendors")
 class TestProductAPIEndpoint:
+    """Django REST Framework API endpoint tests for the Product model"""
     today_string = DateFormat(datetime.now()).format(get_format(settings.SHORT_DATE_FORMAT))
 
-    """Django REST Framework API endpoint tests for the Product model"""
+    def test_token_authentication(self, live_server):
+        token, _ = Token.objects.get_or_create(user=User.objects.get(username=AUTH_USER["username"]))
+
+        response = requests.get(live_server + REST_PRODUCT_LIST, headers={
+            "Authorization": "Token %s" % token.key
+        })
+
+        assert response.status_code == status.HTTP_200_OK, response.text
+
+        response = requests.get(live_server + REST_PRODUCT_LIST, headers={
+            "Authorization": "Token invalid_token"
+        })
+
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
     def test_read_access_with_authenticated_user(self):
         expected_result = {
             "pagination": {
@@ -2027,6 +2118,21 @@ class TestProductListAPIEndpoint:
         )
 
         return pl.id
+
+    def test_token_authentication(self, live_server):
+        token, _ = Token.objects.get_or_create(user=User.objects.get(username=AUTH_USER["username"]))
+
+        response = requests.get(live_server + REST_PRODUCTLIST_LIST, headers={
+            "Authorization": "Token %s" % token.key
+        })
+
+        assert response.status_code == status.HTTP_200_OK, response.text
+
+        response = requests.get(live_server + REST_PRODUCTLIST_LIST, headers={
+            "Authorization": "Token invalid_token"
+        })
+
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     def test_read_access_with_authenticated_user(self):
         self.create_test_data()

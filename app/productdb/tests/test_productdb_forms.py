@@ -2,14 +2,14 @@
 Test suite for the productdb.forms module
 """
 import pytest
-from django.contrib.auth.models import AnonymousUser
+from django.contrib.auth.models import AnonymousUser, User
 from mixer.backend.django import mixer
 from django.core.files.uploadedfile import SimpleUploadedFile
-
+from rest_framework.authtoken.models import Token
 from app.productdb import utils
 from app.productdb.forms import UserProfileForm, ProductListForm, ImportProductsFileUploadForm, \
     ImportProductMigrationFileUploadForm, ProductMigrationOptionForm, ProductCheckForm
-from app.productdb.models import Vendor
+from app.productdb.models import Vendor, UserProfile
 
 pytestmark = pytest.mark.django_db
 
@@ -57,6 +57,35 @@ class TestUserProfileForm:
 
         assert form.is_valid() is True
         assert form.cleaned_data.get("email") == user.email, "User eMail should be added automatically"
+
+    def test_recreate_token(self):
+        user = User.objects.create(username="user")
+        up = UserProfile.objects.get(user=user)
+        data = {
+            "email": "a@b.com",
+            "preferred_vendor": 1
+        }
+        # get or create the API authentication token
+        token = Token.objects.create(user=user)
+        org_key = token.key
+
+        form = UserProfileForm(instance=up, user=user, data=data)
+        assert form.is_valid() is True
+        form.save()
+
+        token = Token.objects.get(user=user)
+        assert token.key == org_key  # key is not changed
+
+        # post with regenerate_api_auth_token parameter
+        data.update({
+            "regenerate_api_auth_token": "True"
+        })
+        form = UserProfileForm(instance=up, user=user, data=data)
+        assert form.is_valid() is True
+        form.save()
+
+        token = Token.objects.get(user=user)
+        assert token.key != org_key  # key was changed
 
 
 @pytest.mark.usefixtures("import_default_vendors")

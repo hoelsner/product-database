@@ -11,6 +11,7 @@ from django.template.defaultfilters import safe
 from django.utils.html import escape
 from django.utils.timezone import timedelta, datetime, get_current_timezone
 from django.contrib import messages
+from rest_framework.authtoken.models import Token
 from app.config.models import NotificationMessage, TextBlock
 from app.productdb.forms import ImportProductsFileUploadForm, ProductListForm, UserProfileForm, \
     ImportProductMigrationFileUploadForm, ProductCheckForm
@@ -591,9 +592,12 @@ def edit_user_profile(request):
     else:
         form = UserProfileForm(request.user, instance=up)
 
+    token, _ = Token.objects.get_or_create(user=request.user)
+
     context = {
         "form": form,
-        "back_to": back_to
+        "back_to": back_to,
+        "api_auth_token": token
     }
 
     return render(request, "productdb/user_profile/edit-user_profile.html", context=context)
