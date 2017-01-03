@@ -773,6 +773,139 @@ class TestProductCheck:
         assert not_in_db.part_of_product_list == ""
         assert not_in_db.migration_product is None
 
+    def test_basic_product_check_with_less_preferred_migration_source(self):
+        """only Product Migration sources that have a preference > 25 should be considered as preferred"""
+        test_product_string = "myprod"
+        test_list = "myprod;myprod\nmyprod;myprod\n" \
+                    "Test;Test"
+        p = mixer.blend(
+            "productdb.Product",
+            product_id=test_product_string,
+            vendor=Vendor.objects.get(id=1)
+        )
+        pms1 = mixer.blend("productdb.ProductMigrationSource", name="Preferred Migration Source", preference=25)
+        pms2 = mixer.blend("productdb.ProductMigrationSource", name="Another Migration Source", preference=10)
+        pmo1 = mixer.blend("productdb.ProductMigrationOption", product=p, migration_source=pms1,
+                           replacement_product_id="replacement")
+        pmo2 = mixer.blend("productdb.ProductMigrationOption", product=p, migration_source=pms2,
+                           replacement_product_id="other_replacement")
+        pl = mixer.blend(
+            "productdb.ProductList",
+            name="TestList",
+            string_product_list="myprod"
+        )
+        pl2 = mixer.blend(
+            "productdb.ProductList",
+            name="AnotherTestList",
+            string_product_list="myprod"
+        )
+
+        pc = ProductCheck.objects.create(name="Test", input_product_ids=test_list)
+        pc.perform_product_check()
+        assert pc.productcheckentry_set.count() == 2
+
+        in_db = pc.productcheckentry_set.get(input_product_id="myprod")
+        assert in_db.amount == 4
+        assert in_db.migration_product is None
+        assert str(in_db) == "Test: myprod (4)"
+
+        pl_names = in_db.get_product_list_names()
+        assert len(pl_names) == 2
+        assert "AnotherTestList" in pl_names
+        assert "TestList" in pl_names
+
+        not_in_db = pc.productcheckentry_set.get(input_product_id="Test")
+        assert not_in_db.amount == 2
+        assert not_in_db.in_database is False
+        assert not_in_db.product_in_database is None
+        assert not_in_db.part_of_product_list == ""
+        assert not_in_db.migration_product is None
+
+        # run again with a specific migration source (should perform the product check as normal)
+        pc.migration_source = pms2  # use the less preferred migration source
+
+        pc.perform_product_check()
+        assert pc.productcheckentry_set.count() == 2
+
+        in_db = pc.productcheckentry_set.get(input_product_id="myprod")
+        assert in_db.amount == 4
+        assert in_db.in_database is True
+        assert in_db.product_in_database is not None
+        assert in_db.part_of_product_list == pl2.hash + "\n" + pl.hash
+        assert in_db.migration_product.replacement_product_id == pmo2.replacement_product_id
+
+        not_in_db = pc.productcheckentry_set.get(input_product_id="Test")
+        assert not_in_db.amount == 2
+        assert not_in_db.in_database is False
+        assert not_in_db.product_in_database is None
+        assert not_in_db.part_of_product_list == ""
+        assert not_in_db.migration_product is None
+
+    def test_recursive_product_check_with_less_preferred_migration_source(self):
+        """test recursive Product Check with specific less preferred migration source"""
+        test_product_string = "myprod"
+        test_list = "myprod;myprod\nmyprod;myprod\n" \
+                    "Test;Test"
+        p = mixer.blend(
+            "productdb.Product",
+            product_id=test_product_string,
+            vendor=Vendor.objects.get(id=1),
+            eox_update_time_stamp=datetime.datetime.utcnow(),
+            eol_ext_announcement_date=datetime.date(2016, 1, 1),
+            end_of_sale_date=datetime.date(2016, 1, 1)
+        )
+        p2 = mixer.blend(
+            "productdb.Product",
+            product_id="replacement_pid",
+            vendor=Vendor.objects.get(id=1),
+            eox_update_time_stamp=datetime.datetime.utcnow(),
+            eol_ext_announcement_date=datetime.date(2016, 1, 1),
+            end_of_sale_date=datetime.date(2016, 1, 1)
+        )
+        mixer.blend(
+            "productdb.Product",
+            product_id="another_replacement_pid",
+            vendor=Vendor.objects.get(id=1)
+        )
+        pms = mixer.blend("productdb.ProductMigrationSource", name="Preferred Migration Source", preference=25)
+        mixer.blend("productdb.ProductMigrationOption", product=p, migration_source=pms,
+                    replacement_product_id="replacement_pid")
+        mixer.blend("productdb.ProductMigrationOption", product=p2, migration_source=pms,
+                    replacement_product_id="another_replacement_pid")
+        pl = mixer.blend(
+            "productdb.ProductList",
+            name="TestList",
+            string_product_list="myprod"
+        )
+        pl2 = mixer.blend(
+            "productdb.ProductList",
+            name="AnotherTestList",
+            string_product_list="myprod"
+        )
+
+        pc = ProductCheck.objects.create(name="Test", input_product_ids=test_list, migration_source=pms)
+        pc.perform_product_check()
+        assert pc.productcheckentry_set.count() == 2
+
+        in_db = pc.productcheckentry_set.get(input_product_id="myprod")
+        assert in_db.amount == 4
+        assert in_db.in_database is True
+        assert in_db.product_in_database is not None
+        assert in_db.part_of_product_list == pl2.hash + "\n" + pl.hash
+        assert in_db.migration_product.replacement_product_id == "another_replacement_pid"  # use the last element in the path
+
+        pl_names = in_db.get_product_list_names()
+        assert len(pl_names) == 2
+        assert "AnotherTestList" in pl_names
+        assert "TestList" in pl_names
+
+        not_in_db = pc.productcheckentry_set.get(input_product_id="Test")
+        assert not_in_db.amount == 2
+        assert not_in_db.in_database is False
+        assert not_in_db.product_in_database is None
+        assert not_in_db.part_of_product_list == ""
+        assert not_in_db.migration_product is None
+
 
 @pytest.mark.usefixtures("import_default_vendors")
 class TestProductMigrationOption:

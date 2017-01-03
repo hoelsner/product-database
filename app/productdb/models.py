@@ -133,6 +133,9 @@ class Product(models.Model):
     EOS_ANNOUNCED_STR = "EoS announced"
     NO_EOL_ANNOUNCEMENT_STR = "No EoL announcement"
 
+    # preference greater than the following constant is considered preferred
+    LESS_PREFERRED_PREFERENCE_VALUE = 25
+
     product_id = models.CharField(
         unique=True,
         max_length=512,
@@ -384,9 +387,18 @@ class Product(models.Model):
     def has_migration_options(self):
         return self.productmigrationoption_set.exists()
 
+    def has_preferred_migration_option(self):
+        """check that a preferred migration option exist (Product Migration Source preference > 25)"""
+        return self.productmigrationoption_set.filter(
+            migration_source__preference__gt=self.LESS_PREFERRED_PREFERENCE_VALUE
+        ).count() != 0
+
     def get_preferred_replacement_option(self):
-        if self.has_migration_options():
-            return self.get_migration_path(self.productmigrationoption_set.first().migration_source.name)[-1]
+        """Return the preferred replacement option (Product Migration Sources with a preference greater than 25)"""
+        if self.has_migration_options() and self.has_preferred_migration_option():
+            return self.get_migration_path(self.productmigrationoption_set.filter(
+                migration_source__preference__gt=self.LESS_PREFERRED_PREFERENCE_VALUE
+            ).first().migration_source.name)[-1]
         return None
 
     def get_migration_path(self, migration_source_name=None):
@@ -399,8 +411,10 @@ class Product(models.Model):
                 return []
 
             else:
-                # use the preferred path
-                migration_source_name = self.productmigrationoption_set.all().first().migration_source.name
+                # use the preferred path (except all Migration sources with a preference of 25 and lower)
+                migration_source_name = self.productmigrationoption_set.filter(
+                    migration_source__preference__gt=self.LESS_PREFERRED_PREFERENCE_VALUE
+                ).first().migration_source.name
 
         if type(migration_source_name) is not str:
             raise AttributeError("attribute 'migration_source_name' must be a string")
