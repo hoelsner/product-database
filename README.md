@@ -20,7 +20,7 @@ This web service is based on python 3.5.1 and Django 1.9. A detailed list with a
 
 See the [license](LICENSE.md) file for license rights and limitations (MIT).
 
-# Setup and installation
+## Setup and installation
 
 The entire setup of the Product Database is based on an Ansible playbook. This playbook contains all parameters and setup
 to setup a new instance of the web-service. There are multiple ways to deploy a new instance of the Product Database:
@@ -34,7 +34,7 @@ password **pdb_admin** and one **api** user with the password **api** as a norma
 is permitted without authentication by default. To change this behavior, you can enable the "login-only mode". The
 REST API is only available to registered users.
 
-## Server requirements
+### Server requirements
 
 * 4 vCPU's (recommended)
 * min. 2 GB RAM
@@ -42,11 +42,10 @@ REST API is only available to registered users.
 ### Dedicated Server setup
 
 To setup the **Product Database** on a dedicated server, you need a clean installation of Ubuntu 16.04. Please note, that
-this web service must be the only application running on the server. Within the `deploy` directory, you find an
-installation profile with some predefined default values named `stage_default`. The entire setup is based on an Ansible
-playbook.
+this web service expects to be the only application running on the server. Within the `deploy` directory, you find a 
+`stage_default` template directory. The entire setup is based on an Ansible playbook.
 
-### Setup without an Ansible control machine
+#### Setup without an Ansible control machine
 
 The following steps are required if you have only a single Ubuntu 16.04 server that should run the Product Database.
 First, you need to install the following dependencies:
@@ -85,7 +84,7 @@ You need an Ansible control machine to deploy your dedicated server (Linux/Mac O
 [the Ansible installation guide for details](http://docs.ansible.com/ansible/intro_installation.html#installing-the-control-machine)).
 On the Ansible control machine, you need to perform the following steps:
 
- 1. install python2 ,ansible and invoke
+ 1. install python2, Ansible and invoke
  2. clone the code repository from GitHub
  3. run the invoke deploy task (just a task runner to simplify the execution)
 
@@ -109,7 +108,13 @@ You need to run the following command within the code repository:
 
 After a successful provisioning process, the Product Database runs inside the VM and is available at **http://localhost:16000**.
 
-# Cisco EoX APIs within the Product Database
+### Update an existing installation
+
+If you want to update an existing installation, you just need to re-run the Ansible playbook with a new `site_source_branch` 
+value, e.g. `0.4`. If you want to use the latest development version, set the value to `master`. Please create a backup 
+of the server before running the update.
+
+## Cisco EoX APIs within the Product Database
 
 This version is capable to synchronize the local database with the Cisco EoX API. More information about the API is 
 available at [http://apiconsole.cisco.com](http://apiconsole.cisco.com) (Cisco Partner access only). Please note the 
@@ -124,7 +129,7 @@ credentials can be created in the Cisco API administration.
 If you have questions about the API access, please take a look on the following entry in the 
 [Cisco Support Forums](https://supportforums.cisco.com/community/5456/partner-support-service) (Cisco CCO account required).
 
-# Development Notes
+## Development Notes
 
 You need to install the requirement files `requirements.txt` and the `requirements_dev.txt` for development. I recommend 
 to create a new **virtualenv** for these dependencies. The test cases from this projects uses py.test and selenium. 
