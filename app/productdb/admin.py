@@ -18,6 +18,7 @@ class UserProfileInline(admin.StackedInline):
     verbose_name = "user profile"
     verbose_name_plural = 'user profiles'
 
+
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
     list_display = [
@@ -189,7 +190,6 @@ class ProductCheckAdmin(CompareVersionAdmin, admin.ModelAdmin):
         "id",
     ]
     fields = [
-        "id",
         "name",
         "migration_source",
         "input_product_ids",
