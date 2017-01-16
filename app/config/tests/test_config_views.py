@@ -11,28 +11,13 @@ from django.core.urlresolvers import reverse
 from django.http import Http404
 from django.test import RequestFactory
 from mixer.backend.django import mixer
+from django_project import celery
 from app.config import views
 from app.config.models import NotificationMessage, TextBlock
 from app.config import utils
 from app.config.settings import AppSettings
 
 pytestmark = pytest.mark.django_db
-MOCK_WORKER_STATE = True
-
-
-class MockWorker:
-    """Mock for the Worker data object from django celery"""
-    def count(self):
-        return 1
-
-    def is_alive(self):
-        return MOCK_WORKER_STATE
-
-    def __iter__(self):
-        yield self
-
-    def __getitem__(self, item):
-        return self
 
 
 def patch_contrib_messages(request):
@@ -200,7 +185,7 @@ class TestStatusView:
 
         assert response.status_code == 200
         expected_content = [
-            "All backend worker offline, asynchronous and scheduled tasks are not executed.",
+            "No backend worker found, asynchronous and scheduled tasks are not executed.",
             "successful connected to the Cisco EoX API"
         ]
         for line in expected_content:
@@ -213,10 +198,8 @@ class TestStatusView:
 
     @pytest.mark.usefixtures("mock_cisco_eox_api_access_available")
     def test_with_active_workers(self, monkeypatch):
-        monkeypatch.setattr(views.WorkerState.objects, "all", lambda: MockWorker())
+        monkeypatch.setattr(celery, "is_worker_active", lambda: True)
         cache.delete("CISCO_EOX_API_TEST")  # ensure that cache is not set
-        global MOCK_WORKER_STATE
-        MOCK_WORKER_STATE = True
 
         # require super user permissions
         user = mixer.blend("auth.User", is_superuser=True)
@@ -232,6 +215,7 @@ class TestStatusView:
             "Backend worker found.",
             "successful connected to the Cisco EoX API"
         ]
+        print(response.content.decode())
         for line in expected_content:
             assert line in response.content.decode()
 
@@ -240,10 +224,8 @@ class TestStatusView:
 
     @pytest.mark.usefixtures("mock_cisco_eox_api_access_available")
     def test_with_inactive_workers(self, monkeypatch):
-        monkeypatch.setattr(views.WorkerState.objects, "all", lambda: MockWorker())
+        monkeypatch.setattr(celery, "is_worker_active", lambda: False)
         cache.delete("CISCO_EOX_API_TEST")  # ensure that cache is not set
-        global MOCK_WORKER_STATE
-        MOCK_WORKER_STATE = False
 
         # require super user permissions
         user = mixer.blend("auth.User", is_superuser=True)
@@ -256,7 +238,7 @@ class TestStatusView:
         assert response.status_code == 200
         assert cache.get("CISCO_EOX_API_TEST", None) is True
         expected_content = [
-            "Only unregistered backend worker found",
+            "No backend worker found, asynchronous and scheduled tasks are not executed.",
             "successful connected to the Cisco EoX API"
         ]
         for line in expected_content:

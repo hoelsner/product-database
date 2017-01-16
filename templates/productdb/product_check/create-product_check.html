@@ -11,36 +11,43 @@ Create Product Check
         <div class="page-header">
             <h1>New Product Check</h1>
         </div>
-
         {% bootstrap_alert content="Every Product Check is temporary stored in the database. All Product Checks are deleted every week on Sunday." alert_type="warning" %}
         {% bootstrap_messages %}
 
-        <p>On this page, you can execute a bulk Product check of multiple Products against the local
-        database. Please enter a list of Product IDs in the following text field separated
-        by line breaks, e.g.</p>
-            <pre style="font-size: x-small">
+        {% if worker_is_active %}
+            <p>On this page, you can execute a bulk Product check of multiple Products against the local
+            database. Please enter a list of Product IDs in the following text field separated
+            by line breaks, e.g.</p>
+                <pre style="font-size: x-small">
 WS-C2960-48TT-L
 WS-C2950-24
 Not Found
 WS-C2960S-24TS-S
 WS-C3850-24P-S
 WS-C3850-24P-S</pre>
-        <hr>
-        <form method="post" class="form">
-            {% csrf_token %}
-            {% bootstrap_field form.create_user %}
+            <hr>
+            <form method="post" class="form">
+                {% csrf_token %}
+                {% bootstrap_field form.create_user %}
 
-            {% bootstrap_field form.name layout="horizontal" %}
-            {% if choose_migration_source %}
-                {% bootstrap_field form.migration_source layout="horizontal" %}
-            {% endif %}
-            {% bootstrap_field form.input_product_ids layout="horizontal" %}
-            {% bootstrap_field form.public_product_check layout="horizontal" %}
-            {% bootstrap_field form.is_cisco_show_inventory_output layout="horizontal" %}
+                {% bootstrap_field form.name layout="horizontal" %}
+                {% if choose_migration_source %}
+                    {% bootstrap_field form.migration_source layout="horizontal" %}
+                {% endif %}
+                {% bootstrap_field form.input_product_ids layout="horizontal" %}
+                {% bootstrap_field form.public_product_check layout="horizontal" %}
+                {% bootstrap_field form.is_cisco_show_inventory_output layout="horizontal" %}
 
-            {% buttons %}
-                <button type="submit" id="submit" class="btn btn-primary btn-block">Create Product Check</button>
-            {% endbuttons %}
-        </form>
+                {% buttons %}
+                    <button type="submit" id="submit" class="btn btn-primary btn-block">Create Product Check</button>
+                {% endbuttons %}
+            </form>
+        {% else %}
+            <div class="alert alert-danger" role="alert">
+                <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
+                <span class="sr-only">Error:</span>
+                No new Product Checks can be created, because a required process is not running. Please contact the administrator and try again later.
+            </div>
+        {% endif %}
     </div>
 {% endblock %}

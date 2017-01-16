@@ -1,5 +1,4 @@
 from celery.schedules import crontab
-
 from django_project.settings.common import *
 
 #

@@ -43,6 +43,23 @@ class TaskState(object):
     PENDING = states.PENDING
 
 
+def is_worker_active():
+    if settings.DEBUG:
+        # if debugging is enabled, skip the check
+        return False
+
+    try:
+        i = app.control.inspect()
+        if i.registered():
+            return True
+
+    except:
+        pass
+
+    logging.error("Celery Worker process not available")
+    return False
+
+
 def get_meta_data_for_task(task_id):
     try:
         meta_data = cache.get("task_meta_%s" % task_id, {})

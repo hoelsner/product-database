@@ -12,6 +12,7 @@ from django.utils.html import escape
 from django.utils.timezone import timedelta, datetime, get_current_timezone
 from django.contrib import messages
 from rest_framework.authtoken.models import Token
+from django_project.celery import is_worker_active
 from app.config.models import NotificationMessage, TextBlock
 from app.productdb.forms import ImportProductsFileUploadForm, ProductListForm, UserProfileForm, \
     ImportProductMigrationFileUploadForm, ProductCheckForm
@@ -33,6 +34,15 @@ def home(request):
     """
     if login_required_if_login_only_mode(request):
         return redirect('%s?next=%s' % (settings.LOGIN_URL, request.path))
+
+    # if the user is a super user, send a message if no backend worker process is running
+    if request.user.is_authenticated() and request.user.is_superuser:
+        if not is_worker_active():
+            messages.add_message(
+                request,
+                level=messages.ERROR,
+                message="No backend worker process is running on the server. Please check the state of the application."
+            )
 
     today_date = datetime.now().date()
 
@@ -325,14 +335,13 @@ def detail_product_check(request, product_check_id):
     if login_required_if_login_only_mode(request):
         return redirect('%s?next=%s' % (settings.LOGIN_URL, request.path))
 
-    try:
-        product_check = ProductCheck.objects.prefetch_related(
-            "productcheckentry_set",
-            "productcheckentry_set__product_in_database",
-            "productcheckentry_set__migration_product",
-        ).get(id=product_check_id)
+    product_check = ProductCheck.objects.filter(id=product_check_id).prefetch_related(
+        "productcheckentry_set",
+        "productcheckentry_set__product_in_database",
+        "productcheckentry_set__migration_product",
+    ).first()
 
-    except ProductCheck.DoesNotExist:
+    if product_check is None:
         raise Http404("Product check with ID %s not found in database" % product_check_id)
 
     # if the product check is in progress, redirect to task-watch page
@@ -389,9 +398,16 @@ def create_product_check(request):
 
     choose_migration_source = request.user.profile.choose_migration_source if request.user.is_authenticated() else False
 
+    worker_is_active = is_worker_active()
+
+    if getattr(settings, "CELERY_ALWAYS_EAGER", False):
+        # if celery always eager is enabled, it works without worker
+        worker_is_active = True
+
     return render(request, "productdb/product_check/create-product_check.html", context={
         "form": form,
-        "choose_migration_source": choose_migration_source
+        "choose_migration_source": choose_migration_source,
+        "worker_is_active": worker_is_active
     })
 
 

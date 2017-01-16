@@ -7,12 +7,12 @@ from django.core.urlresolvers import reverse
 from django.http import Http404
 from django.shortcuts import resolve_url, redirect, render
 from django.utils.safestring import mark_safe
-from djcelery.models import WorkerState
 from app.config.settings import AppSettings
 from app.config.forms import SettingsForm, NotificationMessageForm
 from app.config.models import NotificationMessage, TextBlock
 from app.config import utils
 from app.productdb.utils import login_required_if_login_only_mode
+from django_project import celery
 
 
 @login_required()
@@ -73,36 +73,21 @@ def status(request):
         context["cisco_eox_api_message"] = cisco_eox_api_message
 
     # determine worker status
-    ws = WorkerState.objects.all()
-    if ws.count() == 0:
+    state = celery.is_worker_active()
+
+    if state and not settings.DEBUG:
+        worker_status = """
+            <div class="alert alert-success" role="alert">
+                <span class="fa fa-info-circle"></span>
+                Backend worker found.
+            </div>"""
+
+    else:
         worker_status = """
             <div class="alert alert-danger" role="alert">
                 <span class="fa fa-exclamation-circle"></span>
-                <span class="sr-only">Error:</span>
-                All backend worker offline, asynchronous and scheduled tasks are not executed.
+                No backend worker found, asynchronous and scheduled tasks are not executed.
             </div>"""
-    else:
-        alive_worker = False
-        for w in ws:
-            if w.is_alive():
-                alive_worker = True
-                break
-        if alive_worker:
-            worker_status = """
-                <div class="alert alert-success" role="alert">
-                    <span class="fa fa-info-circle"></span>
-                    <span class="sr-only">Error:</span>
-                    Backend worker found.
-                </div>"""
-
-        else:
-            worker_status = """
-                <div class="alert alert-warning" role="alert">
-                    <span class="fa fa-exclamation-circle"></span>
-                    <span class="sr-only">Error:</span>
-                    Only unregistered backend worker found, asynchronous and scheduled tasks are not executed.
-                    Please verify the state in the <a href="/productdb/admin">Django Admin</a> page.
-                </div>"""
 
     context['worker_status'] = mark_safe(worker_status)
 
