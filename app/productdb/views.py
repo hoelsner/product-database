@@ -194,7 +194,8 @@ def detail_product_list(request, product_list_id=None, share_link=False):
     :return:
     """
     if login_required_if_login_only_mode(request) and not share_link:
-        return redirect('%s?next=%s' % (settings.LOGIN_URL, request.path))
+        # redirect to the share link
+        return redirect(reverse("productdb:share-product_list", kwargs={"product_list_id": product_list_id}))
 
     if not product_list_id:
         # if product_id is set to none, redirect to the all products view

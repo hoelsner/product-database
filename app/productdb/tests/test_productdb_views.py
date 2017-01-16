@@ -402,8 +402,8 @@ class TestDetailProductListView:
         response = views.detail_product_list(request, pl.id)
 
         assert response.status_code == 302, "Should redirect to login page"
-        assert response.url == reverse("login") + "?next=" + url, \
-            "Should contain a next parameter for redirect"
+        assert response.url.startswith("/productdb/share/productlist/"), \
+            "if the user is not logged in, it is redirected to the sharelink"
 
     def test_authenticated_user(self):
         p = mixer.blend("productdb.Product")
