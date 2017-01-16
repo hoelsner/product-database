@@ -10,10 +10,9 @@ from django.core.cache import cache
 from django.core.cache.utils import make_template_fragment_key
 from django.db import models
 from django.db.models import Q
-from django.db.models.signals import pre_delete, post_save, pre_save
+from django.db.models.signals import pre_delete, post_save, pre_save, post_delete
 from django.dispatch import receiver
 from django.utils.timezone import datetime
-
 from app.config.settings import AppSettings
 from app.productdb.validators import validate_product_list_string
 from app.productdb import utils
@@ -924,7 +923,7 @@ def create_user_profile_if_not_exist(sender, instance, **kwargs):
         UserProfile.objects.create(user=instance)
 
 
-@receiver(post_save, sender=ProductList)
+@receiver([post_save, post_delete], sender=ProductList)
 def invalidate_page_cache(sender, instance, **kwargs):
     key = make_template_fragment_key("productlist_detail", [instance.id, False])
     if key:
@@ -942,7 +941,7 @@ def update_db_state_for_the_migration_options_with_product_id(sender, instance, 
         pmo.save()
 
 
-@receiver(post_save, sender=Product)
+@receiver([post_save, post_delete], sender=Product)
 def invalidate_product_related_cache_values(sender, instance, **kwargs):
     """delete cache values that are somehow related to the Product data model"""
     cache.delete("PDB_HOMEPAGE_CONTEXT")

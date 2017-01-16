@@ -1,6 +1,6 @@
 from django.core.cache import cache
 from django.db import models
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 
 
@@ -156,7 +156,7 @@ class ConfigOption(models.Model):
         return self.key
 
 
-@receiver(post_save, sender=NotificationMessage)
+@receiver([post_save, post_delete], sender=NotificationMessage)
 def invalidate_notification_message_related_cache_values(sender, instance, **kwargs):
     """delete cache values that are somehow related to the Notification Message data model"""
     cache.delete("PDB_HOMEPAGE_CONTEXT")
