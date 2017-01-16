@@ -29,12 +29,20 @@ def configure_logging(log_level, basedir, filename, enable_sentry=False):
                 'class': 'logging.StreamHandler',
                 'formatter': 'simple',
             },
-            'app': {
+            'productdb': {
                 'level': log_level,
                 'class': 'logging.handlers.RotatingFileHandler',
                 'maxBytes': u_logfile_size,
                 'backupCount': u_logfile_count,
                 'filename': os.path.join(basedir, "app." + filename),
+                'formatter': 'verbose',
+            },
+            'django_logfile': {
+                'level': log_level,
+                'class': 'logging.handlers.RotatingFileHandler',
+                'maxBytes': u_logfile_size,
+                'backupCount': u_logfile_count,
+                'filename': os.path.join(basedir, "django." + filename),
                 'formatter': 'verbose',
             },
             'catch_all': {
@@ -55,8 +63,8 @@ def configure_logging(log_level, basedir, filename, enable_sentry=False):
             }
         },
         'loggers': {
-            'app': {
-                'handlers': ['console', 'app'],
+            'productdb': {
+                'handlers': ['console', 'productdb'],
                 'level': log_level,
                 'propagate': True,
             },
@@ -64,6 +72,11 @@ def configure_logging(log_level, basedir, filename, enable_sentry=False):
                 'handlers': ['catch_all'],
                 'level': log_level,
                 'propagate': True,
+            },
+            'django': {
+                'handlers': ['django_logfile'],
+                'level': 'INFO',
+                'propagate': False,
             },
             'django.db.backends': {
                 'handlers': ['catch_all'],
@@ -93,7 +106,7 @@ def configure_logging(log_level, basedir, filename, enable_sentry=False):
             'level': 'WARNING',
             'class': 'raven.contrib.django.raven_compat.handlers.SentryHandler'
         }
-        logging_config["loggers"]["app"]["handlers"] += ["sentry"]
+        logging_config["loggers"]["productdb"]["handlers"] += ["sentry"]
         logging_config["loggers"][""]["handlers"] += ["sentry"]
 
     return logging_config

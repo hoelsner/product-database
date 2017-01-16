@@ -1,7 +1,6 @@
 [Unit]
 Description=gunicorn for the Product Database
-After=network.target
-After=nginx.service
+After=network.target nginx.service postgresql.service
 
 [Service]
 PIDFile=/var/www/productdb/gunicorn.pid

@@ -1,7 +1,6 @@
 [Unit]
 Description=celerycamera for the Product Database
-After=network.target
-After=redis-service.service
+After=network.target redis-service.service postgresql.service
 
 [Service]
 Type=forking

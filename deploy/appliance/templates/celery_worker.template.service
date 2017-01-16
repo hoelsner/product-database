@@ -1,8 +1,6 @@
 [Unit]
 Description=celery worker for the Product Database
-After=network.target
-After=redis-service.service
-After=prductdb-celerycamera.service
+After=network.target prductdb-celerycamera.service redis-service.service postgresql.service
 
 [Service]
 Restart=always
@@ -15,7 +13,7 @@ User=__USERNAME__
 Group=__GROUP__
 WorkingDirectory=/var/www/productdb/source
 EnvironmentFile=/etc/productdb/productdb
-ExecStart=/var/www/productdb/virtualenv/bin/celery worker -n product_db -A django_project --detach --concurrency=${PDB_CELERY_CONCURRENCY} --loglevel=INFO --pidfile=../celery_worker.pid --events --beat --time-limit=14400 --soft-time-limit=7200 --statedb=../celerybeat-schedule.db --logfile=../logs/celery_worker.log
+ExecStart=/var/www/productdb/virtualenv/bin/celery worker -n product_db -A django_project --detach --concurrency=${PDB_CELERY_CONCURRENCY} --loglevel=INFO --pidfile=../celery_worker.pid --events --beat --time-limit=14400 --soft-time-limit=10800 --statedb=../celerybeat-schedule.db --logfile=../logs/celery_worker.log
 ExecReload=/bin/kill -s HUP $MAINPID
 ExecStop=/bin/kill -s TERM $MAINPID
 
