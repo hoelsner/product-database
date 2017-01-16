@@ -1186,6 +1186,7 @@ class TestDetailProductCheckView:
         assert response.url.startswith("/productdb/task/")
 
 
+@pytest.mark.usefixtures("set_celery_always_eager")
 class TestCreateProductCheckView:
     URL_NAME = "productdb:create-product_check"
 
@@ -1219,7 +1220,6 @@ class TestCreateProductCheckView:
         assert response.status_code == 200, "Should be callable without permissions"
 
     @pytest.mark.usefixtures("import_default_vendors")
-    @pytest.mark.usefixtures("set_celery_always_eager")
     def test_post(self):
         url = reverse(self.URL_NAME)
         perm = Permission.objects.get(codename="add_productcheck")

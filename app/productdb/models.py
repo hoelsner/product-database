@@ -16,6 +16,7 @@ from django.utils.timezone import datetime
 
 from app.config.settings import AppSettings
 from app.productdb.validators import validate_product_list_string
+from app.productdb import utils
 
 CURRENCY_CHOICES = (
     ('EUR', 'Euro'),
@@ -694,6 +695,22 @@ class UserProfile(models.Model):
         return "User Profile for %s" % self.user.username
 
 
+class ProductCheckInputChunks(models.Model):
+    """chunks for the input product IDs field in the product check"""
+    sequence = models.PositiveIntegerField()
+
+    input_product_ids_chunk = models.CharField(
+        max_length=65536,
+        null=False,
+        blank=True
+    )
+
+    product_check = models.ForeignKey("ProductCheck")
+
+    class Meta:
+        ordering = ['sequence']
+
+
 class ProductCheck(models.Model):
     name = models.CharField(
         verbose_name="Name",
@@ -715,11 +732,25 @@ class ProductCheck(models.Model):
         """if no migration source is choosen, always use the preferred one"""
         return self.migration_source is None
 
-    input_product_ids = models.TextField(
-        verbose_name="Product ID list",
-        help_text="unordered Product IDs, separated by line breaks or semicolon",
-        max_length=65536
-    )
+    # buffer value (before save)
+    _input_product_ids = ""
+
+    @property
+    def input_product_ids(self):
+        """return concat string of all input product id chunks"""
+        if self._input_product_ids == "":
+            values = self.productcheckinputchunks_set.values_list("input_product_ids_chunk", flat=True)
+            return "".join(values)
+
+        else:
+            return self._input_product_ids
+
+    @input_product_ids.setter
+    def input_product_ids(self, value):
+        if type(value) is not str:
+            raise AttributeError("value must be a string type")
+
+        self._input_product_ids = value
 
     @property
     def input_product_ids_list(self):
@@ -784,6 +815,16 @@ class ProductCheck(models.Model):
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
         self.full_clean()
         super().save(force_insert, force_update, using, update_fields)
+
+        # save chunks to database (if new value is set)
+        if self._input_product_ids != "":
+            self.productcheckinputchunks_set.all().delete()
+
+            chunks = utils.split_string(self._input_product_ids, 65536)
+            counter = 1
+            for chunk in chunks:
+                ProductCheckInputChunks.objects.create(product_check=self, input_product_ids_chunk=chunk, sequence=counter)
+                counter += 1
 
     def __str__(self):
         return self.name

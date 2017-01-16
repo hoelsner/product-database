@@ -116,3 +116,15 @@ Start
     fsm_results = show_inventory_template.ParseText(sanitized_content)
 
     return [line[2] for line in fsm_results if line[2] != ""]
+
+
+def split_string(string, length=65536):
+    """
+    small utility to split string
+    :param string:
+    :param length:
+    :return:
+    """
+    while string:
+        yield string[:length]
+        string = string[length:]

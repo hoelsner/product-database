@@ -164,6 +164,13 @@ class ImportProductMigrationFileUploadForm(forms.Form):
 
 
 class ProductCheckForm(forms.ModelForm):
+    input_product_ids = forms.CharField(
+        label="Product ID list",
+        help_text="unordered Product IDs, separated by line breaks or semicolon",
+        widget=forms.Textarea(attrs={'cols': 80, 'rows': 10}),
+        required=True
+    )
+
     public_product_check = forms.BooleanField(
         label="public available",
         label_suffix=":",
@@ -192,14 +199,21 @@ class ProductCheckForm(forms.ModelForm):
 
         return cleaned_data
 
+    def save(self, commit=True):
+        obj = super().save(commit=False)
+        obj.input_product_ids = self.cleaned_data["input_product_ids"]
+        if commit:
+            obj.save()
+        return obj
+
     class Meta:
         model = ProductCheck
         fields = [
             "name",
             "migration_source",
-            "input_product_ids",
             "create_user",
         ]
+
         widgets = {
             "create_user": forms.HiddenInput()
         }

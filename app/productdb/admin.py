@@ -185,9 +185,11 @@ class ProductCheckAdmin(CompareVersionAdmin, admin.ModelAdmin):
         "migration_source",
         "last_change",
         "create_user",
-        "in_progress"
+        "in_progress",
+        "id",
     ]
     fields = [
+        "id",
         "name",
         "migration_source",
         "input_product_ids",
@@ -198,7 +200,8 @@ class ProductCheckAdmin(CompareVersionAdmin, admin.ModelAdmin):
 
     readonly_fields = [
         "last_change",
-        "in_progress"
+        "in_progress",
+        "input_product_ids"
     ]
 
     history_latest_first = True

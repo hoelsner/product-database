@@ -223,3 +223,21 @@ PID: C3KX-NM-1G , VID: V01 , SN: 12345ABCD"""
     ]
 
     assert utils.parse_cisco_show_inventory(example_string_with_empty_product_id) == expected_list
+
+
+def test_split_string_method():
+    # generate a long string and split it to chunks
+    input_string = "1234567890"
+    expected_result = [
+        "12345",
+        "67890"
+    ]
+
+    result = utils.split_string(input_string, 5)  # split after the 5th element
+    assert expected_result == list(result)
+
+    # test with very large string
+    large_string = "".join(["1" for e in range(0, 65536*3)])
+    result = utils.split_string(large_string, 65536)  # split after the 5th element
+
+    assert len(list(result)) == 3

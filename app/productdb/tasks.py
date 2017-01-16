@@ -6,7 +6,7 @@ from app.productdb.excel_import import ProductsExcelImporter, InvalidImportForma
 from app.productdb.models import JobFile, ProductCheck
 from django_project.celery import app, TaskState
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("productdb")
 
 
 @app.task(name="productdb.delete_all_product_checks")
@@ -35,8 +35,8 @@ def perform_product_check(self, product_check_id):
         product_check.task_id = self.request.id
         product_check.save()
 
-    except:
-        msg = "Cannot load product check, ID not found in database."
+    except Exception as ex:
+        msg = "Cannot load product check, ID not found in database (%s)." % str(ex)
         logger.error(msg, exc_info=True)
         result = {
             "error_message": msg

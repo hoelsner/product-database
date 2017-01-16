@@ -355,6 +355,7 @@ class TestProductCheckForm:
         })
 
         assert form.is_valid() is True
+        form.save()
         assert form.instance.input_product_ids == "Test"
 
         form = ProductCheckForm(data={
@@ -364,4 +365,5 @@ class TestProductCheckForm:
         })
 
         assert form.is_valid() is True
+        form.save()
         assert form.instance.input_product_ids == "a\nb\nc"

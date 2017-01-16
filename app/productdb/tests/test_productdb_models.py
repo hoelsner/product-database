@@ -5,13 +5,14 @@ import pytest
 import os
 import tempfile
 import datetime
+from hashlib import sha512
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.core.files import File
 from django.db.models import QuerySet
 from mixer.backend.django import mixer
 from app.productdb.models import Vendor, ProductList, JobFile, Product, UserProfile, ProductGroup, ProductMigrationSource, \
-    ProductMigrationOption, ProductCheck, ProductCheckEntry
+    ProductMigrationOption, ProductCheck, ProductCheckEntry, ProductCheckInputChunks
 
 pytestmark = pytest.mark.django_db
 
@@ -620,6 +621,56 @@ class TestProductCheck:
         pc.save()
 
         assert pc.in_progress is True
+
+    def test_flexible_input_field(self):
+        first_large_string = "".join(["\n" if e % 32 == 0 else "1" for e in range(1, 65536)])
+        second_large_string = "".join(["\n" if e % 32 == 0 else "2" for e in range(1, 65536)])
+
+        pc = ProductCheck.objects.create(name="Test", input_product_ids=first_large_string)
+
+        # single chunk (maximum size)
+        assert pc.productcheckinputchunks_set.count() == 1
+        assert pc.input_product_ids == first_large_string
+
+        # test setter property
+        pc.input_product_ids = second_large_string
+
+        sls_hash = sha512(second_large_string.encode()).digest()
+
+        assert sha512(pc._input_product_ids.encode()).digest() == sls_hash, "internal buffer should be set"
+        assert sha512(pc.input_product_ids.encode()).digest() == sls_hash, "Should return the buffer value"
+
+        # save value
+        pc.save()
+
+        assert pc.productcheckinputchunks_set.count() == 1
+
+        # read from DB
+        read_pc = ProductCheck.objects.get(id=pc.id)
+
+        assert sha512(read_pc.input_product_ids.encode()).digest() == sls_hash
+
+        # test with multiple chunks
+        very_large_string = first_large_string + second_large_string + first_large_string
+        vls_hash = sha512(very_large_string.encode()).digest()
+
+        # test setter property with very large string
+        new_pc = ProductCheck.objects.create(name="Test", input_product_ids=very_large_string)
+
+        assert sha512(new_pc._input_product_ids.encode()).digest() == vls_hash, "internal buffer should be set"
+        assert sha512(new_pc.input_product_ids.encode()).digest() == vls_hash, "Should return the buffer value"
+
+        # save value
+        new_pc.save()
+
+        assert new_pc.productcheckinputchunks_set.count() == 3
+        assert ProductCheckInputChunks.objects.count() == 3 + 1
+
+        # read and save again
+        new_pc = ProductCheck.objects.get(id=new_pc.id)
+        new_pc.save()
+
+        assert sha512(new_pc.input_product_ids.encode()).digest() == vls_hash
 
     def test_basic_product_check(self):
         test_product_string = "myprod"
