@@ -20,6 +20,7 @@
     "font-awesome": "fontawesome#^4.6.3",
     "datatables.net-fixedheader": "^3.1.2",
     "datatables.net-fixedheader-bs": "^3.1.2",
-    "bootstrap-tour": "^0.11.0"
+    "bootstrap-tour": "^0.11.0",
+    "Plugins": "git://github.com/DataTables/Plugins.git#1.10.13"
   }
 }

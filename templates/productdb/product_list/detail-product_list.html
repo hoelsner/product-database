@@ -101,7 +101,7 @@
                                 {{ product.product_group.name }}
                             </td>
                             <td>{{ product.description }}</td>
-                            <td>
+                            <td data-sort="{{ product.list_price|default:0 }}">
                                 {% if product.list_price %}
                                     {{ product.list_price|floatformat:2 }} {{ product.currency }}
                                 {% endif %}
@@ -182,6 +182,7 @@
     <script src="{% static 'lib/datatables.net-buttons/js/buttons.colVis.min.js' %}"></script>
 
     <script src="{% static 'lib/datatables.net-fixedheader/js/dataTables.fixedHeader.min.js' %}"></script>
+    <script src="{% static 'lib/Plugins/sorting/natural.js' %}"></script>
     <script src="{% static 'js/help/browse_all_database_help.js' %}"></script>
 
     <script type="application/javascript">
@@ -236,7 +237,8 @@
                         "targets": 4,
                         "data": "list_price",
                         "visible": true,
-                        "searchable": false
+                        "searchable": false,
+                        "type": "natural"
                     },
                     {
                         "targets": 5,
