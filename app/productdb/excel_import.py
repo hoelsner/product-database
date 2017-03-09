@@ -8,7 +8,7 @@ from xlrd import XLRDError
 from app.productdb.models import Product, CURRENCY_CHOICES, ProductGroup, ProductMigrationSource, ProductMigrationOption
 from app.productdb.models import Vendor
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("productdb")
 
 
 class InvalidExcelFileFormat(Exception):

@@ -1391,7 +1391,7 @@ class TestProductAPIEndpoint:
         # create with name
         response = client.post(REST_PRODUCT_LIST, data={"product_id": test_product_id})
 
-        assert response.status_code == status.HTTP_201_CREATED
+        assert response.status_code == status.HTTP_201_CREATED, response.content.decode()
         # adjust ID values from Database
         expected_result["id"] = Product.objects.get(product_id=test_product_id).id
         expected_result["url"] = "http://testserver/productdb/api/v0/products/%d/" % expected_result["id"]

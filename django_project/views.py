@@ -16,7 +16,7 @@ from app.productdb.utils import login_required_if_login_only_mode
 from django_project.celery import app as celery, TaskState, get_meta_data_for_task
 from django_project import context_processors
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("productdb")
 
 
 def custom_page_not_found_view(request):

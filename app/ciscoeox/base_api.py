@@ -6,7 +6,7 @@ from django.core.cache import cache
 from app.ciscoeox.exception import *
 from app.config.settings import AppSettings
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("productdb")
 
 
 class BaseCiscoApiConsole:

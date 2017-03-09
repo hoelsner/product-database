@@ -13,7 +13,7 @@ from app.config import utils
 from app.productdb.models import Vendor, Product
 from django_project.celery import app as app, TaskState
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("productdb")
 
 NOTIFICATION_MESSAGE_TITLE = "Synchronization with Cisco EoX API"
 
@@ -30,6 +30,7 @@ def cisco_eox_populate_product_lc_state_sync_field():
 
     except:
         # Vendor doesn't exist, no steps required
+        logger.fatal("Vendor \"Cisco Systems\" not found in database, please check your installation")
         return {"error": "Vendor \"Cisco Systems\" not found in database"}
 
     cisco_products = Product.objects.filter(vendor=cis_vendor)

@@ -10,7 +10,7 @@ from app.ciscoeox.base_api import CiscoEoxApi
 from app.config.settings import AppSettings
 from app.productdb.models import Product, Vendor, ProductMigrationSource, ProductMigrationOption
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("productdb")
 
 
 def convert_time_format(date_format):

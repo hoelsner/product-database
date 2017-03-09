@@ -12,7 +12,7 @@ from app.ciscoeox.exception import ConnectionFailedException, CiscoApiCallFailed
 from app.config.settings import AppSettings
 from django_project.celery import set_meta_data_for_task
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("productdb")
 
 
 @login_required()

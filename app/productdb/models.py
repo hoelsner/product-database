@@ -12,7 +12,7 @@ from django.db import models
 from django.db.models import Q
 from django.db.models.signals import pre_delete, post_save, pre_save, post_delete
 from django.dispatch import receiver
-from django.utils.timezone import datetime
+from django.utils.timezone import datetime, now
 from app.config.settings import AppSettings
 from app.productdb.validators import validate_product_list_string
 from app.productdb import utils
@@ -281,7 +281,7 @@ class Product(models.Model):
         verbose_name="update timestamp",
         help_text="last changes to the product data",
         auto_created=True,
-        auto_now=True
+        default=now
     )
 
     list_price_timestamp = models.DateField(
@@ -355,6 +355,7 @@ class Product(models.Model):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.__loaded_list_price = self.list_price
+        self.__loaded_lc_state_sync = self.lc_state_sync
 
     def __str__(self):
         return self.product_id
@@ -367,6 +368,11 @@ class Product(models.Model):
         if self.__loaded_list_price != self.list_price:
             # price has changed, update flag
             self.list_price_timestamp = datetime.today()
+
+        # the state sync is only updated within a separate task and always updated separately
+        if self.__loaded_lc_state_sync == self.lc_state_sync:
+            # state sync not changed, update of the update timestamp
+            self.update_timestamp = datetime.today()
 
         # clean the object before save
         self.full_clean()

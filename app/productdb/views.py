@@ -24,7 +24,7 @@ from django_project.celery import set_meta_data_for_task
 from app.productdb.utils import login_required_if_login_only_mode
 
 HOMEPAGE_CONTEXT_CACHE_KEY = "PDB_HOMEPAGE_CONTEXT"
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("productdb")
 
 
 def home(request):

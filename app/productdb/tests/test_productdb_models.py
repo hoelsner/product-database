@@ -4,7 +4,7 @@ Test suite for the productdb.models module
 import pytest
 import os
 import tempfile
-import datetime
+import datetime as _datetime
 from hashlib import sha512
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
@@ -13,6 +13,7 @@ from django.db.models import QuerySet
 from mixer.backend.django import mixer
 from app.productdb.models import Vendor, ProductList, JobFile, Product, UserProfile, ProductGroup, ProductMigrationSource, \
     ProductMigrationOption, ProductCheck, ProductCheckEntry, ProductCheckInputChunks
+from django.utils.timezone import datetime
 
 pytestmark = pytest.mark.django_db
 
@@ -184,36 +185,36 @@ class TestProduct:
         assert p.current_lifecycle_states is None, "Nothing is defined for the product, should be None"
 
         # the update timestamp indicated that the product lifecycle state was checked
-        p.eox_update_time_stamp = datetime.datetime.now()
+        p.eox_update_time_stamp = _datetime.datetime.now()
         assert p.current_lifecycle_states == [Product.NO_EOL_ANNOUNCEMENT_STR], "No EoX announcement found at this point"
 
         # set the eox announcement state
-        p.eol_ext_announcement_date = datetime.date.today()
+        p.eol_ext_announcement_date = _datetime.date.today()
         expected_output = [Product.EOS_ANNOUNCED_STR]
         assert p.current_lifecycle_states == expected_output, "EoL announcement should be visible"
 
         # set the End of Sale date
-        p.end_of_sale_date = datetime.date.today() + datetime.timedelta(days=1)
+        p.end_of_sale_date = _datetime.date.today() + _datetime.timedelta(days=1)
         expected_output = [Product.EOS_ANNOUNCED_STR]
         assert p.current_lifecycle_states == expected_output, \
             "Nothing should change, because the date is in the future"
-        p.end_of_sale_date = datetime.date.today()
+        p.end_of_sale_date = _datetime.date.today()
         expected_output = [Product.END_OF_SALE_STR]
         assert p.current_lifecycle_states == expected_output
 
         # set the End of new Service Attachment Date
-        p.end_of_new_service_attachment_date = datetime.date.today() + datetime.timedelta(days=1)
+        p.end_of_new_service_attachment_date = _datetime.date.today() + _datetime.timedelta(days=1)
         assert p.current_lifecycle_states == expected_output, \
             "Nothing should change, because the date is in the future"
-        p.end_of_new_service_attachment_date = datetime.date.today()
+        p.end_of_new_service_attachment_date = _datetime.date.today()
         expected_output = [Product.END_OF_SALE_STR, Product.END_OF_NEW_SERVICE_ATTACHMENT_STR]
         assert p.current_lifecycle_states == expected_output
 
         # set the End of SW maintenance date
-        p.end_of_sw_maintenance_date = datetime.date.today() + datetime.timedelta(days=1)
+        p.end_of_sw_maintenance_date = _datetime.date.today() + _datetime.timedelta(days=1)
         assert p.current_lifecycle_states == expected_output, \
             "Nothing should change, because the date is in the future"
-        p.end_of_sw_maintenance_date = datetime.date.today()
+        p.end_of_sw_maintenance_date = _datetime.date.today()
         expected_output = [
             Product.END_OF_SALE_STR,
             Product.END_OF_NEW_SERVICE_ATTACHMENT_STR,
@@ -222,10 +223,10 @@ class TestProduct:
         assert p.current_lifecycle_states == expected_output
 
         # set the End of Routine Failure Analysis date
-        p.end_of_routine_failure_analysis = datetime.date.today() + datetime.timedelta(days=1)
+        p.end_of_routine_failure_analysis = _datetime.date.today() + _datetime.timedelta(days=1)
         assert p.current_lifecycle_states == expected_output, \
             "Nothing should change, because the date is in the future"
-        p.end_of_routine_failure_analysis = datetime.date.today()
+        p.end_of_routine_failure_analysis = _datetime.date.today()
         expected_output = [
             Product.END_OF_SALE_STR,
             Product.END_OF_NEW_SERVICE_ATTACHMENT_STR,
@@ -235,10 +236,10 @@ class TestProduct:
         assert p.current_lifecycle_states == expected_output
 
         # set the End of Service Contract Renewal date
-        p.end_of_service_contract_renewal = datetime.date.today() + datetime.timedelta(days=1)
+        p.end_of_service_contract_renewal = _datetime.date.today() + _datetime.timedelta(days=1)
         assert p.current_lifecycle_states == expected_output, \
             "Nothing should change, because the date is in the future"
-        p.end_of_service_contract_renewal = datetime.date.today()
+        p.end_of_service_contract_renewal = _datetime.date.today()
         expected_output = [
             Product.END_OF_SALE_STR,
             Product.END_OF_NEW_SERVICE_ATTACHMENT_STR,
@@ -249,10 +250,10 @@ class TestProduct:
         assert p.current_lifecycle_states == expected_output
 
         # set the End of Vulnerability/Security Support date
-        p.end_of_sec_vuln_supp_date = datetime.date.today() + datetime.timedelta(days=1)
+        p.end_of_sec_vuln_supp_date = _datetime.date.today() + _datetime.timedelta(days=1)
         assert p.current_lifecycle_states == expected_output, \
             "Nothing should change, because the date is in the future"
-        p.end_of_sec_vuln_supp_date = datetime.date.today()
+        p.end_of_sec_vuln_supp_date = _datetime.date.today()
         expected_output = [
             Product.END_OF_SALE_STR,
             Product.END_OF_NEW_SERVICE_ATTACHMENT_STR,
@@ -264,10 +265,10 @@ class TestProduct:
         assert p.current_lifecycle_states == expected_output
 
         # set the End of Support date
-        p.end_of_support_date = datetime.date.today() + datetime.timedelta(days=1)
+        p.end_of_support_date = _datetime.date.today() + _datetime.timedelta(days=1)
         assert p.current_lifecycle_states == expected_output, \
             "Nothing should change, because the date is in the future"
-        p.end_of_support_date = datetime.date.today()
+        p.end_of_support_date = _datetime.date.today()
         assert p.current_lifecycle_states == [Product.END_OF_SUPPORT_STR]
 
     def test_product_id_unique_constraint(self):
@@ -374,24 +375,37 @@ class TestProduct:
 
         assert exinfo.match("eol_reference_url': \['Enter a valid URL.")
 
-    def test_timestamp_values(self):
-        p = mixer.blend("productdb.Product")
-        date = datetime.date.today()
+    def test_timestamp_values(self, monkeypatch):
+        date = _datetime.date.today()
+        first_date = _datetime.date(year=1970, day=1, month=1)
 
-        assert p.update_timestamp == date
-        assert p.list_price_timestamp is None
+        p = mixer.blend("productdb.Product", update_timestamp=first_date, lc_state_sync=True)
 
+        assert p.update_timestamp == first_date, "Date is not overwritten by the save methode, because the state " \
+                                                 "sync was changed"
+        assert p.list_price_timestamp is None, "No timestamp because no list price was set"
+
+        # change the lc_sync_state (update_timestamp should not change)
+        p = Product.objects.get(id=p.id)
+        p.lc_state_sync = False
+        p.save()
+
+        assert p.update_timestamp == first_date, "timestamp not changed, only lc flag updated"
+        assert p.list_price_timestamp is None, "timestamp not changed, only lc flag updated"
+
+        p = Product.objects.get(id=p.id)
         p.description = "Test"
         p.save()
 
-        assert p.update_timestamp == date
+        assert p.update_timestamp == date, "timestamp updated"
         assert p.list_price_timestamp is None
 
+        p = Product.objects.get(id=p.id)
         p.list_price = 1000
         p.save()
 
-        assert p.update_timestamp == date
-        assert p.list_price_timestamp == date
+        assert p.update_timestamp == date, "also updated"
+        assert p.list_price_timestamp == date, "list price changed, datetime should be set"
 
 
 class TestProductList:
@@ -768,17 +782,17 @@ class TestProductCheck:
             "productdb.Product",
             product_id=test_product_string,
             vendor=Vendor.objects.get(id=1),
-            eox_update_time_stamp=datetime.datetime.utcnow(),
-            eol_ext_announcement_date=datetime.date(2016, 1, 1),
-            end_of_sale_date=datetime.date(2016, 1, 1)
+            eox_update_time_stamp=_datetime.datetime.utcnow(),
+            eol_ext_announcement_date=_datetime.date(2016, 1, 1),
+            end_of_sale_date=_datetime.date(2016, 1, 1)
         )
         p2 = mixer.blend(
             "productdb.Product",
             product_id="replacement_pid",
             vendor=Vendor.objects.get(id=1),
-            eox_update_time_stamp=datetime.datetime.utcnow(),
-            eol_ext_announcement_date=datetime.date(2016, 1, 1),
-            end_of_sale_date=datetime.date(2016, 1, 1)
+            eox_update_time_stamp=_datetime.datetime.utcnow(),
+            eol_ext_announcement_date=_datetime.date(2016, 1, 1),
+            end_of_sale_date=_datetime.date(2016, 1, 1)
         )
         mixer.blend(
             "productdb.Product",
@@ -901,17 +915,17 @@ class TestProductCheck:
             "productdb.Product",
             product_id=test_product_string,
             vendor=Vendor.objects.get(id=1),
-            eox_update_time_stamp=datetime.datetime.utcnow(),
-            eol_ext_announcement_date=datetime.date(2016, 1, 1),
-            end_of_sale_date=datetime.date(2016, 1, 1)
+            eox_update_time_stamp=_datetime.datetime.utcnow(),
+            eol_ext_announcement_date=_datetime.date(2016, 1, 1),
+            end_of_sale_date=_datetime.date(2016, 1, 1)
         )
         p2 = mixer.blend(
             "productdb.Product",
             product_id="replacement_pid",
             vendor=Vendor.objects.get(id=1),
-            eox_update_time_stamp=datetime.datetime.utcnow(),
-            eol_ext_announcement_date=datetime.date(2016, 1, 1),
-            end_of_sale_date=datetime.date(2016, 1, 1)
+            eox_update_time_stamp=_datetime.datetime.utcnow(),
+            eol_ext_announcement_date=_datetime.date(2016, 1, 1),
+            end_of_sale_date=_datetime.date(2016, 1, 1)
         )
         mixer.blend(
             "productdb.Product",
@@ -1017,17 +1031,17 @@ class TestProductMigrationOption:
             "productdb.Product",
             product_id="eol_product",
             vendor=Vendor.objects.get(id=1),
-            eox_update_time_stamp=datetime.datetime.utcnow(),
-            eol_ext_announcement_date=datetime.date(2016, 1, 1),
-            end_of_sale_date=datetime.date(2016, 1, 1)
+            eox_update_time_stamp=_datetime.datetime.utcnow(),
+            eol_ext_announcement_date=_datetime.date(2016, 1, 1),
+            end_of_sale_date=_datetime.date(2016, 1, 1)
         )
         mixer.blend(
             "productdb.Product",
             product_id="replacement_eol_product",
             vendor=Vendor.objects.get(id=1),
-            eox_update_time_stamp=datetime.datetime.utcnow(),
-            eol_ext_announcement_date=datetime.date(2016, 1, 1),
-            end_of_sale_date=datetime.date(2016, 1, 1)
+            eox_update_time_stamp=_datetime.datetime.utcnow(),
+            eol_ext_announcement_date=_datetime.date(2016, 1, 1),
+            end_of_sale_date=_datetime.date(2016, 1, 1)
         )
         assert p.current_lifecycle_states == [Product.END_OF_SALE_STR]
 
@@ -1218,8 +1232,8 @@ class TestProductMigrationOption:
         assert expected_replacement_paths_and_order == read_list
 
         # the replacement option is now end of life
-        p12.eol_ext_announcement_date = datetime.date(2016, 1, 1)
-        p12.end_of_sale_date = datetime.date(2016, 1, 1)
+        p12.eol_ext_announcement_date = _datetime.date(2016, 1, 1)
+        p12.end_of_sale_date = _datetime.date(2016, 1, 1)
         p12.save()
 
         # get the new migration path for the preferred group
