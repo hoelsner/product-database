@@ -1,0 +1,20 @@
+FROM ubuntu:16.04
+
+ADD ./requirements.txt /var/www/productdb/requirements.txt
+
+RUN echo \
+    && apt-get update  \
+    && apt-get install -y \
+        python3.5 \
+        python3-pip \
+        python3-dev \
+        python-psycopg2 \
+        libpq-dev \
+        libsasl2-dev \
+        libldap2-dev \
+        libssl-dev
+
+RUN echo \
+    && pip3 install --no-cache-dir --upgrade pip setuptools \
+    && pip3 install --no-cache-dir -r /var/www/productdb/requirements.txt \
+    && mkdir /var/www/productdb/logs

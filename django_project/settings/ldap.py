@@ -10,11 +10,11 @@ from django_auth_ldap.config import LDAPSearch, GroupOfNamesType
 LDAP_ENABLE = os.getenv("PDB_LDAP_ENABLE", False)
 
 if LDAP_ENABLE:
-    logging.getLogger().warn("LDAP authentication enabled on server")
+    logging.getLogger().warning("LDAP authentication enabled on server")
 
     AUTH_LDAP_SERVER_URI = os.getenv("PDB_LDAP_SERVER_URL", "ldap://127.0.0.1:389/")
     AUTH_LDAP_BIND_DN = os.getenv("PDB_LDAP_BIND_DN", "cn=django-agent,dc=example,dc=com")
-    AUTH_LDAP_BIND_PASSWORD = os.getenv("PDB_LDAP_BIND_PASSWORD", "cn=django-agent,dc=example,dc=com")
+    AUTH_LDAP_BIND_PASSWORD = os.getenv("PDB_LDAP_BIND_PASSWORD", "")
 
     AUTH_LDAP_USER_SEARCH = LDAPSearch(os.getenv("PDB_LDAP_USER_SEARCH", "ou=users,dc=example,dc=com"),
                                        ldap.SCOPE_SUBTREE, "(uid=%(user)s)")

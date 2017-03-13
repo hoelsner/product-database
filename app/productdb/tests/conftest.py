@@ -21,12 +21,12 @@ def enable_login_only_mode(monkeypatch):
 @pytest.fixture
 def disable_import_price_list_task(monkeypatch):
     """disable the import price list backend function"""
-    monkeypatch.setattr(tasks.import_price_list, "delay", lambda **kwargs: MockTask())
+    monkeypatch.setattr(tasks.import_price_list, "apply_async", lambda **kwargs: MockTask())
     monkeypatch.setattr(celery, "set_meta_data_for_task", lambda: None)
 
 
 @pytest.fixture
 def disable_import_product_migrations_task(monkeypatch):
     """disable the import product migrations backend function"""
-    monkeypatch.setattr(tasks.import_product_migrations, "delay", lambda **kwargs: MockTask())
+    monkeypatch.setattr(tasks.import_product_migrations, "apply_async", lambda **kwargs: MockTask())
     monkeypatch.setattr(celery, "set_meta_data_for_task", lambda: None)

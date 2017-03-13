@@ -69,12 +69,12 @@ def configure_logging(log_level, basedir, filename, enable_sentry=False):
                 'propagate': True,
             },
             '': {
-                'handlers': ['catch_all'],
+                'handlers': ['console', 'catch_all'],
                 'level': log_level,
                 'propagate': True,
             },
             'django': {
-                'handlers': ['django_logfile'],
+                'handlers': ['console', 'django_logfile'],
                 'level': 'INFO',
                 'propagate': False,
             },
@@ -92,6 +92,11 @@ def configure_logging(log_level, basedir, filename, enable_sentry=False):
                 'level': 'DEBUG',
                 'handlers': ['console'],
                 'propagate': False,
+            },
+            'celery': {
+                'level': 'WARNING',
+                'handlers': ['console'],
+                'propagate': False,
             }
         },
         'root': {
@@ -107,6 +112,7 @@ def configure_logging(log_level, basedir, filename, enable_sentry=False):
             'class': 'raven.contrib.django.raven_compat.handlers.SentryHandler'
         }
         logging_config["loggers"]["productdb"]["handlers"] += ["sentry"]
+        logging_config["loggers"]["celery"]["handlers"] += ["sentry"]
         logging_config["loggers"][""]["handlers"] += ["sentry"]
 
     return logging_config

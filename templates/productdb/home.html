@@ -174,5 +174,10 @@
                 </div>
             </div>
         </div>
+        {% if DEBUG_MODE %}
+            <div class="col-md-12">
+                <p class="text-danger">Debug Mode enabled ({{ REQUEST_IP }})</p>
+            </div>
+        {% endif %}
     </div>
 {% endblock %}

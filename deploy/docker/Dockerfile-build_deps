@@ -1,0 +1,27 @@
+FROM productdb/basebox:latest
+
+ENV PYTHONUNBUFFERED 1
+ENV DJANGO_SECRET_KEY PlsChgMe
+ENV DJANGO_LOG_LEVEL info
+ENV POSTGRES_DB productdb
+ENV POSTGRES_USER postgres
+ENV POSTGRES_PASSWORD plschgme
+ENV PDB_DATABASE_HOST database
+ENV PDB_DATABASE_PORT 5432
+ENV PDB_REDIS_HOST redis
+ENV PDB_REDIS_PORT 6379
+
+ENV HTTPS_SELF_SIGNED_CERT_COUNTRY "Germany"
+ENV HTTPS_SELF_SIGNED_CERT_FQDN "productdb"
+
+RUN echo \
+    && apt-get update \
+    && apt-get install -y \
+        npm \
+        nodejs-legacy
+
+ADD . /var/www/productdb/source
+WORKDIR /var/www/productdb/source
+
+RUN chmod +x ./deploy/docker/build_deps/build_dependencies.sh
+CMD ./deploy/docker/build_deps/build_dependencies.sh

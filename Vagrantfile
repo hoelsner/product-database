@@ -23,7 +23,7 @@ Vagrant.configure(2) do |config|
 
     productdb.vm.post_up_message = "access the product database at https://localhost:16443 (Ubuntu)"
   end
-  config.vm.define "productdb_ldap", primary: true do |productdb_ldap|
+  config.vm.define "productdb_ldap" do |productdb_ldap|
     productdb_ldap.vm.box = "ubuntu/xenial64"
 
     productdb_ldap.vm.network "forwarded_port", guest: 443, host: 17443

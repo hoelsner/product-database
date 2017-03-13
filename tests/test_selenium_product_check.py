@@ -134,6 +134,7 @@ class TestBulkEolCheckFunction(BaseSeleniumTest):
 
         # test that the table view is stored
         browser.execute_script("window.scrollTo(0, 0)")
+        time.sleep(1)
         browser.find_element_by_id("_back").click()
 
         assert "All Product Checks" in browser.find_element_by_tag_name("body").text

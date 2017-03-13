@@ -37,7 +37,7 @@ MIDDLEWARE_CLASSES = [
     'reversion.middleware.RevisionMiddleware',
 ]
 
-if os.getenv("PDB_DEBUG") and not os.getenv("PDB_DEBUG_CACHE"):
+if os.getenv("PDB_DEBUG", False) and os.getenv("PDB_DEBUG_NO_CACHE", False):
     print("!!!!!!!! use database caching and disable cacheops...")
     CACHES = {
         'default': {
@@ -48,21 +48,30 @@ if os.getenv("PDB_DEBUG") and not os.getenv("PDB_DEBUG_CACHE"):
     CACHEOPS_ENABLED = False  # disable cacheops for debugging
 
 else:
+    redis_server = os.environ.get("PDB_REDIS_HOST", "127.0.0.1")
+    redis_port = os.environ.get("PDB_REDIS_PORT", "6379")
     CACHES = {
         'default': {
             'BACKEND': 'redis_cache.RedisCache',
-            'LOCATION': 'localhost:6379',
+            'LOCATION': '%s:%s' % (redis_server, redis_port),
+            'OPTIONS': {
+                'CONNECTION_POOL_CLASS': 'redis.BlockingConnectionPool',
+                'CONNECTION_POOL_CLASS_KWARGS': {
+                    'max_connections': 50,
+                    'timeout': 20,
+                }
+            }
         },
     }
 
-    if os.getenv("PDB_DISABLE_CACHE", False):
+    if os.getenv("PDB_DISABLE_CACHEOPS", False):
         print("!!!!!!!! use redis caching and disable cacheops...")
         CACHEOPS_ENABLED = False  # disable cacheops for debugging
 
     else:
         CACHEOPS_REDIS = {
-            'host': 'localhost',
-            'port': 6379,
+            'host': redis_server,
+            'port': redis_port,
             'socket_timeout': 3,
         }
         CACHEOPS_DEFAULTS = {
@@ -101,18 +110,21 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'django_project.context_processors.is_ldap_authenticated_user',
-                'django_project.context_processors.get_internal_product_id_label',
+                'django_project.context_processors.get_internal_product_id_label'
             ],
         },
     },
 ]
 
+if os.getenv("PDB_DEBUG", False) or os.getenv("DEBUG", False):
+    TEMPLATES[0]["OPTIONS"]["context_processors"].append('django_project.context_processors.is_debug_enabled')
+
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "PlsChgMe")
 
 # configure database settings
-DATABASE_NAME = os.getenv("PDB_DATABASE_NAME", "productdb_dev")
-DATABASE_USER = os.getenv("PDB_DATABASE_USER", "productdb")
-DATABASE_PASSWORD = os.getenv("PDB_DATABASE_PASSWORD", "productdb")
+DATABASE_NAME = os.getenv("PDB_DATABASE_NAME", os.getenv("POSTGRES_DB", "postgres"))
+DATABASE_USER = os.getenv("PDB_DATABASE_USER", os.getenv("POSTGRES_USER", "postgres"))
+DATABASE_PASSWORD = os.getenv("PDB_DATABASE_PASSWORD", os.getenv("POSTGRES_PASSWORD", ""))
 DATABASE_HOST = os.getenv("PDB_DATABASE_HOST", "127.0.0.1")
 DATABASE_PORT = os.getenv("PDB_DATABASE_PORT", "5432")
 
@@ -147,15 +159,15 @@ LOGIN_REDIRECT_URL = "/productdb/"
 CSRF_FAILURE_VIEW = 'django_project.views.custom_csrf_failure_page'
 
 STATIC_URL = '/productdb/static/'
-STATIC_ROOT = os.path.abspath(os.path.join(BASE_DIR, '../../static'))
+STATIC_ROOT = os.path.abspath(os.path.join(BASE_DIR, "..", "..", "static"))
 STATICFILES_DIRS = (
-    os.path.join(BASE_DIR, "../static"),
-    os.path.join(BASE_DIR, "../node_modules"),
+    os.path.join(BASE_DIR, "..", "static"),
 )
 
 # enable session timeout
 SESSION_COOKIE_AGE = 60 * 15
 SESSION_SAVE_EVERY_REQUEST = True
+SESSION_COOKIE_NAME = "productdb"
 
 BOOTSTRAP3 = {
     'jquery_url': 'lib/jquery/dist/jquery.min.js',
@@ -175,24 +187,27 @@ BOOTSTRAP3 = {
     'success_css_class': 'has-success',
 }
 
+DATA_DIRECTORY = os.path.abspath(os.path.join(os.path.join(BASE_DIR, "..", "..", "data")))
+MEDIA_ROOT = DATA_DIRECTORY
 
-DATA_DIRECTORY = os.path.join("data")
-
+# install data directory if required
 if not os.path.exists(DATA_DIRECTORY):
     os.makedirs(DATA_DIRECTORY, exist_ok=True)
 
 ADD_REVERSION_ADMIN = True
 
 if os.getenv("PDB_DEBUG"):
+    from ipaddress import IPv4Interface
     # enable django debug toolbar (only installed with the dev requirements)
-    INTERNAL_IPS = ["127.0.0.1"]
+    debug_ip = os.getenv("DEBUG_IP", "127.0.0.1/32")
+    INTERNAL_IPS = [str(host) for host in IPv4Interface(debug_ip).network]
     INSTALLED_APPS += ['debug_toolbar']
     MIDDLEWARE_CLASSES += ['debug_toolbar.middleware.DebugToolbarMiddleware']
     CELERY_ALWAYS_EAGER = True
     CELERY_EAGER_PROPAGATES_EXCEPTIONS = True
 
-# Force HTTPs (should be used in production)
-if os.getenv("PDB_HTTPS_ONLY", False):
+# Force HTTPs (always used in production)
+if not os.getenv("PDB_DEBUG") and not os.getenv("PDB_TESTING", False):
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')

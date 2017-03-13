@@ -50,3 +50,6 @@ coverage_report.html
 /.cache
 /tmp
 .cisco_api_credentials
+deploy/docker/env/*
+!deploy/docker/env/env.demo
+!deploy/docker/env/env.prod_template

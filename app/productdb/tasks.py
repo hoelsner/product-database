@@ -31,9 +31,6 @@ def perform_product_check(self, product_check_id):
 
     update_task_state("Load Product Check...")
 
-    # wait for 3 seconds to ensure that the database has the new Product Check (issue with very large product checks)
-    time.sleep(3)
-
     try:
         product_check = ProductCheck.objects.get(id=product_check_id)
         product_check.task_id = self.request.id

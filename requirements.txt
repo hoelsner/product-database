@@ -23,7 +23,7 @@ redis==2.10.5
 requests==2.10.0
 six==1.10.0
 xlrd==1.0.0
-pyldap==2.4.25.1
+pyldap==2.4.28
 django-auth-ldap==1.2.8
 django-bootstrap3==7.1.0
 django-reversion==2.0.7

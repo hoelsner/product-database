@@ -6,19 +6,23 @@ from django_project.settings.common import *
 #
 import djcelery
 INSTALLED_APPS += ['djcelery']
+redis_server = os.environ.get("PDB_REDIS_HOST", "127.0.0.1")
+redis_port = os.environ.get("PDB_REDIS_PORT", "6379")
 
-BROKER_URL = 'redis://localhost:6379'
-CELERY_RESULT_BACKEND = 'redis://localhost:6379'
+BROKER_URL = 'redis://%s:%s' % (redis_server, redis_port)
+CELERY_ENABLE_UTC = False
+CELERY_TIMEZONE = os.getenv("PDB_TIME_ZONE", "Europe/Berlin")
+CELERY_RESULT_BACKEND = 'redis://%s:%s' % (redis_server, redis_port)
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TRACK_STARTED = True
 CELERY_RESULT_PERSISTENT = True
 CELERY_TASK_RESULT_EXPIRES = 2419200
-CELERYBEAT_SCHEDULE_FILENAME = "../celerybeat-schedule.db"
+CELERYBEAT_SCHEDULE_FILENAME = "../data/celerybeat-schedule"
 CELERYBEAT_PIDFILE = "../celerybeat.pid"
 CELERYBEAT_SCHEDULER = 'djcelery.schedulers.DatabaseScheduler'
-CELERY_TIMEZONE = TIME_ZONE
+CELERYD_PREFETCH_MULTIPLIER = os.environ.get("PDB_CELERY_CONCURRENCY", 4)
 CELERYBEAT_SCHEDULE = {
     'periodic-sync-with-cisco-eox-api': {
         'task': 'ciscoeox.synchronize_with_cisco_eox_api',

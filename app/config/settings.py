@@ -5,7 +5,7 @@ import logging
 from app.config.models import ConfigOption
 from django.core.cache import cache
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("productdb")
 
 
 class AppSettings:

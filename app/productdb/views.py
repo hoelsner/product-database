@@ -9,7 +9,7 @@ from django.http import Http404
 from django.shortcuts import redirect, render, get_object_or_404
 from django.template.defaultfilters import safe
 from django.utils.html import escape
-from django.utils.timezone import timedelta, datetime, get_current_timezone
+from django.utils.timezone import timedelta, datetime, get_current_timezone, now
 from django.contrib import messages
 from rest_framework.authtoken.models import Token
 from django_project.celery import is_worker_active
@@ -374,7 +374,12 @@ def create_product_check(request):
             form.save()
 
             # dispatch task
-            task = tasks.perform_product_check.delay(form.instance.id)
+            eta = now() + timedelta(seconds=3)
+            task = tasks.perform_product_check.apply_async(
+                eta=eta,
+                args=(form.instance.id, )
+            )
+
             set_meta_data_for_task(
                 task_id=task.id,
                 title="Product check",
@@ -383,6 +388,7 @@ def create_product_check(request):
                     "product_check_id": form.instance.id
                 })
             )
+
             logger.info("create product check with ID %d on task %s" % (form.instance.id, task.id))
 
             return redirect(reverse("task_in_progress", kwargs={"task_id": task.id}))
@@ -533,12 +539,17 @@ def import_products(request):
             job_file = JobFile(file=request.FILES['excel_file'])
             job_file.save()
 
-            task = tasks.import_price_list.delay(
-                job_file_id=job_file.id,
-                create_notification_on_server=not form.cleaned_data["suppress_notification"],
-                update_only=form.cleaned_data["update_existing_products_only"],
-                user_for_revision=request.user.username
+            eta = now() + timedelta(seconds=3)
+            task = tasks.import_price_list.apply_async(
+                eta=eta,
+                kwargs={
+                    "job_file_id": job_file.id,
+                    "create_notification_on_server": not form.cleaned_data["suppress_notification"],
+                    "update_only": form.cleaned_data["update_existing_products_only"],
+                    "user_for_revision": request.user.username
+                }
             )
+
             set_meta_data_for_task(
                 task_id=task.id,
                 title="Import products from Excel sheet",
@@ -567,10 +578,15 @@ def import_product_migrations(request):
             job_file = JobFile(file=request.FILES['excel_file'])
             job_file.save()
 
-            task = tasks.import_product_migrations.delay(
-                job_file_id=job_file.id,
-                user_for_revision=request.user.username
+            eta = now() + timedelta(seconds=3)
+            task = tasks.import_product_migrations.apply_async(
+                eta=eta,
+                kwargs={
+                    "job_file_id": job_file.id,
+                    "user_for_revision": request.user.username
+                }
             )
+
             set_meta_data_for_task(
                 task_id=task.id,
                 title="Import product migrations from Excel sheet",
