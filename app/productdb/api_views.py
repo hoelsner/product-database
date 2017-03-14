@@ -43,9 +43,9 @@ class ProductMigrationSourceViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class ProductMigrationOptionFilter(filters.FilterSet):
-    product = django_filters.CharFilter(name="product__product_id", lookup_type="startswith")
-    migration_source = django_filters.CharFilter(name="migration_source__name", lookup_type="startswith")
-    replacement_product_id = django_filters.CharFilter(name="replacement_product_id", lookup_type="startswith")
+    product = django_filters.CharFilter(name="product__product_id", lookup_expr="startswith")
+    migration_source = django_filters.CharFilter(name="migration_source__name", lookup_expr="startswith")
+    replacement_product_id = django_filters.CharFilter(name="replacement_product_id", lookup_expr="startswith")
 
     class Meta:
         model = ProductMigrationOption
@@ -69,8 +69,8 @@ class ProductMigrationOptionViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class ProductGroupFilter(filters.FilterSet):
-    vendor = django_filters.CharFilter(name="vendor__name", lookup_type="startswith")
-    name = django_filters.CharFilter(name="name", lookup_type="exact")
+    vendor = django_filters.CharFilter(name="vendor__name", lookup_expr="startswith")
+    name = django_filters.CharFilter(name="name", lookup_expr="exact")
 
     class Meta:
         model = ProductGroup
@@ -109,8 +109,8 @@ class ProductGroupViewSet(viewsets.ModelViewSet):
 
 
 class ProductListFilter(filters.FilterSet):
-    name = django_filters.CharFilter(name="name", lookup_type="icontains")
-    description = django_filters.CharFilter(name="description", lookup_type="icontains")
+    name = django_filters.CharFilter(name="name", lookup_expr="icontains")
+    description = django_filters.CharFilter(name="description", lookup_expr="icontains")
 
     class Meta:
         model = ProductList
@@ -133,9 +133,9 @@ class ProductListViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class ProductFilter(filters.FilterSet):
-    vendor = django_filters.CharFilter(name="vendor__name", lookup_type="startswith")
-    product_id = django_filters.CharFilter(name="product_id", lookup_type="iexact")
-    product_group = django_filters.CharFilter(name="product_group__name", lookup_type="exact")
+    vendor = django_filters.CharFilter(name="vendor__name", lookup_expr="startswith")
+    product_id = django_filters.CharFilter(name="product_id", lookup_expr="iexact")
+    product_group = django_filters.CharFilter(name="product_group__name", lookup_expr="exact")
 
     class Meta:
         model = Product

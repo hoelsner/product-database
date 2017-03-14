@@ -187,7 +187,7 @@ BOOTSTRAP3 = {
     'success_css_class': 'has-success',
 }
 
-DATA_DIRECTORY = os.path.abspath(os.path.join(os.path.join(BASE_DIR, "..", "..", "data")))
+DATA_DIRECTORY = os.path.join(os.path.join("..", "data"))
 MEDIA_ROOT = DATA_DIRECTORY
 
 # install data directory if required
