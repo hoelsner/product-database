@@ -19,6 +19,10 @@
     service: name=productdb-celeryworker state=started enabled=yes
     ignore_errors: yes
     sudo: true
+  - name: start celerybeat service
+    service: name=productdb-celerybeat state=started enabled=yes
+    ignore_errors: yes
+    sudo: true
   - name: start celerycam service
     service: name=productdb-celerycamera state=started enabled=yes
     ignore_errors: yes

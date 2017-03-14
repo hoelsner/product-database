@@ -15,6 +15,9 @@
   - name: restart celeryworker service
     service: name=productdb-celeryworker state=restarted enabled=yes
     become: true
+  - name: restart celerybeat service
+    service: name=productdb-celerybeat state=restarted enabled=yes
+    become: true
   - name: restart celerycam service
     service: name=productdb-celerycamera state=restarted enabled=yes
     become: true

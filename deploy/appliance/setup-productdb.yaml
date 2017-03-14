@@ -331,6 +331,27 @@
       replace={{ site_group }}
 
   #
+  # configure CELERY BEAT service
+  - name: create celery_beat service
+    become: true
+    copy:
+      src=/var/www/productdb/source/deploy/appliance/templates/celery_beat.template.service
+      dest=/etc/systemd/system/productdb-celerybeat.service
+      remote_src=True
+  - name: set username on celery_beat environment configuration
+    become: true
+    replace:
+      dest=/etc/systemd/system/productdb-celerybeat.service
+      regexp='__USERNAME__'
+      replace={{ site_user }}
+  - name: set group on celery_beat environment configuration
+    become: true
+    replace:
+      dest=/etc/systemd/system/productdb-celerybeat.service
+      regexp='__GROUP__'
+      replace={{ site_group }}
+
+  #
   # configure CELERYCAM service
   - name: create celery_camera service
     become: true
