@@ -13,7 +13,7 @@ network products. It currently focuses on the following use cases:
 * REST API access to a central database which holds information about products from network vendors/manufacturers
 * import data using Excel
 
-This web service is based on python 3.5.1 and Django 1.9. A detailed list with all dependencies is available in the
+This web service is based on python 3.5 and Django 1.9. A detailed list with all dependencies is available in the
 `requirements.txt` file.
 
 ## License
@@ -39,11 +39,46 @@ REST API is only available to registered users.
 * 4 vCPU's (recommended)
 * min. 2 GB RAM
 
-### Dedicated Server setup
+### Setup using Docker
 
-To setup the **Product Database** on a dedicated server, you need a clean installation of Ubuntu 16.04. Please note, that
-this web service expects to be the only application running on the server. Within the `deploy` directory, you find a 
-`stage_default` template directory. The entire setup is based on an Ansible playbook.
+**The current Docker implementation is only tested with local containers (no Docker Hub) on a single Docker Machine.** 
+
+You can download the Docker Community Edition for free on the [Docker Homepage](https://www.docker.com/get-docker). 
+After a successful Docker installation, use the following commands to create a demo instance of the Product Database:
+
+```bash
+git clone https://github.com/hoelsner/product-database.git
+docker build -f deploy/docker/Dockerfile-basebox -t productdb/basebox:latest .
+docker-compose -p productdb up -d --build
+```
+
+**Please note:** The docker-compose file will expose port 80 and 443 on your Machine for the Product Database by default. If 
+you have a local webserver already running, set the `NGINX_HTTP_PORT` and `NGINX_HTTPS_PORT` environment variable. Otherwise 
+the `docker-compose -pr productdb up -d` command will fail.
+
+To update an existing instance, you need to rebuild the containers:
+
+```bash
+docker-compose -p productdb down
+git pull origin master
+docker-compose -p productdb up -d --build
+```
+
+There are also some scripts associated to the `database` container for backup/restore purpose. You can use one of the 
+following commands to take a backup, view a list with all backups and restore the database from a file. Please note that 
+the restore operation requires that all services except the database are stopped.
+
+```bash
+docker-compose -p productdb run database backup
+docker-compose -p productdb run database list-backups
+docker-compose -p productdb run database restore <filename>
+```
+
+### Server Setup
+
+To setup the **Product Database** on a dedicated server (without Docker), you need a clean installation of Ubuntu 16.04. 
+Please note, that this web service expects to be the only application running on the server. Within the `deploy` directory, 
+you find a `stage_default` template directory. The entire setup is based on an Ansible playbook.
 
 #### Setup without an Ansible control machine
 
@@ -114,20 +149,12 @@ If you want to update an existing installation, you just need to re-run the Ansi
 value, e.g. `0.4`. If you want to use the latest development version, set the value to `master`. Please create a backup 
 of the server before running the update.
 
-## Cisco EoX APIs within the Product Database
+## Cisco EoX APIs (Cisco Support APIs) within the Product Database
 
 This version is capable to synchronize the local database with the Cisco EoX API. More information about the API is 
 available at [http://apiconsole.cisco.com](http://apiconsole.cisco.com) (Cisco Partner access only). Please note the 
 Terms & Conditions of this Service
 ([http://www.cisco.com/web/siteassets/legal/terms_condition.html](http://www.cisco.com/web/siteassets/legal/terms_condition.html)).
-
-To use the Product Database with the Cisco API console, you need to enter your client credentials on the settings page. These 
-credentials can be created in the Cisco API administration. 
-
-**Currently, the access permission to the Cisco EoX V5 API is required**
- 
-If you have questions about the API access, please take a look on the following entry in the 
-[Cisco Support Forums](https://supportforums.cisco.com/community/5456/partner-support-service) (Cisco CCO account required).
 
 ## Development Notes
 

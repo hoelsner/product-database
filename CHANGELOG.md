@@ -7,7 +7,9 @@
 * REST API authentication is now possible with user specific tokens (available in the User Profile, 
 [see Django REST framework for details](http://www.django-rest-framework.org/api-guide/authentication/#tokenauthentication)) 
 * the input Product IDs field in the Product Check has now an unlimited length
-* the application now notifies the user, if no backend worker thread is active
+* the web-service now notifies a super user, if no backend worker is active/registered
+* **HTTPs is now mandatory**
+* **add Dockerfile**
 
 ## Version 0.4
 
