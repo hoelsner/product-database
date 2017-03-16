@@ -44,12 +44,14 @@ REST API is only available to registered users.
 **The current Docker implementation is only tested with local containers (no Docker Hub) on a single Docker Machine.** 
 
 You can download the Docker Community Edition for free on the [Docker Homepage](https://www.docker.com/get-docker). 
-After a successful Docker installation, use the following commands to create a demo instance of the Product Database:
+After a successful Docker installation, use the following commands to create a new demo instance of the Product Database:
 
 ```bash
 git clone https://github.com/hoelsner/product-database.git
 docker build -f deploy/docker/Dockerfile-basebox -t productdb/basebox:latest .
-docker-compose -p productdb up -d --build
+docker-compose -p productdb up -d database redis
+docker-compose -p productdb up build_deps
+docker-compose -p productdb up -d
 ```
 
 **Please note:** The docker-compose file will expose port 80 and 443 on your Machine for the Product Database by default. If 
@@ -61,7 +63,7 @@ To update an existing instance, you need to rebuild the containers:
 ```bash
 docker-compose -p productdb down
 git pull origin master
-docker-compose -p productdb up -d --build
+docker-compose -p productdb up -d --build --force-recreate
 ```
 
 There are also some scripts associated to the `database` container for backup/restore purpose. You can use one of the 
@@ -69,9 +71,9 @@ following commands to take a backup, view a list with all backups and restore th
 the restore operation requires that all services except the database are stopped.
 
 ```bash
-docker-compose -p productdb run database backup
-docker-compose -p productdb run database list-backups
-docker-compose -p productdb run database restore <filename>
+docker-compose -p productdb exec database backup
+docker-compose -p productdb exec database list-backups
+docker-compose -p productdb exec database restore <filename>
 ```
 
 ### Server Setup
