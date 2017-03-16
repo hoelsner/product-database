@@ -7,6 +7,7 @@ version: '3'
 
 services:
   redis:
+    container_name: ${INSTANCE_NAME:-productdb}_redis
     restart: always
     image: redis:latest
     command: redis-server --appendonly yes
@@ -14,6 +15,7 @@ services:
       - internal
 
   database:
+    container_name: ${INSTANCE_NAME:-productdb}_database
     image: productdb/database:latest
     build:
       context: .
@@ -26,6 +28,7 @@ services:
       - internal
 
   build_deps:
+    container_name: ${INSTANCE_NAME:-productdb}_build_deps
     image: productdb/build_deps:latest
     build:
       context: .
@@ -34,11 +37,13 @@ services:
     volumes:
       - static_files:/var/www/productdb/static
       - ssl_files:/var/www/productdb/ssl
+      - data:/var/www/productdb/data
     networks:
       - default
       - internal
 
   camera:
+    container_name: ${INSTANCE_NAME:-productdb}_camera
     restart: always
     image: productdb/camera:latest
     build:
@@ -55,6 +60,7 @@ services:
       - redis
 
   beat:
+    container_name: ${INSTANCE_NAME:-productdb}_beat
     restart: always
     image: productdb/beat:latest
     build:
@@ -107,6 +113,7 @@ services:
       - redis
 
   nginx:
+    container_name: ${INSTANCE_NAME:-productdb}_nginx
     restart: always
     image: productdb/nginx
     build:

@@ -119,3 +119,4 @@ deploy
 !deploy/docker/build_deps
 !deploy/docker/nginx
 !deploy/docker/postgres
+!deploy/docker/Dockerfile-*

@@ -17,6 +17,7 @@ ENV HTTPS_SELF_SIGNED_CERT_FQDN "productdb"
 RUN echo \
     && apt-get update \
     && apt-get install -y \
+        git \
         npm \
         nodejs-legacy
 

@@ -13,7 +13,7 @@ echo ""
 
 python3 manage.py migrate
 
-flag_file="/var/www/productdb/provisioning"
+flag_file="/var/www/productdb/data/provisioning"
 if [ ! -f "$flag_file" ] || [ $REBUILD_DB == "1" ]
 then
     echo ""
@@ -43,13 +43,13 @@ fi
 echo ""
 echo "==> install node package manager dependencies..."
 echo ""
-npm install
+npm install &>/dev/null
 
 echo ""
-echo "==> load and clean frontend dependencies..."
+echo "==> load frontend dependencies..."
 echo ""
-node_modules/.bin/bower install
-node_modules/.bin/grunt clean
+node_modules/.bin/bower install --allow-root &>/dev/null
+node_modules/.bin/grunt clean &>/dev/null
 
 echo ""
 echo "==> collect static files..."

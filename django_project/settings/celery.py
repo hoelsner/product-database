@@ -10,7 +10,7 @@ redis_server = os.environ.get("PDB_REDIS_HOST", "127.0.0.1")
 redis_port = os.environ.get("PDB_REDIS_PORT", "6379")
 
 BROKER_URL = 'redis://%s:%s' % (redis_server, redis_port)
-CELERY_ENABLE_UTC = False
+CELERY_ENABLE_UTC = True
 CELERY_TIMEZONE = os.getenv("PDB_TIME_ZONE", "Europe/Berlin")
 CELERY_RESULT_BACKEND = 'redis://%s:%s' % (redis_server, redis_port)
 CELERY_ACCEPT_CONTENT = ['json']
