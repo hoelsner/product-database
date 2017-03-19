@@ -1,72 +1,12 @@
-import json
 import logging
-
 from django.contrib.auth.decorators import login_required, permission_required
 from django.core.urlresolvers import reverse
 from django.core.cache import cache
-from django.shortcuts import redirect, render
-
+from django.shortcuts import redirect
 from app.ciscoeox import tasks
-from app.ciscoeox import api_crawler
-from app.ciscoeox.exception import ConnectionFailedException, CiscoApiCallFailed
-from app.config.settings import AppSettings
 from django_project.celery import set_meta_data_for_task
 
 logger = logging.getLogger("productdb")
-
-
-@login_required()
-@permission_required('is_superuser', raise_exception=True)
-def cisco_eox_query(request):
-    """Manual query page against the Cisco EoX Version 5 API (if enabled)
-
-    :param request:
-    :return:
-    """
-    app_config = AppSettings()
-    cisco_api_enabled = app_config.is_cisco_api_enabled()
-
-    context = {
-        "is_cisco_api_enabled": cisco_api_enabled
-    }
-
-    if request.method == "POST":
-        # create a form instance and populate it with data from the request:
-        if "sync_cisco_eox_states_now" in request.POST.keys():
-            if "sync_cisco_eox_states_query" in request.POST.keys():
-                query = request.POST['sync_cisco_eox_states_query']
-
-                if query != "":
-                    if len(query.split(" ")) == 1:
-                        context['query_executed'] = query
-                        try:
-                            eox_api_update_records = api_crawler.update_cisco_eox_database(api_query=query)
-
-                        except ConnectionFailedException as ex:
-                            eox_api_update_records = {"error": "Cannot contact Cisco API, error message:\n%s" % ex}
-
-                        except CiscoApiCallFailed as ex:
-                            eox_api_update_records = {"error": "Cisco API call failed: %s" % ex}
-
-                        except Exception as ex:  # catch any exception
-                            logger.debug("execution failed due to unexpected exception", exc_info=True)
-                            eox_api_update_records = ["execution failed: %s" % ex]
-
-                        context['eox_api_update_records'] = json.dumps(eox_api_update_records, indent=4, sort_keys=True)
-
-                    else:
-                        context['eox_api_update_records'] = "Invalid query '%s': not executed" % \
-                                                            request.POST['sync_cisco_eox_states_query']
-                else:
-                    context['eox_api_update_records'] = ["Please specify a valid query"]
-
-            else:
-                context['eox_api_update_records'] = "Query not specified."
-
-        else:
-            context['eox_api_update_records'] = "Query not executed, please select the \"execute it now\" checkbox."
-
-    return render(request, "ciscoeox/cisco_eox_query.html", context=context)
 
 
 @login_required()
