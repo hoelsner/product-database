@@ -11,6 +11,8 @@ services:
     restart: always
     image: redis:latest
     command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
     networks:
       - internal
 
@@ -121,8 +123,8 @@ services:
       dockerfile: deploy/docker/Dockerfile-nginx
     env_file: deploy/docker/env/env.${INSTANCE_CONFIG:-demo}
     ports:
-      - "${NGINX_HTTP_PORT:-80}:80"
-      - "${NGINX_HTTPS_PORT:-443}:443"
+      - "${EXPOSE_IP:-0.0.0.0}:${NGINX_HTTP_PORT:-80}:80"
+      - "${EXPOSE_IP:-0.0.0.0}:${NGINX_HTTPS_PORT:-443}:443"
     networks:
       - default
     volumes:
@@ -143,3 +145,4 @@ volumes:
   ssl_files:
   data:
   postgres_backup:
+  redis_data:
