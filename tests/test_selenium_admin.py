@@ -445,7 +445,7 @@ class TestSyncLocalDatabaseWithCiscoEoxApi(BaseSeleniumTest):
         browser.find_element_by_id("trigger_sync_with_cisco_eox_api").click()
 
         # verify the resulting dialog
-        assert "The following products are affected by this update:" in browser.find_element_by_tag_name("body").text
+        assert "The following queries were executed: WS-C2960-24-*, WS-C3750-24-*" in browser.find_element_by_tag_name("body").text
 
         # click on continue button, the status page should be visible again
         browser.find_element_by_id("continue_button").click()
@@ -457,117 +457,14 @@ class TestSyncLocalDatabaseWithCiscoEoxApi(BaseSeleniumTest):
         # on the homepage, you should see a recent message from the Cisco EoX API sync
         assert "recent events" in browser.find_element_by_tag_name("body").text
         assert "Synchronization with Cisco EoX API" in browser.find_element_by_tag_name("body").text
-        assert "The synchronization was performed successfully." in browser.find_element_by_tag_name("body").text
+        assert "The synchronization with the Cisco EoX API was successful." in browser.find_element_by_tag_name("body").text
 
         # show the detailed message
         browser.find_element_by_link_text("view details").click()
         assert "Synchronization with Cisco EoX API" in browser.find_element_by_tag_name("body").text
-        expected_content = "The synchronization was performed successfully. 0 products are updated, " \
-                           "0 products are added to the database and 2 products are ignored"
+        expected_content = "The following queries were executed:\nWS-C2960-24-* (affected 3 products, success)\n" \
+                           "WS-C3750-24-* (affected 0 products, success)"
         assert expected_content in browser.find_element_by_tag_name("body").text
-
-        # end session
-        self.logout_user(browser)
-
-    def test_configure_periodic_cisco_api_eox_sync_and_perform_initial_synchronization_using_testing_tool(self,
-                                                                                                          browser,
-                                                                                                          live_server):
-        self.configure_cisco_api_for_test_case(browser, live_server)
-
-        # switch to the testing tools page and test Cisco EoX API query
-        browser.get(live_server + reverse("cisco_api:eox_query"))
-
-        # enter "WS-C2960-*" as query and check that this query should be executed
-        browser.find_element_by_id("sync_cisco_eox_states_query").send_keys("WS-C2960-*")
-        browser.find_element_by_id("sync_cisco_eox_states_now").click()
-
-        # execute query to test API update
-        browser.find_element_by_id("submit").click()
-
-        # check lifecycle values of WS-C2960-48TT-L using the REST API (should be now not null)
-        direct_query_result_log = browser.find_element_by_id("direct_query_result_log").text
-        updated_element = """"PID": "WS-C2960-48TT-L",
-        "blacklist": false,
-        "created": false,
-        "message": null,
-        "updated": true"""
-        blacklisted_element = """"PID": "WS-C2960-24-S-RF",
-        "blacklist": true,
-        "created": false,
-        "message": null,
-        "updated": false"""
-        invalid_element = """"PID": "WS-C2960-24LC-S-WS",
-        "blacklist": false,
-        "created": false,
-        "message": null,
-        "updated": false"""
-
-        assert updated_element in direct_query_result_log
-        assert blacklisted_element in direct_query_result_log
-        assert invalid_element in direct_query_result_log
-
-        # switch to Cisco API settings and activate the auto-create feature
-        browser.get(live_server + reverse("productdb_config:change_settings"))
-
-        # change to Cisco API configuration tab
-        browser.find_element_by_link_text("Cisco API settings").click()
-        time.sleep(1)
-
-        auto_create_new_products = browser.find_element_by_id("id_eox_auto_sync_auto_create_elements")
-        auto_create_new_products.click()
-        if not auto_create_new_products.is_selected():
-            time.sleep(1)
-            auto_create_new_products.send_keys(Keys.SPACE)
-
-        browser.find_element_by_id("submit").click()
-
-        # verify results
-        auto_create_new_products = browser.find_element_by_id("id_eox_auto_sync_auto_create_elements")
-        assert auto_create_new_products.is_selected() is True
-
-        # switch to the testing tools page and test Cisco EoX API query
-        browser.get(live_server + reverse("cisco_api:eox_query"))
-
-        # execute the same query and execute it again
-        # enter "WS-C2960-*" as query and check that this query should be executed
-        browser.find_element_by_id("sync_cisco_eox_states_query").send_keys("WS-C2960-*")
-        browser.find_element_by_id("sync_cisco_eox_states_now").click()
-
-        # execute query to test API update
-        browser.find_element_by_id("submit").click()
-
-        # check lifecycle values of WS-C2960-48TT-L using the REST API (should be now not null)
-        direct_query_result_log = browser.find_element_by_id("direct_query_result_log").text
-        created_element = """PID": "WS-C2960-24PC-L",
-        "blacklist": false,
-        "created": true,
-        "message": null,
-        "updated": true"""
-
-        assert blacklisted_element in direct_query_result_log
-        assert created_element in direct_query_result_log
-
-        # enter an invalid query "AAA BBB" (should not be executed because only a single query is allowed)
-        browser.find_element_by_id("sync_cisco_eox_states_query").send_keys("AAA BBB")
-        browser.find_element_by_id("sync_cisco_eox_states_now").click()
-
-        # execute query to test API update
-        browser.find_element_by_id("submit").click()
-
-        # check result
-        direct_query_result_log = browser.find_element_by_id("direct_query_result_log").text
-        expected_result = "Invalid query 'AAA BBB': not executed"
-        assert expected_result in direct_query_result_log
-
-        # go back to the global settings
-        browser.get(live_server + reverse("productdb_config:change_settings"))
-
-        # disable the Cisco API console access
-        browser.find_element_by_id("id_cisco_api_enabled").click()
-        browser.find_element_by_id("submit").click()
-
-        page_text = browser.find_element_by_tag_name('body').text
-        assert "Cisco API settings" not in page_text
 
         # end session
         self.logout_user(browser)
@@ -580,16 +477,6 @@ class TestSyncLocalDatabaseWithCiscoEoxApi(BaseSeleniumTest):
 class TestSettingsPermissions(BaseSeleniumTest):
     def test_regular_user_has_no_access_to_settings_pages(self, browser, live_server):
         browser.get(live_server + reverse("productdb_config:change_settings"))
-
-        # perform login using the regular API user
-        # the user will be logged in but is again redirected to the login dialog because of missing permissions
-        self.login_user(browser, self.API_USERNAME, self.API_PASSWORD, "HTTP 403 - forbidden request")
-
-        # end session
-        browser.get(live_server + reverse("logout"))
-
-    def test_regular_user_has_no_access_to_task_settings_pages(self, browser, live_server):
-        browser.get(live_server + reverse("cisco_api:eox_query"))
 
         # perform login using the regular API user
         # the user will be logged in but is again redirected to the login dialog because of missing permissions

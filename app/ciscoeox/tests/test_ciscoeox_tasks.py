@@ -7,14 +7,14 @@ import json
 import requests
 from mixer.backend.django import mixer
 from requests import Response
-from app.ciscoeox import api_crawler
 from app.ciscoeox import tasks
 from app.ciscoeox.exception import CiscoApiCallFailed, CredentialsNotFoundException
+from app.config import utils
 from app.config.models import NotificationMessage
 from app.config.settings import AppSettings
 from app.productdb.models import Product, Vendor
+import app.ciscoeox.api_crawler as cisco_eox_api_crawler
 from django_project.celery import TaskState
-from app.config import utils
 
 pytestmark = pytest.mark.django_db
 
@@ -43,14 +43,15 @@ def use_test_api_configuration():
 class TestExecuteTaskToSynchronizeCiscoEoxStateTask:
     def mock_api_call(sel, monkeypatch):
         # mock the underlying API call
-        def mock_response():
-            r = Response()
-            r.status_code = 200
-            with open("app/ciscoeox/tests/data/cisco_eox_response_page_1_of_1.json") as f:
-                r._content = f.read().encode("utf-8")
-            return r
+        class MockSession:
+            def get(self, *args, **kwargs):
+                r = Response()
+                r.status_code = 200
+                with open("app/ciscoeox/tests/data/cisco_eox_response_page_1_of_1.json") as f:
+                    r._content = f.read().encode("utf-8")
+                return r
 
-        monkeypatch.setattr(requests, "get", lambda x, headers: mock_response())
+        monkeypatch.setattr(requests, "Session", MockSession)
 
     def test_manual_task(self, monkeypatch):
         self.mock_api_call(monkeypatch)
@@ -61,11 +62,9 @@ class TestExecuteTaskToSynchronizeCiscoEoxStateTask:
         app.set_cisco_eox_api_queries("WS-C2960-*")
 
         task = tasks.execute_task_to_synchronize_cisco_eox_states.delay(ignore_periodic_sync_flag=True)
-        expected_result = '<div style="text-align:left;"><h3>Query: WS-C2960-*</h3>The following products are ' \
-                          'affected by this update:</p><ul><li>create the Product <code>WS-C2950G-48-EI-WS</code> ' \
-                          'in the database</li><li>create the Product <code>WS-C2950T-48-SI-WS</code> in the ' \
-                          'database</li><li>create the Product <code>WS-C2950G-24-EI</code> in the database</li>' \
-                          '</ul></div>'
+        expected_result = '<p style="text-align: left;">The following queries were executed:<br>' \
+                          '<ul style="text-align: left;"><li><code>WS-C2960-*</code> (<b>affected 3 products</b>, ' \
+                          'success)</li></ul></p>'
 
         assert task is not None
         assert task.status == "SUCCESS", task.traceback
@@ -74,32 +73,21 @@ class TestExecuteTaskToSynchronizeCiscoEoxStateTask:
         assert NotificationMessage.objects.count() == 1, "Task should create a Notification Message"
         assert Product.objects.count() == 3, "Three products are part of the update"
 
-        # test no changes required
-        task = tasks.execute_task_to_synchronize_cisco_eox_states.delay(ignore_periodic_sync_flag=True)
-        expected_result = '<div style="text-align:left;"><h3>Query: WS-C2960-*</h3>No changes required.</div>'
-
-        assert task is not None
-        assert task.status == "SUCCESS", task.traceback
-        assert task.state == TaskState.SUCCESS
-        assert task.info.get("status_message") == expected_result
-        assert NotificationMessage.objects.count() == 2, "Task should create a Notification Message"
-        assert Product.objects.count() == 3, "Three products are part of the update"
-
         # test update required
         p = Product.objects.get(product_id="WS-C2950G-24-EI")
         p.eox_update_time_stamp = datetime.date(1999, 1, 1)
         p.save()
 
         task = tasks.execute_task_to_synchronize_cisco_eox_states.delay(ignore_periodic_sync_flag=True)
-        expected_result = '<div style="text-align:left;"><h3>Query: WS-C2960-*</h3>The following products are ' \
-                          'affected by this update:</p><ul><li>update the Product data for <code>WS-C2950G-24-EI' \
-                          '</code></li></ul></div>'
+        expected_result = '<p style="text-align: left;">The following queries were executed:<br>' \
+                          '<ul style="text-align: left;"><li><code>WS-C2960-*</code> (<b>affected 3 products</b>, ' \
+                          'success)</li></ul></p>'
 
         assert task is not None
         assert task.status == "SUCCESS", task.traceback
         assert task.state == TaskState.SUCCESS
         assert task.info.get("status_message") == expected_result
-        assert NotificationMessage.objects.count() == 3, "Task should create a Notification Message"
+        assert NotificationMessage.objects.count() == 2, "Task should create a Notification Message"
         assert Product.objects.count() == 3, "Three products are part of the update"
 
     def test_manual_task_with_single_blacklist_entry(self, monkeypatch):
@@ -112,11 +100,12 @@ class TestExecuteTaskToSynchronizeCiscoEoxStateTask:
         app.set_product_blacklist_regex("WS-C2950G-24-EI")
 
         task = tasks.execute_task_to_synchronize_cisco_eox_states.delay(ignore_periodic_sync_flag=True)
-        expected_result = '<div style="text-align:left;"><h3>Query: WS-C2960-*</h3>The following products are ' \
-                          'affected by this update:</p><ul><li>create the Product <code>WS-C2950G-48-EI-WS</code> ' \
-                          'in the database</li><li>create the Product <code>WS-C2950T-48-SI-WS</code> in the ' \
-                          'database</li><li>Product data for <code>WS-C2950G-24-EI</code> ignored</li>' \
-                          '</ul></div>'
+        expected_result = '<p style="text-align: left;">The following queries were executed:<br>' \
+                          '<ul style="text-align: left;"><li><code>WS-C2960-*</code> (<b>affected 3 products</b>, ' \
+                          'success)</li></ul>' \
+                          '<br>The following comment/errors occurred during the synchronization:<br>' \
+                          '<ul style="text-align: left;">' \
+                          '<li><code>WS-C2950G-24-EI</code>:  Product record ignored</li></ul></p>'
 
         assert task is not None
         assert task.status == "SUCCESS", task.traceback
@@ -124,6 +113,8 @@ class TestExecuteTaskToSynchronizeCiscoEoxStateTask:
         assert task.info.get("status_message") == expected_result
         assert NotificationMessage.objects.count() == 1, "Task should create a Notification Message"
         assert Product.objects.count() == 2
+        nm = NotificationMessage.objects.first()
+        assert nm.type == NotificationMessage.MESSAGE_SUCCESS, "Incomplete configuration, should throw a warning "
 
     def test_manual_task_with_multiple_blacklist_entries(self, monkeypatch):
         self.mock_api_call(monkeypatch)
@@ -135,11 +126,11 @@ class TestExecuteTaskToSynchronizeCiscoEoxStateTask:
         app.set_product_blacklist_regex("WS-C2950G-48-EI-WS;WS-C2950G-24-EI")
 
         task = tasks.execute_task_to_synchronize_cisco_eox_states.delay(ignore_periodic_sync_flag=True)
-        expected_result = '<div style="text-align:left;"><h3>Query: WS-C2960-*</h3>The following products are ' \
-                          'affected by this update:</p><ul><li>Product data for <code>WS-C2950G-48-EI-WS</code> ' \
-                          'ignored</li><li>create the Product <code>WS-C2950T-48-SI-WS</code> in the ' \
-                          'database</li><li>Product data for <code>WS-C2950G-24-EI</code> ignored</li>' \
-                          '</ul></div>'
+        expected_result = '<p style="text-align: left;">The following queries were executed:<br>' \
+                          '<ul style="text-align: left;"><li><code>WS-C2960-*</code> (success)</li></ul><br>' \
+                          'The following comment/errors occurred during the synchronization:<br>' \
+                          '<ul style="text-align: left;"><li><code>WS-C2950G-24-EI</code>:  Product record ignored' \
+                          '</li></ul></p>'
 
         assert task is not None
         assert task.status == "SUCCESS", task.traceback
@@ -147,6 +138,8 @@ class TestExecuteTaskToSynchronizeCiscoEoxStateTask:
         assert task.info.get("status_message") == expected_result
         assert NotificationMessage.objects.count() == 1, "Task should create a Notification Message"
         assert Product.objects.count() == 1, "Only a single product is imported"
+        nm = NotificationMessage.objects.first()
+        assert nm.type == NotificationMessage.MESSAGE_SUCCESS, "Incomplete configuration, should throw a warning "
 
     def test_periodic_task_without_queries(self, monkeypatch):
         self.mock_api_call(monkeypatch)
@@ -163,13 +156,17 @@ class TestExecuteTaskToSynchronizeCiscoEoxStateTask:
         assert task.state == TaskState.SUCCESS
         assert task.info.get("status_message") == "No Cisco EoX API queries configured."
         assert NotificationMessage.objects.count() == 1, "Task should create a Notification Message"
+        nm = NotificationMessage.objects.first()
+        assert nm.type == NotificationMessage.MESSAGE_WARNING, "Incomplete configuration, should throw a warning " \
+                                                               "message"
 
     def test_api_call_error(self, monkeypatch):
         # force API failure
-        def mock_response():
-            raise CiscoApiCallFailed("The API is broken")
+        class MockSession:
+            def get(self, *args, **kwargs):
+                raise CiscoApiCallFailed("The API is broken")
 
-        monkeypatch.setattr(api_crawler, "update_cisco_eox_database", lambda query: mock_response())
+        monkeypatch.setattr(requests, "Session", MockSession)
 
         # test automatic trigger
         app = AppSettings()
@@ -178,19 +175,27 @@ class TestExecuteTaskToSynchronizeCiscoEoxStateTask:
 
         task = tasks.execute_task_to_synchronize_cisco_eox_states.delay()
 
+        expected_status_message = '<p style="text-align: left;">The following queries were executed:<br>' \
+                                  '<ul style="text-align: left;">' \
+                                  '<li class="text-danger"><code>yxcz</code> (failed, cannot contact API endpoint ' \
+                                  'at https://api.cisco.com/supporttools/eox/rest/5/EOXByProductID/1/yxcz)</li>' \
+                                  '</ul></p>'
+
         assert task is not None
         assert task.status == "SUCCESS", task.traceback
         assert task.state == TaskState.SUCCESS
-        assert task.info.get("status_message", None) is None
-        assert task.info.get("error_message") == "Cisco EoX API call failed (The API is broken)"
+        assert task.info.get("status_message") == expected_status_message
         assert NotificationMessage.objects.count() == 1, "Task should create a Notification Message"
+        nm = NotificationMessage.objects.first()
+        assert nm.type == NotificationMessage.MESSAGE_ERROR, "Should be an error message, because all queries failed"
 
     def test_credentials_not_found(self, monkeypatch):
         # force API failure
-        def mock_response():
-            raise CredentialsNotFoundException("Something is wrong with the credentials handling")
+        class MockSession:
+            def get(self, *args, **kwargs):
+                raise CredentialsNotFoundException("Something is wrong with the credentials handling")
 
-        monkeypatch.setattr(api_crawler, "update_cisco_eox_database", lambda query: mock_response())
+        monkeypatch.setattr(requests, "Session", MockSession)
 
         # test automatic trigger
         app = AppSettings()
@@ -199,20 +204,26 @@ class TestExecuteTaskToSynchronizeCiscoEoxStateTask:
 
         task = tasks.execute_task_to_synchronize_cisco_eox_states.delay()
 
+        expected_status_message = '<p style="text-align: left;">The following queries were executed:<br>' \
+                                  '<ul style="text-align: left;"><li class="text-danger"><code>yxcz</code> ' \
+                                  '(failed, cannot contact API endpoint at ' \
+                                  'https://api.cisco.com/supporttools/eox/rest/5/EOXByProductID/1/yxcz)</li></ul></p>'
+
         assert task is not None
         assert task.status == "SUCCESS", task.traceback
         assert task.state == TaskState.SUCCESS
-        assert task.info.get("status_message", None) is None
-        assert task.info.get("error_message") == "Invalid credentials for Cisco EoX API or insufficient access " \
-                                                 "rights (Something is wrong with the credentials handling)"
+        assert task.info.get("status_message") == expected_status_message
         assert NotificationMessage.objects.count() == 1, "Task should create a Notification Message"
+        nm = NotificationMessage.objects.first()
+        assert nm.type == NotificationMessage.MESSAGE_ERROR, "Should be an error message, because all queries failed"
 
     def test_api_check_failed(self, monkeypatch):
         # force API failure
-        def mock_response():
-            raise Exception("The API is broken")
+        class MockSession:
+            def get(self, *args, **kwargs):
+                raise Exception("The API is broken")
 
-        monkeypatch.setattr(requests, "get", lambda x, headers: mock_response())
+        monkeypatch.setattr(requests, "Session", MockSession)
 
         # test automatic trigger
         app = AppSettings()
@@ -221,14 +232,18 @@ class TestExecuteTaskToSynchronizeCiscoEoxStateTask:
 
         task = tasks.execute_task_to_synchronize_cisco_eox_states.delay()
 
+        expected_status_message = "The following queries were executed: <code>yxcz</code>\n" \
+                                  "The following queries were executed:<br><ul><li class=\"text-danger\">yxcz " \
+                                  "(failed, cannot contact API endpoint at " \
+                                  "https://api.cisco.com/supporttools/eox/rest/5/EOXByProductID/1/yxcz)</li></ul>"
+
         assert task is not None
         assert task.status == "SUCCESS", task.traceback
         assert task.state == TaskState.SUCCESS
-        assert task.info.get("status_message", None) is None
-        assert task.info.get("error_message") == "Cannot access the Cisco API. Please ensure that the server is " \
-                                                 "connected to the internet and that the authentication settings are " \
-                                                 "valid."
+        assert task.info.get("status_message") == expected_status_message
         assert NotificationMessage.objects.count() == 1, "Task should create a Notification Message"
+        nm = NotificationMessage.objects.first()
+        assert nm.type == NotificationMessage.MESSAGE_ERROR, "Should be an error message, because all queries failed"
 
     def test_periodic_task_enabled_state(self, monkeypatch):
         self.mock_api_call(monkeypatch)
@@ -252,9 +267,12 @@ class TestExecuteTaskToSynchronizeCiscoEoxStateTask:
         assert task.state == TaskState.SUCCESS
         assert task.info.get("status_message") != "task not enabled"
 
-    def test_api_not_reachable_while_task_synchronization(self, monkeypatch):
-        monkeypatch.setattr(utils, "check_cisco_eox_api_access", lambda x, y,z: False)
-        expected_detail_msg = "The synchronization with the Cisco EoX API was not started."
+    def test_execute_task_to_synchronize_cisco_eox_states_with_failed_api_query(self, monkeypatch):
+        def raise_ciscoapicallfailed():
+            raise CiscoApiCallFailed("Cisco API call failed message")
+
+        monkeypatch.setattr(utils, "check_cisco_eox_api_access", lambda x, y, z: True)
+        monkeypatch.setattr(cisco_eox_api_crawler, "get_raw_api_data", lambda query: raise_ciscoapicallfailed())
 
         # test automatic trigger
         app = AppSettings()
@@ -263,15 +281,17 @@ class TestExecuteTaskToSynchronizeCiscoEoxStateTask:
 
         task = tasks.execute_task_to_synchronize_cisco_eox_states.delay()
 
+        expected_status_message = "The following queries were executed: <code>yxcz</code>\n" \
+                                  "The following queries were executed:<br><ul><li class=\"text-danger\">" \
+                                  "yxcz (failed, Cisco API call failed message)</li></ul>"
+
         assert task is not None
         assert task.status == "SUCCESS", task.traceback
         assert task.state == TaskState.SUCCESS
-        assert task.info.get("status_message", None) is None
-        assert task.info.get("error_message") == "Cannot access the Cisco API. Please ensure that the server is " \
-                                                 "connected to the internet and that the authentication settings are " \
-                                                 "valid."
+        assert task.info.get("status_message") == expected_status_message
         assert NotificationMessage.objects.count() == 1, "Task should create a Notification Message"
-        assert NotificationMessage.objects.all().first().detailed_message == expected_detail_msg
+        nm = NotificationMessage.objects.first()
+        assert nm.type == NotificationMessage.MESSAGE_ERROR, "Should be an error message, because all queries failed"
 
 
 @pytest.mark.usefixtures("set_celery_always_eager")

@@ -122,7 +122,7 @@ if os.getenv("PDB_DEBUG", False) or os.getenv("DEBUG", False):
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "PlsChgMe")
 
 # configure database settings
-DATABASE_NAME = os.getenv("PDB_DATABASE_NAME", os.getenv("POSTGRES_DB", "postgres"))
+DATABASE_NAME = os.getenv("PDB_DATABASE_NAME", os.getenv("POSTGRES_DB", "productdb"))
 DATABASE_USER = os.getenv("PDB_DATABASE_USER", os.getenv("POSTGRES_USER", "postgres"))
 DATABASE_PASSWORD = os.getenv("PDB_DATABASE_PASSWORD", os.getenv("POSTGRES_PASSWORD", ""))
 DATABASE_HOST = os.getenv("PDB_DATABASE_HOST", "127.0.0.1")
@@ -206,7 +206,7 @@ if os.getenv("PDB_DEBUG"):
     CELERY_ALWAYS_EAGER = True
     CELERY_EAGER_PROPAGATES_EXCEPTIONS = True
 
-# Force HTTPs (always used in production)
+# Force HTTPs (always used in production) - disable for testing using the environment variable PDB_TESTING=1
 if not os.getenv("PDB_DEBUG") and not os.getenv("PDB_TESTING", False):
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True

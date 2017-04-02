@@ -25,6 +25,11 @@ class BaseCiscoApiConsole:
     current_access_token = None
     http_auth_header = None
     token_expire_datetime = datetime.datetime.now()
+    _session = None
+
+    def __del__(self):
+        if self._session is not None:
+            self._session.close()
 
     def __repr__(self):
         return {
@@ -193,8 +198,11 @@ class BaseCiscoApiConsole:
         return True
 
     def get_request(self, url):
+        if self._session is None:
+            self._session = requests.Session()
+
         try:
-            response = requests.get(url, headers=self.http_auth_header)
+            response = self._session.get(url, headers=self.http_auth_header)
 
         except Exception as ex:
             logger.error("cannot contact API endpoint at %s" % url, exc_info=True)
@@ -206,6 +214,7 @@ class BaseCiscoApiConsole:
 
         except:
             logger.debug(response.text)
+            print(response.text)
             logger.error("unexpected response from API endpoint (malformed JSON content)")
             raise CiscoApiCallFailed("unexpected content from API endpoint")
 

@@ -1,3 +1,4 @@
+import logging
 from app.ciscoeox.base_api import CiscoHelloApi, CiscoEoxApi
 
 CISCO_EOX_API_TASK_NAME = "Cisco EoX API crawler"
@@ -21,7 +22,8 @@ def check_cisco_hello_api_access(client_id, client_secret, drop_credentials=True
 
         return True
 
-    except Exception:
+    except Exception as ex:
+        logging.error("Cisco Hello API test access failed (%s)" % ex, exc_info=True)
         return False
 
 
@@ -43,5 +45,6 @@ def check_cisco_eox_api_access(client_id, client_secret, drop_credentials=True):
 
         return True
 
-    except Exception:
+    except Exception as ex:
+        logging.error("Cisco EoX API test access failed (%s)" % ex, exc_info=True)
         return False

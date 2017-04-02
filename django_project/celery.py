@@ -79,7 +79,7 @@ def set_meta_data_for_task(task_id, title, redirect_to=None, auto_redirect=True)
 
 
 @app.task
-def hello_task():
+def hello_task():  # ignore for coverage
     logging.info("Hello Task called")
     return {
         "hello": "task"

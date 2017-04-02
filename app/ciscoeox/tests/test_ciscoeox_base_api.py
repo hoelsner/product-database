@@ -287,13 +287,14 @@ class TestCiscoHelloApi:
         assert json_result == {'response': 'Hello World'}
 
     def test_offline_hello_api_call(self, monkeypatch):
-        def get_endpoint_result():
-            r = Response()
-            r.status_code = 200
-            r._content = json.dumps({'response': 'Hello World'}).encode("utf-8")
-            return r
+        class MockSession:
+            def get(self, *args, **kwargs):
+                r = Response()
+                r.status_code = 200
+                r._content = json.dumps({'response': 'Hello World'}).encode("utf-8")
+                return r
 
-        monkeypatch.setattr(requests, "get", lambda x, headers: get_endpoint_result())
+        monkeypatch.setattr(requests, "Session", MockSession)
 
         cisco_hello_api = CiscoHelloApi()
         monkeypatch.setattr(cisco_hello_api, "create_temporary_access_token", lambda force_new_token=True: mock_access_token_generation())
@@ -309,13 +310,14 @@ class TestCiscoHelloApi:
         assert json_result == {'response': 'Hello World'}
 
     def test_offline_hello_api_call_with_malformed_result(self, monkeypatch):
-        def get_endpoint_result():
-            r = Response()
-            r.status_code = 200
-            r._content = "My invalid JSON string".encode("utf-8")
-            return r
+        class MockSession:
+            def get(self, *args, **kwargs):
+                r = Response()
+                r.status_code = 200
+                r._content = "My invalid JSON string".encode("utf-8")
+                return r
 
-        monkeypatch.setattr(requests, "get", lambda x, headers: get_endpoint_result())
+        monkeypatch.setattr(requests, "Session", MockSession)
 
         cisco_hello_api = CiscoHelloApi()
         monkeypatch.setattr(cisco_hello_api, "create_temporary_access_token", lambda force_new_token=True: mock_access_token_generation())
@@ -327,10 +329,11 @@ class TestCiscoHelloApi:
         assert exinfo.match("unexpected content from API endpoint")
 
     def test_offline_hello_api_call_with_connection_issue(self, monkeypatch):
-        def get_endpoint_result():
-            raise Exception()
+        class MockSession:
+            def get(self, *args, **kwargs):
+                raise Exception()
 
-        monkeypatch.setattr(requests, "get", lambda x, headers: get_endpoint_result())
+        monkeypatch.setattr(requests, "Session", MockSession)
 
         cisco_hello_api = CiscoHelloApi()
         monkeypatch.setattr(cisco_hello_api, "create_temporary_access_token", lambda force_new_token=True: mock_access_token_generation())
@@ -440,14 +443,15 @@ class TestCiscoEoxApi:
         assert cisco_eox_api.get_eox_records() == self.EXPECTED_VALID_TEST_QUERY_RESPONSE["EOXRecord"]
 
     def test_offline_query_product_single_page_results(self, monkeypatch):
-        def mock_response():
-            r = Response()
-            r.status_code = 200
-            with open("app/ciscoeox/tests/data/cisco_eox_response_page_1_of_1.json") as f:
-                r._content = f.read().encode("utf-8")
-            return r
+        class MockSession:
+            def get(self, *args, **kwargs):
+                r = Response()
+                r.status_code = 200
+                with open("app/ciscoeox/tests/data/cisco_eox_response_page_1_of_1.json") as f:
+                    r._content = f.read().encode("utf-8")
+                return r
 
-        monkeypatch.setattr(requests, "get", lambda x, headers: mock_response())
+        monkeypatch.setattr(requests, "Session", MockSession)
 
         cisco_eox_api = CiscoEoxApi()
         monkeypatch.setattr(cisco_eox_api, "create_temporary_access_token", lambda force_new_token=True: mock_access_token_generation())
@@ -476,21 +480,24 @@ class TestCiscoEoxApi:
         assert cisco_eox_api.get_error_description(jresult["EOXRecord"][0]) == ""
 
     def test_offline_query_product_multiple_page_results(self, monkeypatch):
-        def mock_response_page_1():
-            r = Response()
-            r.status_code = 200
-            with open("app/ciscoeox/tests/data/cisco_eox_response_page_1_of_2.json") as f:
-                r._content = f.read().encode("utf-8")
-            return r
+        class MockSessionPageOne:
+            _first_call = False
 
-        def mock_response_page_2():
-            r = Response()
-            r.status_code = 200
-            with open("app/ciscoeox/tests/data/cisco_eox_response_page_2_of_2.json") as f:
-                r._content = f.read().encode("utf-8")
-            return r
+            def get(self, *args, **kwargs):
+                r = Response()
+                r.status_code = 200
+                if not self._first_call:
+                    with open("app/ciscoeox/tests/data/cisco_eox_response_page_1_of_2.json") as f:
+                        r._content = f.read().encode("utf-8")
+                    self._first_call = True
 
-        monkeypatch.setattr(requests, "get", lambda x, headers: mock_response_page_1())
+                else:
+                    with open("app/ciscoeox/tests/data/cisco_eox_response_page_2_of_2.json") as f:
+                        r._content = f.read().encode("utf-8")
+
+                return r
+
+        monkeypatch.setattr(requests, "Session", MockSessionPageOne)
 
         cisco_eox_api = CiscoEoxApi()
         monkeypatch.setattr(cisco_eox_api, "create_temporary_access_token", lambda force_new_token=True: mock_access_token_generation())
@@ -517,8 +524,6 @@ class TestCiscoEoxApi:
         assert cisco_eox_api.get_api_error_message() == "no error"
         assert cisco_eox_api.get_error_description(jresult["EOXRecord"][0]) == ""
         assert cisco_eox_api.get_error_description(jresult["EOXRecord"][0]) == ""
-
-        monkeypatch.setattr(requests, "get", lambda x, headers: mock_response_page_2())
 
         jresult = cisco_eox_api.query_product(self.TEST_QUERY, 2)
 
@@ -562,14 +567,15 @@ class TestCiscoEoxApi:
                                                         "ID(s): NOTHING (SSA_ERR_026)"
 
     def test_offline_query_product_no_results(self, monkeypatch):
-        def mock_response():
-            r = Response()
-            r.status_code = 200
-            with open("app/ciscoeox/tests/data/cisco_eox_no_result_response.json") as f:
-                r._content = f.read().encode("utf-8")
-            return r
+        class MockSession:
+            def get(self, *args, **kwargs):
+                r = Response()
+                r.status_code = 200
+                with open("app/ciscoeox/tests/data/cisco_eox_no_result_response.json") as f:
+                    r._content = f.read().encode("utf-8")
+                return r
 
-        monkeypatch.setattr(requests, "get", lambda x, headers: mock_response())
+        monkeypatch.setattr(requests, "Session", MockSession)
 
         cisco_eox_api = CiscoEoxApi()
         monkeypatch.setattr(cisco_eox_api, "create_temporary_access_token", lambda force_new_token=True: mock_access_token_generation())
