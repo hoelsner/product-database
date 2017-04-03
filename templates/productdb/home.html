@@ -9,44 +9,57 @@
 {% block main_content %}
     <div class="row">
         {% bootstrap_messages %}
-        <div class="col-lg-9 col-md-8">
+        <div class="col-lg-6 col-md-8 col-md-offset-2 col-lg-offset-3">
             <div class="jumbotron" style="padding-bottom: 25px;">
-                <h1>
-                    <i class="fa fa-database"></i>
-                    Product Database
-                </h1>
-                {% if TB_HOMEPAGE_TEXT_BEFORE_FAVORITE_ACTIONS %}
-                    <div>
-                        {{ TB_HOMEPAGE_TEXT_BEFORE_FAVORITE_ACTIONS.html_content|render_markdown }}
-                    </div>
-                {% endif %}
-
-                <div class="btn-toolbar" role="toolbar" style="margin-top: 25px; margin-bottom: 25px;">
-                    <div class="btn-group" role="group">
-                        <a class="btn btn-default" role="button" href="{% url 'productdb:browse_vendor_products' %}">
-                            <i class="fa fa-cube"></i>&nbsp;&nbsp;
-                            Products by Vendor
-                        </a>
-                        <a class="btn btn-default" role="button" href="{% url 'productdb:list-product_lists' %}">
+                <div class="col-md-12">
+                    <h1>
+                        <i class="fa fa-database"></i>
+                        Product Database
+                    </h1>
+                    {% if TB_HOMEPAGE_TEXT_BEFORE_FAVORITE_ACTIONS %}
+                        <div>
+                            {{ TB_HOMEPAGE_TEXT_BEFORE_FAVORITE_ACTIONS.html_content|render_markdown }}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="col-md-10 col-lg-8 col-md-offset-1 col-lg-offset-2">
+                    <form method="get" action="{% url "productdb:all_products" %}" class="form-inline" style="text-align: center; margin-top: 25px; margin-bottom: 25px; white-space: nowrap;">
+                        <span class="hidden-xs">
+                            <div class="input-group" style="width: 88%;">
+                                <input name="search" id="search_text_field" class="form-control" placeholder="search database...">
+                            </div>
+                            <button class="btn btn-default" id="submit_search" type="submit"><i class="fa fa-search" aria-hidden="true"></i></button>
+                        </span>
+                        <span class="visible-xs">
+                            <div class="input-group" style="width: 100%;">
+                                <input name="search" id="search_text_field" class="form-control" placeholder="search database...">
+                            </div>
+                        </span>
+                    </form>
+                </div>
+                <div class="col-md-12" style="margin-bottom: 15px">
+                    <div class="text-center">
+                        <a class="btn btn-default btn-sm" role="button" href="{% url 'productdb:list-product_lists' %}">
                             <i class="fa fa-list-ul"></i>&nbsp;&nbsp;
                             Product Lists
                         </a>
-                        <a class="btn btn-default" role="button" href="{% url 'productdb:list-product_checks' %}">
+                        <a class="btn btn-default btn-sm" role="button" href="{% url 'productdb:list-product_checks' %}">
                             <i class="fa fa-list-ul"></i>&nbsp;&nbsp;
                             Product Checks
                         </a>
-                        <a class="btn btn-default" role="button" href="{% url 'productdb:create-product_check' %}">
+                        <a class="btn btn-default btn-sm" role="button" href="{% url 'productdb:create-product_check' %}">
                             <i class="fa fa-cogs"></i>&nbsp;&nbsp;
                             New Product/EoL check
                         </a>
                     </div>
                 </div>
-
-                {% if TB_HOMEPAGE_TEXT_AFTER_FAVORITE_ACTIONS %}
-                    <div>
-                        {{ TB_HOMEPAGE_TEXT_AFTER_FAVORITE_ACTIONS.html_content|render_markdown }}
-                    </div>
-                {% endif %}
+                <div class="col-md-12">
+                    {% if TB_HOMEPAGE_TEXT_AFTER_FAVORITE_ACTIONS %}
+                        <div>
+                            {{ TB_HOMEPAGE_TEXT_AFTER_FAVORITE_ACTIONS.html_content|render_markdown }}
+                        </div>
+                    {% endif %}
+                </div>
             </div>
             {% if recent_events|length != 0 %}
                 <div class="panel panel-default">
@@ -66,114 +79,116 @@
                 </div>
             {% endif %}
         </div>
-        <div class="col-lg-3 col-md-4">
-            <div class="panel panel-primary">
-                <div class="panel-heading">
-                    <h4>
-                        <i class="fa fa-tachometer"></i>&nbsp;
-                        Content Overview
-                    </h4>
-                </div>
-                <div class="panel-footer">
-                    <span class="pull-left">
-                        <i class="fa fa-cube"></i>&nbsp;
-                        Vendors
-                    </span>
-                    <span class="pull-right text-right">
-                        {{ vendors|join:"<br>"|safe }}
-                    </span>
-                    <div class="clearfix"></div>
-                </div>
-                <div class="panel-footer">
-                    <span class="pull-left">
-                        <i class="fa fa-cubes"></i>&nbsp;
-                        All Products
-                    </span>
-                    <span class="pull-right">
-                        {{ product_count }}
-                    </span>
-                    <div class="clearfix"></div>
-                </div>
-                <div class="panel-footer">
-                    <span class="pull-left">
-                        <i class="fa fa-cubes"></i>&nbsp;
-                        Products with Lifecycle Data
-                    </span>
-                    <span class="pull-right">
-                        {{ product_lifecycle_count }}
-                    </span>
-                    <div class="clearfix"></div>
-                    <div style="padding-left: 15%; padding-top: 10px;">
+        {% if user.is_superuser %}
+            <div class="col-lg-4 col-md-4 col-md-offset-4 col-lg-offset-4">
+                <div class="panel panel-primary">
+                    <div class="panel-heading">
+                        <h4>
+                            <i class="fa fa-tachometer"></i>&nbsp;
+                            Content Overview
+                        </h4>
+                    </div>
+                    <div class="panel-footer">
                         <span class="pull-left">
-                            <i class="fa fa-cubes"></i>&nbsp;
-                            No EoL announcement
+                            <i class="fa fa-cube"></i>&nbsp;
+                            Vendors
                         </span>
-                        <span class="pull-right">
-                            {{ product_no_eol_announcement_count }}
+                        <span class="pull-right text-right">
+                            {{ vendors|join:"<br>"|safe }}
                         </span>
                         <div class="clearfix"></div>
                     </div>
-                    <div style="padding-left: 15%">
+                    <div class="panel-footer">
                         <span class="pull-left">
                             <i class="fa fa-cubes"></i>&nbsp;
-                            EoL announcement
+                            All Products
                         </span>
                         <span class="pull-right">
-                            {{ product_eol_announcement_count }}
+                            {{ product_count }}
                         </span>
                         <div class="clearfix"></div>
                     </div>
-                    <div style="padding-left: 15%">
+                    <div class="panel-footer">
                         <span class="pull-left">
                             <i class="fa fa-cubes"></i>&nbsp;
-                            End-of-Sale
+                            Products with Lifecycle Data
                         </span>
                         <span class="pull-right">
-                            {{ product_eos_count }}
+                            {{ product_lifecycle_count }}
+                        </span>
+                        <div class="clearfix"></div>
+                        <div style="padding-left: 15%; padding-top: 10px;">
+                            <span class="pull-left">
+                                <i class="fa fa-cubes"></i>&nbsp;
+                                No EoL announcement
+                            </span>
+                            <span class="pull-right">
+                                {{ product_no_eol_announcement_count }}
+                            </span>
+                            <div class="clearfix"></div>
+                        </div>
+                        <div style="padding-left: 15%">
+                            <span class="pull-left">
+                                <i class="fa fa-cubes"></i>&nbsp;
+                                EoL announcement
+                            </span>
+                            <span class="pull-right">
+                                {{ product_eol_announcement_count }}
+                            </span>
+                            <div class="clearfix"></div>
+                        </div>
+                        <div style="padding-left: 15%">
+                            <span class="pull-left">
+                                <i class="fa fa-cubes"></i>&nbsp;
+                                End-of-Sale
+                            </span>
+                            <span class="pull-right">
+                                {{ product_eos_count }}
+                            </span>
+                            <div class="clearfix"></div>
+                        </div>
+                        <div style="padding-left: 15%">
+                            <span class="pull-left">
+                                <i class="fa fa-cubes"></i>&nbsp;
+                                End-of-Life
+                            </span>
+                            <span class="pull-right">
+                                {{ product_eol_count }}
+                            </span>
+                            <div class="clearfix"></div>
+                        </div>
+                    </div>
+                    <div class="panel-footer">
+                        <span class="pull-left">
+                            <i class="fa fa-cubes"></i>&nbsp;
+                            Products with List Price
+                        </span>
+                        <span class="pull-right">
+                            {{ product_price_count }}
                         </span>
                         <div class="clearfix"></div>
                     </div>
-                    <div style="padding-left: 15%">
+                    <div class="panel-footer">
                         <span class="pull-left">
-                            <i class="fa fa-cubes"></i>&nbsp;
-                            End-of-Life
+                            <i class="fa fa-bar-chart" aria-hidden="true"></i>&nbsp;
+                            Product Checks
                         </span>
                         <span class="pull-right">
-                            {{ product_eol_count }}
+                            {{ STAT_AMOUNT_OF_PRODUCT_CHECKS }}
+                        </span>
+                        <div class="clearfix"></div>
+                        <span class="pull-left">
+                            <i class="fa fa-bar-chart" aria-hidden="true"></i>&nbsp;
+                            Unique Products checked
+                        </span>
+                        <span class="pull-right">
+                            {{ STAT_AMOUNT_OF_UNIQUE_PRODUCT_CHECK_ENTRIES }}
                         </span>
                         <div class="clearfix"></div>
                     </div>
-                </div>
-                <div class="panel-footer">
-                    <span class="pull-left">
-                        <i class="fa fa-cubes"></i>&nbsp;
-                        Products with List Price
-                    </span>
-                    <span class="pull-right">
-                        {{ product_price_count }}
-                    </span>
-                    <div class="clearfix"></div>
-                </div>
-                <div class="panel-footer">
-                    <span class="pull-left">
-                        <i class="fa fa-bar-chart" aria-hidden="true"></i>&nbsp;
-                        Product Checks
-                    </span>
-                    <span class="pull-right">
-                        {{ STAT_AMOUNT_OF_PRODUCT_CHECKS }}
-                    </span>
-                    <div class="clearfix"></div>
-                    <span class="pull-left">
-                        <i class="fa fa-bar-chart" aria-hidden="true"></i>&nbsp;
-                        Unique Products checked
-                    </span>
-                    <span class="pull-right">
-                        {{ STAT_AMOUNT_OF_UNIQUE_PRODUCT_CHECK_ENTRIES }}
-                    </span>
-                    <div class="clearfix"></div>
                 </div>
             </div>
-        </div>
+        {% endif %}
         {% if DEBUG_MODE %}
             <div class="col-md-12">
                 <p class="text-danger">Debug Mode enabled ({{ REQUEST_IP }})</p>

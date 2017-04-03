@@ -99,6 +99,28 @@ class TestCommonAPIEndpoint:
             assert response.status_code == status.HTTP_403_FORBIDDEN
             assert response.json() == {'detail': 'You do not have permission to perform this action.'}
 
+    def test_xml_renderer(self):
+        """smoke test to verify, that the XML renderer works. Only an XML renderer is implemented therefore write
+        operations using XML are not possible"""
+        for e in range(1, 50):
+            p = mixer.blend("productdb.Product")
+
+        test_queries = [
+            REST_VENDOR_LIST,
+            REST_PRODUCT_GROUP_LIST,
+            REST_PRODUCTLIST_LIST,
+            REST_PRODUCTMIGRATIONSOURCE_LIST,
+            REST_PRODUCTMIGRATIONOPTION_LIST,
+        ]
+
+        client = APIClient()
+        client.login(**AUTH_USER)
+
+        for url in test_queries:
+            response = client.get(url + "?format=xml")
+
+            assert response.status_code == status.HTTP_200_OK
+
     def test_page_size(self):
         for e in range(1, 50):
             mixer.blend("productdb.Product")

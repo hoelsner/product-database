@@ -126,16 +126,21 @@ class TestExecuteTaskToSynchronizeCiscoEoxStateTask:
         app.set_product_blacklist_regex("WS-C2950G-48-EI-WS;WS-C2950G-24-EI")
 
         task = tasks.execute_task_to_synchronize_cisco_eox_states.delay(ignore_periodic_sync_flag=True)
-        expected_result = '<p style="text-align: left;">The following queries were executed:<br>' \
-                          '<ul style="text-align: left;"><li><code>WS-C2960-*</code> (success)</li></ul><br>' \
-                          'The following comment/errors occurred during the synchronization:<br>' \
-                          '<ul style="text-align: left;"><li><code>WS-C2950G-24-EI</code>:  Product record ignored' \
-                          '</li></ul></p>'
+        expected_result = [
+            '<p style="text-align: left;">The following queries were executed:<br>'
+            '<ul style="text-align: left;"><li><code>WS-C2960-*</code> (<b>affected 3 products</b>, '
+            'success)</li></ul>',
+            '<br>The following comment/errors occurred during the synchronization:'
+            '<br><ul style="text-align: left;">',
+            '<li><code>WS-C2950G-24-EI</code>:  Product record ignored</li>',
+            '<li><code>WS-C2950G-48-EI-WS</code>:  Product record ignored</li>'
+        ]
 
         assert task is not None
         assert task.status == "SUCCESS", task.traceback
         assert task.state == TaskState.SUCCESS
-        assert task.info.get("status_message") == expected_result
+        for er in expected_result:
+            assert er in task.info.get("status_message")
         assert NotificationMessage.objects.count() == 1, "Task should create a Notification Message"
         assert Product.objects.count() == 1, "Only a single product is imported"
         nm = NotificationMessage.objects.first()
@@ -232,10 +237,10 @@ class TestExecuteTaskToSynchronizeCiscoEoxStateTask:
 
         task = tasks.execute_task_to_synchronize_cisco_eox_states.delay()
 
-        expected_status_message = "The following queries were executed: <code>yxcz</code>\n" \
-                                  "The following queries were executed:<br><ul><li class=\"text-danger\">yxcz " \
+        expected_status_message = "<p style=\"text-align: left;\">The following queries were executed:<br>" \
+                                  "<ul style=\"text-align: left;\"><li class=\"text-danger\"><code>yxcz</code> " \
                                   "(failed, cannot contact API endpoint at " \
-                                  "https://api.cisco.com/supporttools/eox/rest/5/EOXByProductID/1/yxcz)</li></ul>"
+                                  "https://api.cisco.com/supporttools/eox/rest/5/EOXByProductID/1/yxcz)</li></ul></p>"
 
         assert task is not None
         assert task.status == "SUCCESS", task.traceback
@@ -281,9 +286,9 @@ class TestExecuteTaskToSynchronizeCiscoEoxStateTask:
 
         task = tasks.execute_task_to_synchronize_cisco_eox_states.delay()
 
-        expected_status_message = "The following queries were executed: <code>yxcz</code>\n" \
-                                  "The following queries were executed:<br><ul><li class=\"text-danger\">" \
-                                  "yxcz (failed, Cisco API call failed message)</li></ul>"
+        expected_status_message = "<p style=\"text-align: left;\">The following queries were executed:<br>" \
+                                  "<ul style=\"text-align: left;\"><li class=\"text-danger\">" \
+                                  "<code>yxcz</code> (failed, Cisco API call failed message)</li></ul></p>"
 
         assert task is not None
         assert task.status == "SUCCESS", task.traceback

@@ -436,6 +436,35 @@ class TestProductLists(BaseSeleniumTest):
 @pytest.mark.usefixtures("import_default_text_blocks")
 @selenium_test
 class TestProductDatabaseViews(BaseSeleniumTest):
+    def test_search_on_homepage(self, browser, live_server):
+        # navigate to the homepage
+        browser.get(live_server + reverse("productdb:home"))
+
+        browser.find_element_by_id("search_text_field").send_keys("WS-C2960X-24")
+        browser.find_element_by_id("submit_search").click()
+
+        # verify page by page title
+        assert "All Products" in browser.find_element_by_tag_name("body").text
+
+        # test table content
+        expected_table_content = """Vendor Product ID Description List Price Lifecycle State"""
+        contain_table_rows = [
+            "Cisco Systems WS-C2960X-24PD-L Catalyst 2960-X 24 GigE PoE 370W, 2 x 10G SFP+, LAN Base 4595.00 USD",
+            "Cisco Systems WS-C2960X-24PS-L Catalyst 2960-X 24 GigE PoE 370W, 4 x 1G SFP, LAN Base 3195.00 USD",
+        ]
+        not_contain_table_rows = [
+            "Juniper Networks"
+        ]
+
+        table = browser.find_element_by_id('product_table')
+        assert expected_table_content in table.text
+
+        for r in contain_table_rows:
+            assert r in table.text
+
+        for r in not_contain_table_rows:
+            assert r not in table.text
+
     def test_product_group_view(self, browser, live_server):
         # navigate to the homepage
         browser.get(live_server + reverse("productdb:home"))
