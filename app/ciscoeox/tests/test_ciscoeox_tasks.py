@@ -63,7 +63,7 @@ class TestExecuteTaskToSynchronizeCiscoEoxStateTask:
 
         task = tasks.execute_task_to_synchronize_cisco_eox_states.delay(ignore_periodic_sync_flag=True)
         expected_result = '<p style="text-align: left;">The following queries were executed:<br>' \
-                          '<ul style="text-align: left;"><li><code>WS-C2960-*</code> (<b>affected 3 products</b>, ' \
+                          '<ul style="text-align: left;"><li><code>WS-C2960-*</code> (<b>affects 3 products</b>, ' \
                           'success)</li></ul></p>'
 
         assert task is not None
@@ -80,7 +80,7 @@ class TestExecuteTaskToSynchronizeCiscoEoxStateTask:
 
         task = tasks.execute_task_to_synchronize_cisco_eox_states.delay(ignore_periodic_sync_flag=True)
         expected_result = '<p style="text-align: left;">The following queries were executed:<br>' \
-                          '<ul style="text-align: left;"><li><code>WS-C2960-*</code> (<b>affected 3 products</b>, ' \
+                          '<ul style="text-align: left;"><li><code>WS-C2960-*</code> (<b>affects 3 products</b>, ' \
                           'success)</li></ul></p>'
 
         assert task is not None
@@ -101,7 +101,7 @@ class TestExecuteTaskToSynchronizeCiscoEoxStateTask:
 
         task = tasks.execute_task_to_synchronize_cisco_eox_states.delay(ignore_periodic_sync_flag=True)
         expected_result = '<p style="text-align: left;">The following queries were executed:<br>' \
-                          '<ul style="text-align: left;"><li><code>WS-C2960-*</code> (<b>affected 3 products</b>, ' \
+                          '<ul style="text-align: left;"><li><code>WS-C2960-*</code> (<b>affects 3 products</b>, ' \
                           'success)</li></ul>' \
                           '<br>The following comment/errors occurred during the synchronization:<br>' \
                           '<ul style="text-align: left;">' \
@@ -128,7 +128,7 @@ class TestExecuteTaskToSynchronizeCiscoEoxStateTask:
         task = tasks.execute_task_to_synchronize_cisco_eox_states.delay(ignore_periodic_sync_flag=True)
         expected_result = [
             '<p style="text-align: left;">The following queries were executed:<br>'
-            '<ul style="text-align: left;"><li><code>WS-C2960-*</code> (<b>affected 3 products</b>, '
+            '<ul style="text-align: left;"><li><code>WS-C2960-*</code> (<b>affects 3 products</b>, '
             'success)</li></ul>',
             '<br>The following comment/errors occurred during the synchronization:'
             '<br><ul style="text-align: left;">',

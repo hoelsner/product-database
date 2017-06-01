@@ -212,7 +212,7 @@ def execute_task_to_synchronize_cisco_eox_states(self, ignore_periodic_sync_flag
                     detailed_message += "<li class=\"text-danger\"><code>%s</code> " \
                                         "(failed, %s)</li>" % (fq, failed_query_msgs.get(fq, "unknown"))
                 for sq in successful_queries:
-                    detailed_message += "<li><code>%s</code> (<b>affected %d products</b>, " \
+                    detailed_message += "<li><code>%s</code> (<b>affects %d products</b>, " \
                                         "success)</li>" % (sq, len(query_eox_records[sq]))
                 detailed_message += "</ul>"
 
@@ -224,10 +224,10 @@ def execute_task_to_synchronize_cisco_eox_states(self, ignore_periodic_sync_flag
                     detailed_message += "</ul>"
 
                 # show the executed queries in the summary message
-                summary_html = "The following queries were executed: %s" % ", ".join(
-                    ["<code>%s</code>" % query for query in queries]
-                )
                 if len(failed_queries) == 0 and len(successful_queries) != 0:
+                    summary_html = "The following queries were successful executed: %s" % ", ".join(
+                        ["<code>%s</code>" % query for query in successful_queries]
+                    )
                     NotificationMessage.objects.create(
                         title=NOTIFICATION_MESSAGE_TITLE, type=NotificationMessage.MESSAGE_SUCCESS,
                         summary_message="The synchronization with the Cisco EoX API was successful. " + summary_html,
@@ -235,6 +235,9 @@ def execute_task_to_synchronize_cisco_eox_states(self, ignore_periodic_sync_flag
                     )
 
                 elif len(failed_queries) != 0 and len(successful_queries) == 0:
+                    summary_html = "The following queries failed to execute: %s" % ", ".join(
+                        ["<code>%s</code>" % query for query in failed_queries]
+                    )
                     NotificationMessage.objects.create(
                         title=NOTIFICATION_MESSAGE_TITLE, type=NotificationMessage.MESSAGE_ERROR,
                         summary_message="The synchronization with the Cisco EoX API was not successful. " + summary_html,
@@ -242,6 +245,11 @@ def execute_task_to_synchronize_cisco_eox_states(self, ignore_periodic_sync_flag
                     )
 
                 else:
+                    summary_html = "The following queries were successful executed: %s\n<br>The following queries " \
+                                   "failed to execute: %s" % (
+                                       ", ".join(["<code>%s</code>" % query for query in successful_queries]),
+                                       ", ".join(["<code>%s</code>" % query for query in failed_queries])
+                                   )
                     NotificationMessage.objects.create(
                         title=NOTIFICATION_MESSAGE_TITLE, type=NotificationMessage.MESSAGE_WARNING,
                         summary_message="The synchronization with the Cisco EoX API was partially "

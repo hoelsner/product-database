@@ -124,17 +124,18 @@ def update_local_db_based_on_record(eox_record, create_missing=False):
 
             # save string values from Cisco EoX API record
             if "LinkToProductBulletinURL" in eox_record.keys():
-                product.eol_reference_url = clean_api_url_response(eox_record.get('LinkToProductBulletinURL', ""))
+                value = clean_api_url_response(eox_record.get('LinkToProductBulletinURL', ""))
+                if value != "":
+                    val = URLValidator()
+                    try:
+                        val(value)
+                        product.eol_reference_url = value
 
-                val = URLValidator()
-                try:
-                    val(product.eol_reference_url)
+                    except ValidationError:
+                        raise Exception("invalid EoL reference URL")
 
-                except ValidationError:
-                    raise Exception("invalid EoL reference URL")
-
-                if ("ProductBulletinNumber" in eox_record.keys()) and (product.eol_reference_url != ""):
-                    product.eol_reference_number = eox_record.get('ProductBulletinNumber', "EoL bulletin")
+                    if "ProductBulletinNumber" in eox_record.keys():
+                        product.eol_reference_number = eox_record.get('ProductBulletinNumber', "EoL bulletin")
 
             with transaction.atomic(), reversion.create_revision():
                 product.save()

@@ -124,7 +124,7 @@ SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "PlsChgMe")
 # configure database settings
 DATABASE_NAME = os.getenv("PDB_DATABASE_NAME", os.getenv("POSTGRES_DB", "productdb"))
 DATABASE_USER = os.getenv("PDB_DATABASE_USER", os.getenv("POSTGRES_USER", "postgres"))
-DATABASE_PASSWORD = os.getenv("PDB_DATABASE_PASSWORD", os.getenv("POSTGRES_PASSWORD", ""))
+DATABASE_PASSWORD = os.getenv("PDB_DATABASE_PASSWORD", os.getenv("POSTGRES_PASSWORD", "postgres"))
 DATABASE_HOST = os.getenv("PDB_DATABASE_HOST", "127.0.0.1")
 DATABASE_PORT = os.getenv("PDB_DATABASE_PORT", "5432")
 
@@ -164,9 +164,13 @@ STATICFILES_DIRS = (
     os.path.join(BASE_DIR, "..", "static"),
 )
 
-# enable session timeout
-SESSION_COOKIE_AGE = 60 * 15
-SESSION_SAVE_EVERY_REQUEST = True
+if os.getenv("PDB_SESSION_EXPIRE_ON_BROWSER_CLOSE", None):
+    SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+
+else:
+    SESSION_COOKIE_AGE = 60 * 15
+    SESSION_SAVE_EVERY_REQUEST = True
+
 SESSION_COOKIE_NAME = "productdb"
 
 BOOTSTRAP3 = {
