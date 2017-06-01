@@ -12,9 +12,19 @@ LDAP_ENABLE = os.getenv("PDB_LDAP_ENABLE", False)
 if LDAP_ENABLE:
     logging.getLogger().warning("LDAP authentication enabled on server")
 
+    AUTH_LDAP_GLOBAL_OPTIONS = {}
     AUTH_LDAP_SERVER_URI = os.getenv("PDB_LDAP_SERVER_URL", "ldap://127.0.0.1:389/")
-    AUTH_LDAP_BIND_DN = os.getenv("PDB_LDAP_BIND_DN", "cn=django-agent,dc=example,dc=com")
-    AUTH_LDAP_BIND_PASSWORD = os.getenv("PDB_LDAP_BIND_PASSWORD", "")
+    if os.environ.get("PDB_LDAP_BIND_AS_AUTHENTICATING_USER", None):
+        AUTH_LDAP_BIND_AS_AUTHENTICATING_USER = True
+
+    else:
+        AUTH_LDAP_BIND_DN = os.getenv("PDB_LDAP_BIND_DN", "cn=django-agent,dc=example,dc=com")
+        AUTH_LDAP_BIND_PASSWORD = os.getenv("PDB_LDAP_BIND_PASSWORD", "")
+
+    if os.environ.get("PDB_LDAP_ENABLE_TLS", None):
+        AUTH_LDAP_START_TLS = True
+        if os.environ.get("PDB_LDAP_ALLOW_SELF_SIGNED_CERT", None):
+            AUTH_LDAP_GLOBAL_OPTIONS[ldap.OPT_X_TLS_REQUIRE_CERT] = ldap.OPT_X_TLS_NEVER
 
     AUTH_LDAP_USER_SEARCH = LDAPSearch(os.getenv("PDB_LDAP_USER_SEARCH", "ou=users,dc=example,dc=com"),
                                        ldap.SCOPE_SUBTREE, "(uid=%(user)s)")
