@@ -2,12 +2,24 @@ import django_filters
 from rest_framework import permissions
 from rest_framework import filters
 from rest_framework.response import Response
+
+from app.config.models import NotificationMessage
 from app.productdb.serializers import ProductSerializer, VendorSerializer, ProductGroupSerializer, ProductListSerializer, \
-    ProductMigrationSourceSerializer, ProductMigrationOptionSerializer
+    ProductMigrationSourceSerializer, ProductMigrationOptionSerializer, NotificationMessageSerializer
 from app.productdb.models import Product, Vendor, ProductGroup, ProductList, ProductMigrationSource, \
     ProductMigrationOption
 from rest_framework import viewsets
 from rest_framework.decorators import list_route
+
+
+class NotificationMessageViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint for the Notification Message
+    """
+    queryset = NotificationMessage.objects.all().order_by("id")
+    serializer_class = NotificationMessageSerializer
+    lookup_field = 'id'
+    permission_classes = (permissions.DjangoModelPermissions,)
 
 
 class VendorViewSet(viewsets.ReadOnlyModelViewSet):

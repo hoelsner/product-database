@@ -15,6 +15,8 @@ from mixer.backend.django import mixer
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient
+
+from app.config.models import NotificationMessage
 from app.productdb.models import Vendor, ProductGroup, Product, ProductList, ProductMigrationOption, \
     ProductMigrationSource
 
@@ -44,6 +46,8 @@ REST_PRODUCTMIGRATIONSOURCE_LIST = reverse("productdb:productmigrationsources-li
 REST_PRODUCTMIGRATIONSOURCE_DETAIL = REST_PRODUCTMIGRATIONSOURCE_LIST + "%d/"
 REST_PRODUCTMIGRATIONOPTION_LIST = reverse("productdb:productmigrationoptions-list")
 REST_PRODUCTMIGRATIONOPTION_DETAIL = REST_PRODUCTMIGRATIONOPTION_LIST + "%d/"
+REST_NOTIFICATIONMESSAGES_LIST = reverse("productdb:notificationmessages-list")
+REST_NOTIFICATIONMESSAGES_DETAIL = REST_NOTIFICATIONMESSAGES_LIST + "%d/"
 
 COMMON_API_ENDPOINT_BEHAVIOR = [
     REST_VENDOR_LIST,
@@ -56,6 +60,7 @@ COMMON_API_ENDPOINT_BEHAVIOR = [
     REST_PRODUCTMIGRATIONSOURCE_DETAIL % 1,
     REST_PRODUCTMIGRATIONOPTION_LIST,
     REST_PRODUCTMIGRATIONOPTION_DETAIL % 1,
+    REST_NOTIFICATIONMESSAGES_LIST
 ]
 
 
@@ -2333,3 +2338,119 @@ class TestProductListAPIEndpoint:
         assert "data" in jdata, "data branch not provided"
         assert jdata == expected_result, "unexpected result from API endpoint"
 
+
+@pytest.mark.usefixtures("import_default_users")
+@pytest.mark.usefixtures("import_default_vendors")
+class TestNotificationMessageAPIEndpoint:
+    """Django REST Framework API endpoint tests for the NotificationMessage model"""
+    today_string = DateFormat(datetime.now()).format(get_format(settings.SHORT_DATE_FORMAT))
+
+    def test_token_authentication(self, live_server):
+        token, _ = Token.objects.get_or_create(user=User.objects.get(username=AUTH_USER["username"]))
+
+        response = requests.get(live_server + REST_NOTIFICATIONMESSAGES_LIST, headers={
+            "Authorization": "Token %s" % token.key
+        })
+
+        assert response.status_code == status.HTTP_200_OK, response.text
+
+        response = requests.get(live_server + REST_NOTIFICATIONMESSAGES_LIST, headers={
+            "Authorization": "Token invalid_token"
+        })
+
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    def test_read_access_with_authenticated_user(self):
+        expected_result = {
+            "pagination": {
+                "page": 1,
+                "page_records": 1,
+                "url": {
+                    "next": None,
+                    "previous": None
+                },
+                "last_page": 1,
+                "total_records": 1
+            },
+            "data": [
+                {
+                    "id": 1,
+                    "title": "FooBar",
+                    "type": "INFO",
+                    "summary_message": "Test",
+                    "created": "2017-06-16T19:07:28.312467Z"
+                }
+            ]
+        }
+        nm = mixer.blend("config.NotificationMessage")
+        expected_result["data"][0]["id"] = nm.id
+        expected_result["data"][0]["title"] = nm.title
+        expected_result["data"][0]["summary_message"] = nm.summary_message
+        expected_result["data"][0]["created"] = nm.created.isoformat()
+
+        client = APIClient()
+        client.login(**AUTH_USER)
+
+        response = client.get(REST_NOTIFICATIONMESSAGES_LIST)
+        assert response.status_code == status.HTTP_200_OK
+
+        jdata = response.json()
+        assert "pagination" in jdata, "pagination information not provided"
+        assert "data" in jdata, "data branch not found in result"
+        assert jdata["pagination"]["total_records"] == 1, "unexpected result from API endpoint"
+        assert jdata == expected_result, "unexpected result from API endpoint"
+
+        # access first element of the list
+        response = client.get(jdata["data"][0]["url"])
+
+        assert response.status_code == status.HTTP_200_OK
+        assert jdata["data"][0] == response.json()
+
+    def test_add_access_with_permission(self):
+        test_user = "user"
+        expected_result = {
+            "id": 1,
+            "title": "FooBar",
+            "type": "INFO",
+            "summary_message": "",
+            "created": None
+        }
+
+        u = User.objects.create_user(test_user, "", test_user)
+        p = Permission.objects.get(codename="add_notificationmessage")
+        assert p is not None
+        u.user_permissions.add(p)
+        u.save()
+        assert u.has_perm("productdb.add_notificationmessage")
+
+        client = APIClient()
+        client.login(username=test_user, password=test_user)
+
+        # create with name
+        response = client.post(REST_NOTIFICATIONMESSAGES_LIST, data={"title": expected_result["title"]})
+
+        assert response.status_code == status.HTTP_201_CREATED, response.content.decode()
+        # adjust ID values from Database
+        nm_obj = NotificationMessage.objects.get(title=expected_result["title"])
+        expected_result["id"] = nm_obj.id
+        expected_result["created"] = nm_obj.created.isoformat()
+        assert response.json() == expected_result, "Should provide the new notification message"
+
+    def test_delete_access_with_permission(self):
+        nm = mixer.blend("config.NotificationMessage")
+        assert NotificationMessage.objects.count() == 1
+
+        test_user = "user"
+        u = User.objects.create_user(test_user, "", test_user)
+        perm = Permission.objects.get(codename="delete_notificationmessage")
+        assert perm is not None
+        u.user_permissions.add(perm)
+        u.save()
+        assert u.has_perm("productdb.delete_notificationmessage")
+
+        client = APIClient()
+        client.login(username=test_user, password=test_user)
+        response = client.delete(REST_NOTIFICATIONMESSAGES_DETAIL % nm.id)
+
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+        assert NotificationMessage.objects.count() == 0

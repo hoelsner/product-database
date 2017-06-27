@@ -2,6 +2,8 @@ from rest_framework.serializers import HyperlinkedModelSerializer, BooleanField
 from rest_framework import serializers
 from rest_framework.serializers import ChoiceField, CharField, DecimalField, PrimaryKeyRelatedField
 from django.core.validators import MinValueValidator
+
+from app.config.models import NotificationMessage
 from app.productdb.models import Product, Vendor, CURRENCY_CHOICES, ProductGroup, ProductList, ProductMigrationSource, \
     ProductMigrationOption
 
@@ -227,6 +229,25 @@ class ProductMigrationSourceSerializer(HyperlinkedModelSerializer):
             "url": {
                 "lookup_field": "id",
                 "view_name": "productdb:productmigrationsources-detail"
+            }
+        }
+        depth = 0
+
+
+class NotificationMessageSerializer(HyperlinkedModelSerializer):
+    class Meta:
+        model = NotificationMessage
+        fields = (
+            "id",
+            "title",
+            "type",
+            "summary_message",
+            "created"
+        )
+        extra_kwargs = {
+            "url": {
+                "lookup_field": "message_id",
+                "view_name": "productdb:notification-detail"
             }
         }
         depth = 0
