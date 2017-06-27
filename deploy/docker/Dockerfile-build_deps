@@ -24,5 +24,19 @@ RUN echo \
 ADD . /var/www/productdb/source
 WORKDIR /var/www/productdb/source
 
+RUN npm install  && \
+    /var/www/productdb/source/node_modules/.bin/bower install --allow-root && \
+    /var/www/productdb/source/node_modules/.bin/grunt clean
+
+# copy static directory to container directory
+RUN mkdir /var/www/productdb-static
+RUN mkdir /var/www/productdb-static/lib
+RUN cp -Rf /var/www/productdb/source/static/lib /var/www/productdb-static
+
+## Clean up
+RUN rm -rf /var/www/productdb/source/node_modules
+RUN rm -rf /var/www/productdb/source/static/lib
+RUN rm -rf /var/lib/apt/lists/*
+
 RUN chmod +x ./deploy/docker/build_deps/build_dependencies.sh
 CMD ./deploy/docker/build_deps/build_dependencies.sh

@@ -3,12 +3,27 @@ small script that creates a nginx configuration with all reachable web container
 """
 import os
 import socket
+from docker import Client
 
 
 if __name__ == "__main__":
     # try to resolve valid hostname for the web service
     entry_counter = 2
-    hostname_prefix = os.environ.get("INSTANCE_NAME") + "_" if os.environ.get("INSTANCE_NAME", None) else ""
+
+    if os.environ.get("INSTANCE_NAME", None):
+        container_prefix = os.environ.get("INSTANCE_NAME", "production")
+
+    else:
+        # try to get the container name from the docker file
+        cli = Client(base_url='unix://var/run/docker.sock')
+        container_prefix = None
+        for c in cli.containers():
+            if c["Id"].startswith(socket.gethostname()):
+                container_prefix = c["Names"][-1].split("_", 1)[0].lstrip("/")
+                break
+
+    hostname_prefix = container_prefix + "_" if container_prefix else ""
+
     hosts = ["%sweb_1" % hostname_prefix]
     while True:
         try:

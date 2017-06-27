@@ -40,16 +40,11 @@ else
     echo "==> found SSL certificate, don't create a certificate"
     echo ""
 fi
-echo ""
-echo "==> install node package manager dependencies..."
-echo ""
-npm install &>/dev/null
 
 echo ""
-echo "==> load frontend dependencies..."
+echo "==> copy static data..."
 echo ""
-node_modules/.bin/bower install --allow-root &>/dev/null
-node_modules/.bin/grunt clean &>/dev/null
+cp -Rf /var/www/productdb-static/lib /var/www/productdb/static
 
 echo ""
 echo "==> collect static files..."
