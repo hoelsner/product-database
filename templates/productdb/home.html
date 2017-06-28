@@ -39,15 +39,15 @@
                 </div>
                 <div class="col-md-12" style="margin-bottom: 15px">
                     <div class="text-center">
-                        <a class="btn btn-default btn-sm" role="button" href="{% url 'productdb:list-product_lists' %}">
+                        <a class="btn btn-default btn-sm" role="button" href="{% url 'productdb:list-product_lists' %}" id="product_list_link">
                             <i class="fa fa-list-ul"></i>&nbsp;&nbsp;
                             Product Lists
                         </a>
-                        <a class="btn btn-default btn-sm" role="button" href="{% url 'productdb:list-product_checks' %}">
+                        <a class="btn btn-default btn-sm" role="button" href="{% url 'productdb:list-product_checks' %}" id="product_check_link">
                             <i class="fa fa-list-ul"></i>&nbsp;&nbsp;
                             Product Checks
                         </a>
-                        <a class="btn btn-default btn-sm" role="button" href="{% url 'productdb:create-product_check' %}">
+                        <a class="btn btn-default btn-sm" role="button" href="{% url 'productdb:create-product_check' %}" id="new_product_check_link">
                             <i class="fa fa-cogs"></i>&nbsp;&nbsp;
                             New Product/EoL check
                         </a>

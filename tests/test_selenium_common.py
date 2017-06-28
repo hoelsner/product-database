@@ -5,31 +5,27 @@ import os
 import pytest
 import time
 import re
-from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
-from mixer.backend.django import mixer
-from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.select import Select
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.wait import WebDriverWait
 
-from app.config.settings import AppSettings
-from app.productdb.models import Vendor, Product
 from tests import BaseSeleniumTest
 
-pytestmark = pytest.mark.django_db
-selenium_test = pytest.mark.skipif(not pytest.config.getoption("--selenium"), reason="need --selenium to run")
+selenium_test = pytest.mark.skipif(not pytest.config.getoption("--selenium"),
+                                   reason="need --selenium to run (implicit usage of the --online flag")
 
 
-@pytest.mark.usefixtures("base_data_for_test_case")
-@pytest.mark.usefixtures("import_default_users")
-@pytest.mark.usefixtures("import_default_vendors")
-@pytest.mark.usefixtures("import_default_text_blocks")
 @selenium_test
 class TestCommonFunctions(BaseSeleniumTest):
-    @pytest.mark.usefixtures("mock_cisco_eox_api_access_available")
-    def test_login_only_mode(self, browser, live_server):
+    def test_login_only_mode(self, browser, liveserver):
+        self.api_helper.drop_all_data(liveserver)
+        self.api_helper.load_base_test_data(liveserver)
+
         # open the homepage
-        browser.get(live_server + reverse("productdb:home"))
+        browser.get(liveserver + reverse("productdb:home"))
 
         expected_homepage_text = "This database contains information about network equipment like routers and " \
                                  "switches from multiple vendors."
@@ -37,6 +33,7 @@ class TestCommonFunctions(BaseSeleniumTest):
 
         # Login as superuser - verify, that the "continue without login" button is visible
         browser.find_element_by_id("navbar_login").click()
+        time.sleep(3)
 
         expected_login_continue_text = "continue without login"
         assert expected_login_continue_text in browser.find_element_by_tag_name("body").text
@@ -45,45 +42,61 @@ class TestCommonFunctions(BaseSeleniumTest):
         browser.find_element_by_id("username").send_keys(self.ADMIN_USERNAME)
         browser.find_element_by_id("password").send_keys(self.ADMIN_PASSWORD)
         browser.find_element_by_id("login_button").click()
+        time.sleep(3)
 
         # change settings to login only mode and save settings
         browser.find_element_by_id("navbar_admin").click()
         browser.find_element_by_id("navbar_admin_settings").click()
-        assert "Settings" in browser.find_element_by_tag_name("body").text
+        self.wait_for_text_to_be_displayed_in_body_tag(browser, "Settings")
+
         browser.find_element_by_id("id_login_only_mode").click()
         browser.find_element_by_id("submit").click()
-        assert "Settings saved successfully" in browser.find_element_by_tag_name("body").text
+        self.wait_for_text_to_be_displayed_in_body_tag(browser, "Settings saved successfully")
 
         # go to the Product Database Homepage - it must be visible
-        browser.get(live_server + reverse("productdb:home"))
-        assert expected_homepage_text in browser.find_element_by_tag_name("body").text
+        browser.get(liveserver + reverse("productdb:home"))
+        self.wait_for_text_to_be_displayed_in_body_tag(browser, expected_homepage_text)
+
+        # create the product list for the test case
+        test_pl_name = "LoginOnly Product List"
+        test_pl_description = "A sample description for the Product List."
+        test_pl_product_list_ids = "C2960X-STACK;CAB-ACE\nWS-C2960-24TT-L;WS-C2960-24TC-S"
+        test_pl_product_list_id = "C2960X-STACK"
+
+        browser.find_element_by_id("product_list_link").click()
+        WebDriverWait(browser, 10).until(EC.presence_of_element_located((
+            By.XPATH,
+            "id('product_list_table_wrapper')")
+        ))
+
+        browser.find_element_by_link_text("Add New").click()
+        WebDriverWait(browser, 10).until(EC.presence_of_element_located((By.ID, "id_name")))
+
+        browser.find_element_by_id("id_name").send_keys(test_pl_name)
+        browser.find_element_by_id("id_description").send_keys(test_pl_description)
+        browser.find_element_by_id("id_string_product_list").send_keys(test_pl_product_list_ids)
+        browser.find_element_by_id("submit").click()
+        WebDriverWait(browser, 10).until(EC.presence_of_element_located((
+            By.XPATH,
+            "id('product_list_table_wrapper')")
+        ))
 
         # logout - the login screen is visible
         browser.find_element_by_id("navbar_loggedin").click()
         browser.find_element_by_id("navbar_loggedin_logout").click()
         expected_login_text = "Please enter your credentials below."
-        assert expected_login_text in browser.find_element_by_tag_name("body").text
+        self.wait_for_text_to_be_displayed_in_body_tag(browser, expected_login_text)
 
         # go manually to the Product Database Homepage - you must be redirected to the login screen
-        browser.get(live_server + reverse("productdb:home"))
-        assert expected_homepage_text not in browser.find_element_by_tag_name("body").text
-        assert expected_login_text, browser.find_element_by_tag_name("body").text
+        browser.get(liveserver + reverse("productdb:home"))
+        self.wait_for_text_to_be_displayed_in_body_tag(browser, expected_login_text)
 
         # verify, that the "continue without login" button is not visible
         assert expected_login_continue_text not in browser.find_element_by_tag_name("body").text
 
-        # create a product list in the database
-        test_pl_name = "Test Product List"
-        test_pl_description = "A sample description for the Product List."
-        test_pl_product_list_ids = "C2960X-STACK;CAB-ACE\nWS-C2960-24TT-L;WS-C2960-24TC-S"
-        test_pl_product_list_id = "C2960X-STACK"
-
-        pl = mixer.blend("productdb.ProductList", name=test_pl_name,
-                         description=test_pl_description, string_product_list=test_pl_product_list_ids,
-                         update_user=User.objects.get(username="pdb_admin"))
-
         # the product list must be reachable, even when in login only mode
-        browser.get(live_server + reverse("productdb:share-product_list", kwargs={"product_list_id": pl.id}))
+        pl = self.api_helper.get_product_list_by_name(liveserver, test_pl_name)
+        browser.get(liveserver + reverse("productdb:share-product_list", kwargs={"product_list_id": pl["id"]}))
 
         # verify some basic attributes of the page
         body = browser.find_element_by_tag_name("body").text
@@ -95,10 +108,11 @@ class TestCommonFunctions(BaseSeleniumTest):
             "Link to Product Details should not be available"
 
         # login as API user
-        browser.get(live_server + reverse("productdb:home"))
+        browser.get(liveserver + reverse("productdb:home"))
         browser.find_element_by_id("username").send_keys(self.API_USERNAME)
         browser.find_element_by_id("password").send_keys(self.API_PASSWORD)
         browser.find_element_by_id("login_button").click()
+        time.sleep(3)
 
         # the Product Database Homepage must be visible
         assert expected_homepage_text in browser.find_element_by_tag_name("body").text
@@ -110,28 +124,58 @@ class TestCommonFunctions(BaseSeleniumTest):
         browser.find_element_by_id("username").send_keys(self.ADMIN_USERNAME)
         browser.find_element_by_id("password").send_keys(self.ADMIN_PASSWORD)
         browser.find_element_by_id("login_button").click()
+        time.sleep(3)
 
         browser.find_element_by_id("navbar_admin").click()
         browser.find_element_by_id("navbar_admin_settings").click()
+        self.wait_for_text_to_be_displayed_in_body_tag(browser, "Settings")
+
         assert "Settings" in browser.find_element_by_tag_name("body").text
         browser.find_element_by_id("id_login_only_mode").click()
         browser.find_element_by_id("submit").click()
-        assert "Settings saved successfully" in browser.find_element_by_tag_name("body").text
+        self.wait_for_text_to_be_displayed_in_body_tag(browser, "Settings saved successfully")
+
+        # delete the new product list
+        browser.get(liveserver + reverse("productdb:list-product_lists"))
+        browser.find_element_by_xpath("id('product_list_table')/tbody/tr[1]/td[2]").click()
+        time.sleep(1)
+        browser.find_element_by_xpath("id('product_list_table_wrapper')/div[1]/div[2]/div/div/a[3]").click()
+        time.sleep(3)
+
+        body = browser.find_element_by_tag_name("body").text
+        assert "Delete Product List" in body
+
+        browser.find_element_by_name("really_delete").click()
+        browser.find_element_by_id("submit").click()
+        time.sleep(3)
+
+        # verify that the product list is deleted
+        body = browser.find_element_by_tag_name("body").text
+        assert test_pl_description not in body
+        assert "Product List %s successfully deleted." % test_pl_name in body
 
         # end session
         self.logout_user(browser)
 
-    def test_change_password(self, browser, live_server):
-        # login as the default API user
-        browser.get(live_server + reverse("login"))
+    def test_change_password(self, browser, liveserver):
+        """
+        test change password procedure with a different user (part of the selenium_tests fixture)
+        """
+        self.api_helper.drop_all_data(liveserver)
+        self.api_helper.load_base_test_data(liveserver)
 
-        browser.find_element_by_id("username").send_keys("api")
+        # login as the default API user
+        browser.get(liveserver + reverse("login"))
+
+        browser.find_element_by_id("username").send_keys("testpasswordchange")
         browser.find_element_by_id("password").send_keys("api")
         browser.find_element_by_id("login_button").click()
+        time.sleep(3)
 
         # go to the change password dialog
         browser.find_element_by_id("navbar_loggedin").click()
         browser.find_element_by_id("navbar_loggedin_change_password").click()
+        time.sleep(3)
 
         assert "Old password" in browser.find_element_by_tag_name("body").text
 
@@ -140,19 +184,23 @@ class TestCommonFunctions(BaseSeleniumTest):
         browser.find_element_by_id("id_new_password1").send_keys("api1234")
         browser.find_element_by_id("id_new_password2").send_keys("api1234")
         browser.find_element_by_id("submit").click()
+        time.sleep(3)
 
         assert "Password change successful" in browser.find_element_by_tag_name("body").text
 
         # logout
         browser.find_element_by_id("navbar_loggedin").click()
         browser.find_element_by_id("navbar_loggedin_logout").click()
+        time.sleep(3)
+
         expected_login_text = "Please enter your credentials below."
         assert expected_login_text in browser.find_element_by_tag_name("body").text
 
         # login with new password
-        browser.find_element_by_id("username").send_keys("api")
+        browser.find_element_by_id("username").send_keys("testpasswordchange")
         browser.find_element_by_id("password").send_keys("api1234")
         browser.find_element_by_id("login_button").click()
+        time.sleep(3)
 
         # the Product Database Homepage must be visible
         expected_text = "This database contains information about network equipment like routers and " \
@@ -163,16 +211,13 @@ class TestCommonFunctions(BaseSeleniumTest):
         self.logout_user(browser)
 
 
-@pytest.mark.usefixtures("base_data_for_test_case")
-@pytest.mark.usefixtures("import_default_users")
-@pytest.mark.usefixtures("import_default_vendors")
-@pytest.mark.usefixtures("import_default_text_blocks")
 @selenium_test
 class TestUserProfile(BaseSeleniumTest):
-    def test_preferred_vendor_user_profile(self, browser, live_server):
-        default_vendor = Vendor.objects.get(id=1).name
+    def test_preferred_vendor_user_profile(self, browser, liveserver):
+        self.api_helper.drop_all_data(liveserver)
+        self.api_helper.load_base_test_data(liveserver)
 
-        browser.get(live_server + reverse("productdb:home"))
+        browser.get(liveserver + reverse("productdb:home"))
 
         # verify the vendor selection if the user is not logged in
         browser.find_element_by_id("nav_browse").click()
@@ -182,25 +227,23 @@ class TestUserProfile(BaseSeleniumTest):
 
         # login
         browser.find_element_by_id("navbar_login").click()
-        assert "Please enter your credentials below." in browser.find_element_by_tag_name("body").text, \
-            "Should view the login page"
+        self.wait_for_text_to_be_displayed_in_body_tag(browser, "Please enter your credentials below.")
 
         homepage_message = "Browse Products by Vendor"
         self.login_user(browser, self.API_USERNAME, self.API_PASSWORD, homepage_message)
 
         # verify the selected default vendor
         pref_vendor_select = browser.find_element_by_id("vendor_selection")
-        assert default_vendor in pref_vendor_select.text
+        assert "Cisco Systems" in pref_vendor_select.text, "selected by default"
 
         # view the edit settings page
         browser.find_element_by_id("navbar_loggedin").click()
         browser.find_element_by_id("navbar_loggedin_user_profile").click()
-        assert "Edit User Profile" in browser.find_element_by_tag_name("body").text, \
-            "Should view the Edit User Profile page"
+        self.wait_for_text_to_be_displayed_in_body_tag(browser, "Edit User Profile")
 
         # verify that the vendor with the ID 1 is selected
         pref_vendor_select = browser.find_element_by_id("id_preferred_vendor")
-        assert default_vendor in pref_vendor_select.text
+        assert "Cisco Systems" in pref_vendor_select.text
         pref_vendor_select = Select(pref_vendor_select)
 
         # change the vendor selection
@@ -209,8 +252,7 @@ class TestUserProfile(BaseSeleniumTest):
         browser.find_element_by_id("submit").send_keys(Keys.ENTER)
 
         # redirect to the Browse Products by Vendor
-        assert "Browse Products by Vendor" in browser.find_element_by_class_name("page-header").text, \
-            "Should view the Browse Product by Vendor page"
+        self.wait_for_text_to_be_displayed_in_body_tag(browser, "Browse Products by Vendor")
 
         # verify that the new default vendor is selected
         pref_vendor_select = browser.find_element_by_id("vendor_selection")
@@ -219,17 +261,21 @@ class TestUserProfile(BaseSeleniumTest):
         # end session
         self.logout_user(browser)
 
-    def test_email_change_in_user_profile(self, browser, live_server):
-        browser.get(live_server + reverse("productdb:home"))
+    def test_email_change_in_user_profile(self, browser, liveserver):
+        """
+        use separate user from the selenium_tests fixture
+        """
+        self.api_helper.drop_all_data(liveserver)
+        self.api_helper.load_base_test_data(liveserver)
+        browser.get(liveserver + reverse("productdb:home"))
 
         # login
         browser.find_element_by_id("navbar_login").click()
-        assert "Please enter your credentials below." in browser.find_element_by_tag_name("body").text, \
-            "Should view the login page"
+        self.wait_for_text_to_be_displayed_in_body_tag(browser, "Please enter your credentials below.")
 
         homepage_message = "This database contains information about network equipment like routers and switches " \
                            "from multiple vendors."
-        self.login_user(browser, self.API_USERNAME, self.API_PASSWORD, homepage_message)
+        self.login_user(browser, "testuserprofilemail", self.API_PASSWORD, homepage_message)
 
         # view the edit settings page
         browser.find_element_by_id("navbar_loggedin").click()
@@ -241,42 +287,46 @@ class TestUserProfile(BaseSeleniumTest):
         browser.find_element_by_id("id_email").clear()
         browser.find_element_by_id("id_email").send_keys(new_email)
         browser.find_element_by_id("submit").click()
+        self.wait_for_text_to_be_displayed_in_body_tag(browser, homepage_message)
 
         # verify redirect to homepage
-        assert homepage_message in browser.find_element_by_tag_name("body").text, \
-            "Should view the homepage after save"
         assert "User Profile successful updated" in browser.find_element_by_tag_name("body").text, \
             "Should view a message that the user profile was saved"
 
         # verify new value in email address
         browser.find_element_by_id("navbar_loggedin").click()
         browser.find_element_by_id("navbar_loggedin_user_profile").click()
+        self.wait_for_text_to_be_displayed_in_body_tag(browser, "Edit User Profile")
+
         assert new_email in browser.find_element_by_id("id_email").get_attribute('value'), \
             "Show view the correct email address of the user (%s)" % new_email
 
         # end session
         self.logout_user(browser)
 
-    def test_search_option_in_user_profile(self, browser, live_server):
+    def test_search_option_in_user_profile(self, browser, liveserver):
+        """
+        use separate user from the selenium_tests fixture
+        """
+        self.api_helper.drop_all_data(liveserver)
+        self.api_helper.load_base_test_data(liveserver)
+
         search_term = "WS-C2960X-24T(D|S)"
-        browser.get(live_server + reverse("productdb:home"))
+        browser.get(liveserver + reverse("productdb:home"))
 
         # login
-        browser.find_element_by_id("navbar_login").click()
-        assert "Please enter your credentials below." in browser.find_element_by_tag_name("body").text, \
-            "Should view the login page"
-
         homepage_message = "This database contains information about network equipment like routers and switches " \
                            "from multiple vendors."
-        self.login_user(browser, self.API_USERNAME, self.API_PASSWORD, homepage_message)
+        browser.find_element_by_id("navbar_login").click()
+        self.wait_for_text_to_be_displayed_in_body_tag(browser, "Please enter your credentials below.")
+        self.login_user(browser, "testregexsession", self.API_PASSWORD, homepage_message)
 
         # go to the all products view
+        expected_content = "On this page, you can view all products that are stored in the database."
+
         browser.find_element_by_id("nav_browse").click()
         browser.find_element_by_id("nav_browse_all_products").click()
-
-        expected_content = "On this page, you can view all products that are stored in the database."
-        assert expected_content in browser.find_element_by_tag_name("body").text, \
-            "Should display the view all products page"
+        self.wait_for_text_to_be_displayed_in_body_tag(browser, expected_content)
 
         # try to search for the product
         browser.find_element_by_id("column_search_Product ID").send_keys(search_term)
@@ -286,19 +336,15 @@ class TestUserProfile(BaseSeleniumTest):
         # enable the regular expression search feature in the user profile
         browser.find_element_by_id("navbar_loggedin").click()
         browser.find_element_by_id("navbar_loggedin_user_profile").click()
-
-        assert "Contact eMail:" in browser.find_element_by_tag_name("body").text, \
-            "Should show the Edit User Profile view"
-
-        browser.find_element_by_id("id_regex_search").click()
-        browser.find_element_by_id("submit").click()
+        self.wait_for_text_to_be_displayed_in_body_tag(browser, "Contact eMail:")
 
         expected_content = "On this page, you can view all products that are stored in the database."
-        assert expected_content in browser.find_element_by_tag_name("body").text, \
-            "Should redirect to original page"
+        browser.find_element_by_id("id_regex_search").click()
+        browser.find_element_by_id("submit").click()
+        self.wait_for_text_to_be_displayed_in_body_tag(browser, expected_content)
 
         browser.find_element_by_id("column_search_Product ID").send_keys(search_term)
-        time.sleep(2)
+        time.sleep(3)
 
         assert "WS-C2960X-24TS" in browser.find_element_by_tag_name("body").text, \
             "Should show no results (regular expression is used but by default not enabled)"
@@ -310,13 +356,12 @@ class TestUserProfile(BaseSeleniumTest):
         self.logout_user(browser)
 
 
-@pytest.mark.usefixtures("base_data_for_test_case")
-@pytest.mark.usefixtures("import_default_users")
-@pytest.mark.usefixtures("import_default_vendors")
-@pytest.mark.usefixtures("import_default_text_blocks")
 @selenium_test
 class TestProductLists(BaseSeleniumTest):
-    def test_product_list(self, browser, live_server):
+    def test_product_list(self, browser, liveserver):
+        self.api_helper.drop_all_data(liveserver)
+        self.api_helper.load_base_test_data(liveserver)
+
         add_button_xpath = "id('product_list_table_wrapper')/div[1]/div[2]/div/div/a[1]"
         edit_button_xpath = "id('product_list_table_wrapper')/div[1]/div[2]/div/div/a[2]"
         delete_button_xpath = "id('product_list_table_wrapper')/div[1]/div[2]/div/div/a[3]"
@@ -327,11 +372,12 @@ class TestProductLists(BaseSeleniumTest):
         test_pl_product_list_id = "C2960X-STACK"
 
         # open the homepage
-        browser.get(live_server + reverse("productdb:home"))
+        browser.get(liveserver + reverse("productdb:home"))
 
         # go to product list view
         browser.find_element_by_id("nav_browse").click()
         browser.find_element_by_id("nav_browse_all_product_lists").click()
+        time.sleep(3)
 
         # verify that the add, edit and delete button is not visible
         body = browser.find_element_by_tag_name("body").text
@@ -342,6 +388,8 @@ class TestProductLists(BaseSeleniumTest):
 
         # login to the page as admin user
         browser.find_element_by_id("navbar_login").click()
+        time.sleep(3)
+
         self.login_user(browser, self.ADMIN_USERNAME, self.ADMIN_PASSWORD, "All Product Lists")
 
         # verify that the add, edit and delete buttons are visible
@@ -352,22 +400,21 @@ class TestProductLists(BaseSeleniumTest):
 
         # create a new product list
         browser.find_element_by_xpath(add_button_xpath).click()
-        body = browser.find_element_by_tag_name("body").text
-        assert "Add Product List" in body
+        self.wait_for_text_to_be_displayed_in_body_tag(browser, "Add Product List")
 
         browser.find_element_by_id("id_name").send_keys(test_pl_name)
         browser.find_element_by_id("id_description").send_keys(test_pl_description)
         browser.find_element_by_id("id_string_product_list").send_keys(test_pl_product_list_ids)
 
         browser.find_element_by_id("submit").click()
-        body = browser.find_element_by_tag_name("body").text
-        assert "All Product Lists" in body
-        assert test_pl_name in body
+        self.wait_for_text_to_be_displayed_in_body_tag(browser, "All Product Lists")
+        assert test_pl_name in browser.find_element_by_tag_name("body").text
 
         # view the newly created product list
         browser.find_element_by_link_text(test_pl_name).click()
-        body = browser.find_element_by_tag_name("body").text
+        time.sleep(3)
 
+        body = browser.find_element_by_tag_name("body").text
         assert test_pl_name in body
         assert test_pl_description in body
         assert test_pl_product_list_id in body
@@ -380,13 +427,14 @@ class TestProductLists(BaseSeleniumTest):
 
         # edit the new product list
         browser.find_element_by_xpath("id('product_list_table')/tbody/tr[1]/td[2]").click()
-        time.sleep(1)
+        time.sleep(3)
         browser.find_element_by_xpath(edit_button_xpath).click()
 
         browser.find_element_by_id("id_description").send_keys(" EDITED")
         test_pl_description += " EDITED"
 
         browser.find_element_by_id("submit").click()
+        time.sleep(3)
 
         body = browser.find_element_by_tag_name("body").text
         assert test_pl_description in body
@@ -395,56 +443,36 @@ class TestProductLists(BaseSeleniumTest):
         browser.find_element_by_xpath("id('product_list_table')/tbody/tr[1]/td[2]").click()
         time.sleep(1)
         browser.find_element_by_xpath(delete_button_xpath).click()
+        time.sleep(3)
 
         body = browser.find_element_by_tag_name("body").text
         assert "Delete Product List" in body
 
         browser.find_element_by_name("really_delete").click()
         browser.find_element_by_id("submit").click()
+        time.sleep(3)
 
         # verify that the product list is deleted
         body = browser.find_element_by_tag_name("body").text
         assert test_pl_description not in body
         assert "Product List %s successfully deleted." % test_pl_name in body
 
-    def test_product_list_share_link(self, browser, live_server):
-        test_pl_name = "Test Product List"
-        test_pl_description = "A sample description for the Product List."
-        test_pl_product_list_ids = "C2960X-STACK;CAB-ACE\nWS-C2960-24TT-L;WS-C2960-24TC-S"
-        test_pl_product_list_id = "C2960X-STACK"
 
-        pl = mixer.blend("productdb.ProductList", name=test_pl_name,
-                         description=test_pl_description, string_product_list=test_pl_product_list_ids,
-                         update_user=User.objects.get(username="pdb_admin"))
-
-        # try to access the share link
-        browser.get(live_server + reverse("productdb:share-product_list", kwargs={"product_list_id": pl.id}))
-
-        # verify some basic attributes of the page
-        body = browser.find_element_by_tag_name("body").text
-        assert test_pl_name in body
-        assert test_pl_description in body
-        assert test_pl_product_list_id in body
-        assert "maintained by %s" % self.ADMIN_DISPLAY_NAME in body
-        with pytest.raises(NoSuchElementException):
-            browser.find_element_by_link_text(test_pl_product_list_id)
-
-
-@pytest.mark.usefixtures("base_data_for_test_case")
-@pytest.mark.usefixtures("import_default_users")
-@pytest.mark.usefixtures("import_default_vendors")
-@pytest.mark.usefixtures("import_default_text_blocks")
 @selenium_test
 class TestProductDatabaseViews(BaseSeleniumTest):
-    def test_search_on_homepage(self, browser, live_server):
+    def test_search_on_homepage(self, browser, liveserver):
+        self.api_helper.drop_all_data(liveserver)
+        self.api_helper.load_base_test_data(liveserver)
+
         # navigate to the homepage
-        browser.get(live_server + reverse("productdb:home"))
+        browser.get(liveserver + reverse("productdb:home"))
 
         browser.find_element_by_id("search_text_field").send_keys("WS-C2960X-24")
         browser.find_element_by_id("submit_search").click()
 
         # verify page by page title
         assert "All Products" in browser.find_element_by_tag_name("body").text
+        time.sleep(2)
 
         # test table content
         expected_table_content = """Vendor Product ID Description List Price Lifecycle State"""
@@ -465,16 +493,17 @@ class TestProductDatabaseViews(BaseSeleniumTest):
         for r in not_contain_table_rows:
             assert r not in table.text
 
-    def test_product_group_view(self, browser, live_server):
+    def test_product_group_view(self, browser, liveserver):
+        self.api_helper.drop_all_data(liveserver)
+        self.api_helper.load_base_test_data(liveserver)
+
         # navigate to the homepage
-        browser.get(live_server + reverse("productdb:home"))
+        browser.get(liveserver + reverse("productdb:home"))
 
         # go to the "All Product Groups" view
         browser.find_element_by_id("nav_browse").click()
         browser.find_element_by_id("nav_browse_all_product_groups").click()
-
-        # verify page by page title
-        assert "All Product Groups" in browser.find_element_by_tag_name("body").text
+        self.wait_for_text_to_be_displayed_in_body_tag(browser, "All Product Groups")
 
         # test table content
         expected_table_content = """Vendor\nName"""
@@ -486,7 +515,7 @@ class TestProductDatabaseViews(BaseSeleniumTest):
         ]
 
         table = browser.find_element_by_id('product_group_table')
-        assert expected_table_content in table.text
+        self.wait_for_text_to_be_displayed_in_body_tag(browser, expected_table_content)
         for r in table_rows:
             assert r in table.text
 
@@ -520,9 +549,7 @@ class TestProductDatabaseViews(BaseSeleniumTest):
 
         # click on the "Catalyst 2960X" link
         browser.find_element_by_partial_link_text("Catalyst 2960X").click()
-
-        # verify page title
-        assert "Catalyst 2960X Product Group details" in browser.find_element_by_tag_name("body").text
+        self.wait_for_text_to_be_displayed_in_body_tag(browser, "Catalyst 2960X Product Group details")
 
         # verify table content
         expected_table_content = """Product ID\nDescription\nList Price Lifecycle State"""
@@ -554,41 +581,29 @@ class TestProductDatabaseViews(BaseSeleniumTest):
         # open detail page
         browser.find_element_by_partial_link_text("C2960X-STACK").click()
         detail_link = browser.current_url
-
-        # verify page by title
-        assert "C2960X-STACK Product details" in browser.find_element_by_tag_name("body").text
+        self.wait_for_text_to_be_displayed_in_body_tag(browser, "C2960X-STACK Product details")
 
         # verify that the "Internal Product ID" is not visible (because not set)
-        app_config = AppSettings()
-        assert app_config.get_internal_product_id_label() not in browser.find_element_by_tag_name("body").text
+        assert "Internal Product ID" not in browser.find_element_by_tag_name("body").text
 
         # add an internal product ID and verify that it is visible
         test_internal_product_id = "123456789-abcdef"
-        p = Product.objects.get(product_id="C2960X-STACK")
-        p.internal_product_id = test_internal_product_id
-        p.save()
+        p = self.api_helper.update_product(liveserver_url=liveserver, product_id="C2960X-STACK",
+                                           internal_product_id=test_internal_product_id)
 
-        browser.get(detail_link)
+        browser.get(liveserver + reverse("productdb:product-detail", kwargs={"product_id": p["id"]}))
         page_text = browser.find_element_by_tag_name("body").text
-        assert app_config.get_internal_product_id_label() in page_text
+        assert "Internal Product ID" in page_text
         assert test_internal_product_id in page_text
 
-    def test_browse_product_list_view(self, browser, live_server):
-        expected_content = "This database contains information about network equipment like routers and switches " \
-                           "from multiple"
+        # end session
+        self.logout_user(browser)
 
-        # a user hits the homepage of the product db
-        browser.get(live_server + "/productdb/")
-
-        # check that the user sees a table
-        page_text = browser.find_element_by_tag_name('body').text
-        assert expected_content in page_text
-
-    def test_add_notification_message(self, browser, live_server):
+    def test_add_notification_message(self, browser, liveserver):
         # go to the Product Database Homepage
-        browser.get(live_server + reverse("productdb:home"))
-
+        browser.get(liveserver + reverse("productdb:home"))
         browser.find_element_by_id("navbar_login").click()
+        time.sleep(3)
 
         expected_homepage_text = "This database contains information about network equipment like routers and " \
                                  "switches from multiple vendors."
@@ -602,8 +617,7 @@ class TestProductDatabaseViews(BaseSeleniumTest):
         # add a new notification message
         browser.find_element_by_id("navbar_admin").click()
         browser.find_element_by_id("navbar_admin_notification_message").click()
-
-        assert "Add Notification Message" in browser.find_element_by_tag_name("body").text
+        self.wait_for_text_to_be_displayed_in_body_tag(browser, "Add Notification Message")
 
         # add content
         title = "My message title"
@@ -613,22 +627,24 @@ class TestProductDatabaseViews(BaseSeleniumTest):
         browser.find_element_by_id("id_summary_message").send_keys(summary_message)
         browser.find_element_by_id("id_detailed_message").send_keys(detailed_message)
         browser.find_element_by_id("submit").click()
+        self.wait_for_text_to_be_displayed_in_body_tag(browser, title)
 
-        # verify that the message is visible on the homepage
-        assert title in browser.find_element_by_tag_name("body").text
         assert summary_message in browser.find_element_by_tag_name("body").text
 
         # end session
         self.logout_user(browser)
 
-    def test_browse_products_view(self, browser, live_server):
+    def test_browse_products_view(self, browser, liveserver):
+        self.api_helper.drop_all_data(liveserver)
+        self.api_helper.load_base_test_data(liveserver)
+
         expected_cisco_row = "C2960X-STACK Catalyst 2960-X FlexStack Plus Stacking Module 1195.00 USD"
         expected_juniper_row = "EX-SFP-1GE-LX SFP 1000Base-LX Gigabit Ethernet Optics, 1310nm for " \
                                "10km transmission on SMF 1000.00 USD"
         default_vendor = "Cisco Systems"
 
         # a user hits the browse product list url
-        browser.get(live_server + reverse("productdb:browse_vendor_products"))
+        browser.get(liveserver + reverse("productdb:browse_vendor_products"))
         time.sleep(5)
 
         # check that the user sees a table
@@ -662,10 +678,10 @@ class TestProductDatabaseViews(BaseSeleniumTest):
         time.sleep(1)
         test_product_id = "WS-C2960-24LT-L"
         browser.find_element_by_link_text(test_product_id).click()
-        assert "%s Product details" % test_product_id in browser.find_element_by_tag_name("body").text
+        self.wait_for_text_to_be_displayed_in_body_tag(browser, "%s Product details" % test_product_id)
 
         # reopen the browse vendor products table
-        browser.get(live_server + reverse("productdb:browse_vendor_products"))
+        browser.get(liveserver + reverse("productdb:browse_vendor_products"))
         time.sleep(5)
 
         # the user sees a selection field, where the value "Cisco Systems" is selected
@@ -676,6 +692,7 @@ class TestProductDatabaseViews(BaseSeleniumTest):
         # the user chooses the list named "Juniper Networks" and press the button "view product list"
         pl_selection.select_by_visible_text("Juniper Networks")
         browser.find_element_by_id("submit").send_keys(Keys.ENTER)
+        self.wait_for_text_to_be_displayed_in_body_tag(browser, "EX-SFP-1GE-LX")
 
         # the page reloads and the table contains now the element "EX-SFP-1GE-LX" as the first element of the table
         table = browser.find_element_by_id('product_table')
@@ -683,17 +700,19 @@ class TestProductDatabaseViews(BaseSeleniumTest):
 
         match = False
         for i in range(0, 3):
-            match = (expected_juniper_row,
-                     [row.text for row in rows])
+            match = (expected_juniper_row, [row.text for row in rows])
             if match:
                 break
             time.sleep(3)
         if not match:
             pytest.fail("Element not found")
 
-    def test_browse_products_view_csv_export(self, browser, live_server, test_download_dir):
+    def test_browse_products_view_csv_export(self, browser, liveserver, test_download_dir):
+        self.api_helper.drop_all_data(liveserver)
+        self.api_helper.load_base_test_data(liveserver)
+
         # a user hits the browse product list url
-        browser.get(live_server + reverse("productdb:browse_vendor_products"))
+        browser.get(liveserver + reverse("productdb:browse_vendor_products"))
 
         # the user sees a selection field, where the value "Cisco Systems" is selected
         vendor_name = "Cisco Systems"
@@ -712,9 +731,12 @@ class TestProductDatabaseViews(BaseSeleniumTest):
         with open(file, "r+") as f:
             assert "\ufeffProduct ID;Description;List Price;Lifecycle State\n" == f.readline()
 
-    def test_search_function_on_browse_vendor_products_view(self, browser, live_server):
+    def test_search_function_on_browse_vendor_products_view(self, browser, liveserver):
+        self.api_helper.drop_all_data(liveserver)
+        self.api_helper.load_base_test_data(liveserver)
+
         # a user hits the browse product list url
-        browser.get(live_server + reverse("productdb:browse_vendor_products"))
+        browser.get(liveserver + reverse("productdb:browse_vendor_products"))
         time.sleep(5)
 
         # he enters a search term in the search box
@@ -741,10 +763,8 @@ class TestProductDatabaseViews(BaseSeleniumTest):
         ]
 
         table = browser.find_element_by_id('product_table')
-        print(table.text)
         assert expected_table_content in table.text
         for r in table_rows:
-            print(table.text)
             assert r in table.text
         browser.find_element_by_xpath(search_xpath).clear()
         time.sleep(1)
@@ -785,13 +805,16 @@ class TestProductDatabaseViews(BaseSeleniumTest):
         assert r[1] in table.text
         browser.find_element_by_id("column_search_List Price").clear()
 
-    def test_browse_all_products_view(self, browser, live_server):
+    def test_browse_all_products_view(self, browser, liveserver):
+        self.api_helper.drop_all_data(liveserver)
+        self.api_helper.load_base_test_data(liveserver)
+
         expected_cisco_row = "Cisco Systems C2960X-STACK Catalyst 2960-X FlexStack Plus Stacking Module 1195.00 USD"
         expected_juniper_row = "Juniper Networks EX-SFP-1GE-LX SFP 1000Base-LX Gigabit Ethernet Optics, 1310nm for " \
                                "10km transmission on SMF 1000.00 USD"
 
         # a user hits the browse product list url
-        browser.get(live_server + reverse("productdb:all_products"))
+        browser.get(liveserver + reverse("productdb:all_products"))
 
         # check that the user sees a table
         time.sleep(5)
@@ -832,11 +855,14 @@ class TestProductDatabaseViews(BaseSeleniumTest):
         # navigate to a detail view
         test_product_id = "GLC-LH-SMD="
         browser.find_element_by_link_text(test_product_id).click()
-        assert "%s Product details" % test_product_id in browser.find_element_by_tag_name("body").text
+        self.wait_for_text_to_be_displayed_in_body_tag(browser, "%s Product details" % test_product_id)
 
-    def test_browse_all_products_view_csv_export(self, browser, live_server, test_download_dir):
+    def test_browse_all_products_view_csv_export(self, browser, liveserver, test_download_dir):
+        self.api_helper.drop_all_data(liveserver)
+        self.api_helper.load_base_test_data(liveserver)
+
         # a user hits the browse product list url
-        browser.get(live_server + reverse("productdb:all_products"))
+        browser.get(liveserver + reverse("productdb:all_products"))
 
         # the user hits the button CSV
         dt_buttons = browser.find_element_by_class_name("dt-buttons")
@@ -850,9 +876,12 @@ class TestProductDatabaseViews(BaseSeleniumTest):
         with open(file, "r+") as f:
             assert "\ufeffVendor;Product ID;Description;List Price;Lifecycle State\n" == f.readline()
 
-    def test_search_function_on_all_products_view(self, browser, live_server):
+    def test_search_function_on_all_products_view(self, browser, liveserver):
+        self.api_helper.drop_all_data(liveserver)
+        self.api_helper.load_base_test_data(liveserver)
+
         # a user hits the browse product list url
-        browser.get(live_server + reverse("productdb:all_products"))
+        browser.get(liveserver + reverse("productdb:all_products"))
 
         # he enters a search term in the search box
         search_term = "WS-C2960X-24P"

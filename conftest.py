@@ -15,7 +15,8 @@ CISCO_API_TEST_CREDENTIALS_FILE = ".cisco_api_credentials"
 def pytest_addoption(parser):
     # requires test credentials in the working directory named .cisco_api_credentials
     parser.addoption("--online", action="store_true", help="run tests online (with external API access)")
-    parser.addoption("--selenium", action="store_true", help="run selenium test cases (always online)")
+    parser.addoption("--selenium", action="store_true", help="execute selenium based test cases against a test "
+                                                             "instance")
 
 
 @pytest.fixture
@@ -90,6 +91,11 @@ def mock_cisco_api_authentication_server(monkeypatch):
         "post",
         lambda url, params=None: mock_post_response()
     )
+
+
+@pytest.fixture(autouse=True)
+def enable_db_access_for_all_tests(db):
+    pass
 
 
 @pytest.yield_fixture(autouse=True)

@@ -6,28 +6,29 @@ import json
 import pytest
 import os
 import time
+import requests
 from django.core.urlresolvers import reverse
 from django.test import Client
-from mixer.backend.django import mixer
+from requests.auth import HTTPBasicAuth
+from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
-from app.productdb.models import Product, Vendor
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.wait import WebDriverWait
 from tests import BaseSeleniumTest, PRODUCTS_API_ENDPOINT
 
-pytestmark = pytest.mark.django_db
-selenium_test = pytest.mark.skipif(not pytest.config.getoption("--selenium"), reason="need --selenium to run")
-online = pytest.mark.skipif(not pytest.config.getoption("--online"), reason="need --online to run")
+selenium_test = pytest.mark.skipif(not pytest.config.getoption("--selenium"),
+                                   reason="need --selenium to run (implicit usage of the --online flag")
+online = pytest.mark.skipif(not pytest.config.getoption("--online"),
+                            reason="need --online to run")
 
 
-@pytest.mark.usefixtures("import_default_users")
-@pytest.mark.usefixtures("import_default_vendors")
-@pytest.mark.usefixtures("import_default_text_blocks")
 @selenium_test
 class TestExcelImportFeature(BaseSeleniumTest):
-    @pytest.mark.usefixtures("set_celery_always_eager")
-    @pytest.mark.usefixtures("redis_server_required")
-    def test_import_product_procedure_with_excel_with_notification(self, browser, live_server):
+    def test_import_product_procedure_with_excel_with_notification(self, browser, liveserver):
+        self.api_helper.drop_all_data(liveserver)
+
         # open homepage and login
-        browser.get(live_server + reverse("productdb:home"))
+        browser.get(liveserver + reverse("productdb:home"))
         browser.find_element_by_id("navbar_login").click()
 
         # handle the login dialog
@@ -36,6 +37,7 @@ class TestExcelImportFeature(BaseSeleniumTest):
         # navigate to the import products dialog
         browser.find_element_by_id("navbar_admin").click()
         browser.find_element_by_id("navbar_admin_import_products").click()
+        WebDriverWait(browser, 10).until(EC.presence_of_element_located((By.ID, "id_excel_file")))
 
         assert "Import Products" in browser.find_element_by_tag_name("body").text
 
@@ -61,9 +63,12 @@ class TestExcelImportFeature(BaseSeleniumTest):
             assert c in page_text
 
         browser.find_element_by_id("continue_button").click()
+        WebDriverWait(browser, 10).until(EC.presence_of_element_located((By.ID, "id_excel_file")))
 
         # go to the homepage and verify that the notification message was created (text matching)
         browser.find_element_by_id("navbar_home").click()
+        WebDriverWait(browser, 10).until(EC.presence_of_element_located((By.ID, "search_text_field")))
+
         assert "Import product list" in browser.find_element_by_tag_name("body").text
 
         # verify metric, 25 Products should be imported, 24 with list price (including 0.00 values)
@@ -104,7 +109,11 @@ class TestExcelImportFeature(BaseSeleniumTest):
         client = Client()
         client.login(username=self.ADMIN_USERNAME, password=self.ADMIN_PASSWORD)
         for part in parts:
-            response = client.get(PRODUCTS_API_ENDPOINT + "?product_id=%s" % part['id'])
+            response = requests.get(liveserver + PRODUCTS_API_ENDPOINT + "?product_id=%s" % part["id"],
+                                    auth=HTTPBasicAuth("pdb_admin", "pdb_admin"),
+                                    headers={'Content-Type': 'application/json'},
+                                    verify=False,
+                                    timeout=10)
             assert response.status_code == 200
 
             response_json = response.json()
@@ -118,11 +127,11 @@ class TestExcelImportFeature(BaseSeleniumTest):
         # end session
         self.logout_user(browser)
 
-    @pytest.mark.usefixtures("set_celery_always_eager")
-    @pytest.mark.usefixtures("redis_server_required")
-    def test_import_product_procedure_with_excel_without_notification(self, browser, live_server):
+    def test_import_product_procedure_with_excel_without_notification(self, browser, liveserver):
+        self.api_helper.drop_all_data(liveserver)
+
         # open homepage and login
-        browser.get(live_server + reverse("productdb:home"))
+        browser.get(liveserver + reverse("productdb:home"))
         browser.find_element_by_id("navbar_login").click()
 
         # handle the login dialog
@@ -131,6 +140,7 @@ class TestExcelImportFeature(BaseSeleniumTest):
         # navigate to the import products dialog
         browser.find_element_by_id("navbar_admin").click()
         browser.find_element_by_id("navbar_admin_import_products").click()
+        WebDriverWait(browser, 10).until(EC.presence_of_element_located((By.ID, "id_excel_file")))
 
         assert "Import Products" in browser.find_element_by_tag_name("body").text
 
@@ -155,10 +165,9 @@ class TestExcelImportFeature(BaseSeleniumTest):
         for c in expected_contents:
             assert c in page_text
 
-        browser.find_element_by_id("continue_button").click()
-
         # go to the homepage and verify that the notification message was created (text matching)
         browser.find_element_by_id("navbar_home").click()
+        WebDriverWait(browser, 10).until(EC.presence_of_element_located((By.ID, "search_text_field")))
         assert "Import product list" not in browser.find_element_by_tag_name("body").text
 
         # verify metric, 25 Products should be imported, 24 with list price (including 0.00 values)
@@ -174,14 +183,15 @@ class TestExcelImportFeature(BaseSeleniumTest):
         # end session
         self.logout_user(browser)
 
-    @pytest.mark.usefixtures("set_celery_always_eager")
-    @pytest.mark.usefixtures("redis_server_required")
-    def test_import_product_procedure_with_excel_in_update_only_mode(self, browser, live_server):
+    def test_import_product_procedure_with_excel_in_update_only_mode(self, browser, liveserver):
+        self.api_helper.drop_all_data(liveserver)
+
         # create a Product in the database that should be updated
-        p = Product.objects.create(product_id="WS-C2960S-48FPD-L", vendor=Vendor.objects.get(id=1))
+        test_product_id = "WS-C2960S-48FPD-L"
+        self.api_helper.create_product(liveserver, product_id=test_product_id, vendor_id=1)
 
         # open homepage and login
-        browser.get(live_server + reverse("productdb:home"))
+        browser.get(liveserver + reverse("productdb:home"))
         browser.find_element_by_id("navbar_login").click()
 
         # handle the login dialog
@@ -190,6 +200,7 @@ class TestExcelImportFeature(BaseSeleniumTest):
         # navigate to the import products dialog
         browser.find_element_by_id("navbar_admin").click()
         browser.find_element_by_id("navbar_admin_import_products").click()
+        WebDriverWait(browser, 10).until(EC.presence_of_element_located((By.ID, "id_excel_file")))
 
         assert "Import Products" in browser.find_element_by_tag_name("body").text
 
@@ -211,21 +222,22 @@ class TestExcelImportFeature(BaseSeleniumTest):
         browser.find_element_by_id("continue_button").click()
 
         # verify the imported entry
-        p.refresh_from_db()
-        assert p.product_id == "WS-C2960S-48FPD-L"
-        assert p.description == "Catalyst 2960S 48 GigE PoE 740W, 2 x 10G SFP+ LAN Base"
-        assert p.list_price == 8795.00
-        assert p.currency == "USD"
-        assert p.vendor.name == "Cisco Systems"
+        p = self.api_helper.get_product_by_product_id(liveserver, test_product_id)
+        assert p["product_id"] == "WS-C2960S-48FPD-L"
+        assert p["description"] == "Catalyst 2960S 48 GigE PoE 740W, 2 x 10G SFP+ LAN Base"
+        assert p["list_price"] == "8795.00"
+        assert p["currency"] == "USD"
 
         # end session
         self.logout_user(browser)
 
-    @pytest.mark.usefixtures("set_celery_always_eager")
-    def test_import_product_procedure_with_an_excel_file_that_with_incomplete_keys(self, browser, live_server):
+    def test_import_product_procedure_with_an_excel_file_that_with_incomplete_keys(self, browser, liveserver):
+        self.api_helper.drop_all_data(liveserver)
+
         # login and go to the import products page
-        browser.get(live_server + reverse("productdb:import_products"))
+        browser.get(liveserver + reverse("productdb:import_products"))
         self.login_user(browser, self.ADMIN_USERNAME, self.ADMIN_PASSWORD, "Import Products")
+        WebDriverWait(browser, 10).until(EC.presence_of_element_located((By.ID, "id_excel_file")))
 
         # upload an excel file with invalid keys
         test_excel_file = os.path.join(os.getcwd(),
@@ -246,11 +258,13 @@ class TestExcelImportFeature(BaseSeleniumTest):
         # end session
         self.logout_user(browser)
 
-    @pytest.mark.usefixtures("set_celery_always_eager")
-    def test_import_product_procedure_with_an_excel_file_with_invalid_sheet_name(self, browser, live_server):
+    def test_import_product_procedure_with_an_excel_file_with_invalid_sheet_name(self, browser, liveserver):
+        self.api_helper.drop_all_data(liveserver)
+
         # login and go to the import products page
-        browser.get(live_server + reverse("productdb:import_products"))
+        browser.get(liveserver + reverse("productdb:import_products"))
         self.login_user(browser, self.ADMIN_USERNAME, self.ADMIN_PASSWORD, "Import Products")
+        WebDriverWait(browser, 10).until(EC.presence_of_element_located((By.ID, "id_excel_file")))
 
         # upload an excel file with invalid keys
         test_excel_file = os.path.join(os.getcwd(),
@@ -270,29 +284,53 @@ class TestExcelImportFeature(BaseSeleniumTest):
         # end session
         self.logout_user(browser)
 
-    @pytest.mark.usefixtures("set_celery_always_eager")
-    def test_import_product_migrations_procedure(self, browser, live_server):
+    def test_import_product_migrations_procedure(self, browser, liveserver):
+        self.api_helper.drop_all_data(liveserver)
+
         # create some test data
-        product_a = mixer.blend("productdb.Product", product_id="Product A", vendor=Vendor.objects.get(id=1),
-                                eol_ext_announcement_date=datetime.date(2016, 1, 1),
-                                end_of_sale_date=datetime.date(2016, 1, 1),
-                                eox_update_time_stamp=datetime.datetime.utcnow())
-        mixer.blend("productdb.Product", product_id="Product B", vendor=Vendor.objects.get(id=1),
-                    eol_ext_announcement_date=datetime.date(2016, 1, 1), end_of_sale_date=datetime.date(2016, 1, 1),
-                    eox_update_time_stamp=datetime.datetime.utcnow())
-        mixer.blend("productdb.Product", product_id="Product C", vendor=Vendor.objects.get(id=1),
-                    eol_ext_announcement_date=datetime.date(2016, 1, 1), end_of_sale_date=datetime.date(2016, 1, 1),
-                    eox_update_time_stamp=datetime.datetime.utcnow())
-        mixer.blend("productdb.Product", product_id="Product D", vendor=Vendor.objects.get(id=1),
-                    eol_ext_announcement_date=datetime.date(2016, 1, 1), end_of_sale_date=datetime.date(2016, 1, 1),
-                    eox_update_time_stamp=datetime.datetime.utcnow())
-        mixer.blend("productdb.Product", product_id="Product E", vendor=Vendor.objects.get(id=1),
-                    eol_ext_announcement_date=datetime.date(2016, 1, 1), end_of_sale_date=datetime.date(2016, 1, 1),
-                    eox_update_time_stamp=datetime.datetime.utcnow())
-        mixer.blend("productdb.ProductMigrationSource", name="Someone", preference=75)
+        self.api_helper.create_product(
+            liveserver_url=liveserver,
+            product_id="Product A",
+            vendor_id=1,
+            eol_ext_announcement_date="2016-01-01",
+            end_of_sale_date="2016-01-01",
+            eox_update_time_stamp=datetime.datetime.utcnow().strftime("%Y-%m-%d"),
+        )
+        self.api_helper.create_product(
+            liveserver_url=liveserver,
+            product_id="Product B",
+            vendor_id=1,
+            eol_ext_announcement_date="2016-01-01",
+            end_of_sale_date="2016-01-01",
+            eox_update_time_stamp=datetime.datetime.utcnow().strftime("%Y-%m-%d"),
+        )
+        self.api_helper.create_product(
+            liveserver_url=liveserver,
+            product_id="Product C",
+            vendor_id=1,
+            eol_ext_announcement_date="2016-01-01",
+            end_of_sale_date="2016-01-01",
+            eox_update_time_stamp=datetime.datetime.utcnow().strftime("%Y-%m-%d"),
+        )
+        self.api_helper.create_product(
+            liveserver_url=liveserver,
+            product_id="Product D",
+            vendor_id=1,
+            eol_ext_announcement_date="2016-01-01",
+            end_of_sale_date="2016-01-01",
+            eox_update_time_stamp=datetime.datetime.utcnow().strftime("%Y-%m-%d"),
+        )
+        self.api_helper.create_product(
+            liveserver_url=liveserver,
+            product_id="Product E",
+            vendor_id=1,
+            eol_ext_announcement_date="2016-01-01",
+            end_of_sale_date="2016-01-01",
+            eox_update_time_stamp=datetime.datetime.utcnow().strftime("%Y-%m-%d"),
+        )
 
         # login and go to the import products page
-        browser.get(live_server + reverse("productdb:import_product_migrations"))
+        browser.get(liveserver + reverse("productdb:import_product_migrations"))
         self.login_user(browser, self.ADMIN_USERNAME, self.ADMIN_PASSWORD, "Import Product Migrations")
 
         # upload an excel file with invalid keys
@@ -312,7 +350,10 @@ class TestExcelImportFeature(BaseSeleniumTest):
         browser.find_element_by_id("continue_button").click()
 
         # go to Product A and verify that the expected preferred migration option was set
-        browser.get(live_server + reverse("productdb:product-detail", kwargs={"product_id": product_a.id}))
+        pa = self.api_helper.get_product_by_product_id(
+            liveserver, "Product A"
+        )
+        browser.get(liveserver + reverse("productdb:product-detail", kwargs={"product_id": pa["id"]}))
 
         content = browser.find_element_by_tag_name("body").text
         assert "Product ID:\nNot in Database\n" in content
@@ -320,13 +361,10 @@ class TestExcelImportFeature(BaseSeleniumTest):
         assert "Someone (detailed)" in content
         assert "Someone else (detailed)" in content
 
+        # end session
+        self.logout_user(browser)
 
-@pytest.mark.usefixtures("base_data_for_test_case")
-@pytest.mark.usefixtures("import_default_users")
-@pytest.mark.usefixtures("import_default_vendors")
-@pytest.mark.usefixtures("import_default_text_blocks")
-@pytest.mark.usefixtures("set_celery_always_eager")
-@online
+
 @selenium_test
 class TestSyncLocalDatabaseWithCiscoEoxApi(BaseSeleniumTest):
     """
@@ -340,16 +378,15 @@ class TestSyncLocalDatabaseWithCiscoEoxApi(BaseSeleniumTest):
         }
 
     """
-    def configure_cisco_api_for_test_case(self, browser, live_server):
-        browser.get(live_server + reverse("productdb_config:change_settings"))
+    def configure_cisco_api_for_test_case(self, browser, liveserver):
+        with open(".cisco_api_credentials") as f:
+            json_credentials = json.loads(f.read())
+
+        browser.get(liveserver + reverse("productdb_config:change_settings"))
 
         # login as admin
-        page_text = browser.find_element_by_tag_name('body').text
-        assert "Login" in page_text
-
-        browser.find_element_by_id("username").send_keys(self.ADMIN_USERNAME)
-        browser.find_element_by_id("password").send_keys(self.ADMIN_PASSWORD)
-        browser.find_element_by_id("login_button").click()
+        self.login_user(browser=browser, username=self.ADMIN_USERNAME,
+                        password=self.ADMIN_PASSWORD, expected_content="Settings")
 
         page_text = browser.find_element_by_tag_name('body').text
         assert "Settings" in page_text
@@ -359,21 +396,18 @@ class TestSyncLocalDatabaseWithCiscoEoxApi(BaseSeleniumTest):
         assert "enable Cisco API" in page_text
         browser.find_element_by_id("id_cisco_api_enabled").click()
         browser.find_element_by_id("submit").click()
+        time.sleep(5)
 
         # after the refresh of the page, a new tab is visible (move to different tasks)
         browser.find_element_by_link_text("Cisco API settings").click()
-        time.sleep(1)
+        browser.find_element_by_link_text("Cisco API settings").send_keys(Keys.ENTER)
+        time.sleep(5)
 
         # now, the user is navigated to the Cisco API Console settings
         page_text = browser.find_element_by_tag_name("body").text
         assert "Cisco API authentication settings" in page_text
 
         # enter the credentials from the file ".cisco_api_credentials" and save the settings
-        with open(".cisco_api_credentials") as f:
-            content = f.read()
-
-        json_credentials = json.loads(content)
-
         api_client_id = browser.find_element_by_id("id_cisco_api_client_id")
         api_client_id.clear()
         api_client_id.send_keys(json_credentials["client_id"])
@@ -382,23 +416,12 @@ class TestSyncLocalDatabaseWithCiscoEoxApi(BaseSeleniumTest):
         api_client_secret.clear()
         api_client_secret.send_keys(json_credentials["client_secret"])
 
-        browser.find_element_by_id("submit").click()
-
-        # after the page refreshes, the user will see a message that the connection to the Cisco EoX API was successful
-        success_message = "Successfully connected to the Cisco EoX API"
-        page_text = browser.find_element_by_tag_name("body").text
-        assert success_message in page_text
-
         # change to Cisco API configuration tab
         browser.find_element_by_link_text("Cisco API settings").click()
 
         # enable the automatic synchronization with the Cisco EoX states and click save settings
         browser.find_element_by_id("id_eox_api_auto_sync_enabled").click()
         browser.find_element_by_id("submit").click()
-
-        # change to Cisco API configuration tab
-        browser.find_element_by_link_text("Cisco API settings").click()
-        time.sleep(1)
 
         # After the page refreshes the more detailed configuration section for the synchronization of the Cisco EoX
         # is visible
@@ -410,32 +433,47 @@ class TestSyncLocalDatabaseWithCiscoEoxApi(BaseSeleniumTest):
         # Blacklist elements, enter query string and blacklist entries and click submit
         assert header_text in page_text
 
-        queries = browser.find_element_by_id("id_eox_api_queries")
-        queries.send_keys("WS-C2960-24-*\nWS-C3750-24-*")
+        browser.find_element_by_id("submit").click()
+        self.wait_for_text_to_be_displayed_in_body_tag(browser, "Successfully connected to the Cisco EoX API")
 
+        # after the page refreshes, the user will see a message that the connection to the Cisco EoX API was successful
+        success_message = "Successfully connected to the Cisco EoX API"
+        page_text = browser.find_element_by_tag_name("body").text
+        assert success_message in page_text
+
+        # change to Cisco API configuration tab
+        browser.find_element_by_link_text("Cisco API settings").click()
+        self.wait_for_element_to_be_clickable_by_xpath(browser, "id('id_eox_api_queries')")
+
+        queries = browser.find_element_by_id("id_eox_api_queries")
+        queries.send_keys("WS-C2960-24*\nWS-C3750-24*")
         blacklist = browser.find_element_by_id("id_eox_api_blacklist")
         blacklist.send_keys("WS-C2960-24-S-WS;WS-C2960-24-S-RF")
 
         browser.find_element_by_id("submit").click()
-
-        # change to Cisco API configuration tab
-        browser.find_element_by_link_text("Cisco API settings").click()
-        time.sleep(1)
+        self.wait_for_text_to_be_displayed_in_body_tag(browser, "Successfully connected to the Cisco EoX API")
 
         # Verify the content of the query and blacklist field
+        time.sleep(5)
+        browser.find_element_by_link_text("Cisco API settings").click()
+        time.sleep(5)
         queries = browser.find_element_by_id("id_eox_api_queries")
-        assert queries.text == "WS-C2960-24-*\nWS-C3750-24-*"
+        assert queries.text == "WS-C2960-24*\nWS-C3750-24*"
 
         blacklist = browser.find_element_by_id("id_eox_api_blacklist")
         assert blacklist.text == "WS-C2960-24-S-RF\nWS-C2960-24-S-WS"
 
-    @pytest.mark.usefixtures("redis_server_required")
-    def test_configure_periodic_cisco_api_eox_sync_and_trigger_the_execution_manually(self, browser, live_server):
-        self.configure_cisco_api_for_test_case(browser, live_server)
+    def test_configure_periodic_cisco_api_eox_sync_and_trigger_the_execution_manually(self, browser, liveserver):
+        self.api_helper.drop_all_data(liveserver)
+        self.api_helper.load_base_test_data(liveserver)
+
+        self.configure_cisco_api_for_test_case(browser, liveserver)
 
         # go to the Product Database status page
         browser.find_element_by_id("navbar_admin").click()
         browser.find_element_by_id("navbar_admin_status").click()
+        WebDriverWait(browser, 10).until(EC.presence_of_element_located((By.ID, "trigger_sync_with_cisco_eox_api")))
+
         assert "Product Database Status" in browser.find_element_by_tag_name("body").text
 
         # verify, that the Cisco API is enabled
@@ -445,52 +483,82 @@ class TestSyncLocalDatabaseWithCiscoEoxApi(BaseSeleniumTest):
         browser.find_element_by_id("trigger_sync_with_cisco_eox_api").click()
 
         # verify the resulting dialog
-        assert "The following queries were executed: WS-C2960-24-*, WS-C3750-24-*" in browser.find_element_by_tag_name("body").text
+        self.wait_for_text_to_be_displayed_in_id_tag(browser, "status_message", "The following queries were executed")
+        page_text = browser.find_element_by_tag_name("body").text
+        assert "The following queries were executed:\nWS-C2960-24*" in page_text
 
         # click on continue button, the status page should be visible again
         browser.find_element_by_id("continue_button").click()
+        time.sleep(2)
         assert "Product Database Status" in browser.find_element_by_tag_name("body").text
 
         # go to the homepage
         browser.find_element_by_id("navbar_home").click()
+        time.sleep(2)
 
         # on the homepage, you should see a recent message from the Cisco EoX API sync
         assert "recent events" in browser.find_element_by_tag_name("body").text
         assert "Synchronization with Cisco EoX API" in browser.find_element_by_tag_name("body").text
-        assert "The synchronization with the Cisco EoX API was successful." in browser.find_element_by_tag_name("body").text
+        assert "The synchronization with the Cisco EoX API was" in browser.find_element_by_tag_name("body").text
 
         # show the detailed message
         browser.find_element_by_link_text("view details").click()
-        assert "Synchronization with Cisco EoX API" in browser.find_element_by_tag_name("body").text
-        expected_content = "The following queries were executed:\nWS-C2960-24-* (affected 3 products, success)\n" \
-                           "WS-C3750-24-* (affected 0 products, success)"
+        time.sleep(2)
+
+        assert "The synchronization with the Cisco EoX API was successful." in browser.find_element_by_tag_name("body").text
+        expected_content = "The following queries were executed:\n" \
+                           "WS-C2960-24* (affects 29 products, success)\n" \
+                           "WS-C3750-24* (affects 12 products, success)"
         assert expected_content in browser.find_element_by_tag_name("body").text
 
         # end session
         self.logout_user(browser)
 
 
-@pytest.mark.usefixtures("import_default_users")
-@pytest.mark.usefixtures("import_default_vendors")
-@pytest.mark.usefixtures("import_default_text_blocks")
 @selenium_test
 class TestSettingsPermissions(BaseSeleniumTest):
-    def test_regular_user_has_no_access_to_settings_pages(self, browser, live_server):
-        browser.get(live_server + reverse("productdb_config:change_settings"))
+    def test_regular_user_has_no_access_to_settings_pages(self, browser, liveserver):
+        self.api_helper.drop_all_data(liveserver)
+
+        browser.get(liveserver + reverse("productdb_config:change_settings"))
 
         # perform login using the regular API user
         # the user will be logged in but is again redirected to the login dialog because of missing permissions
-        self.login_user(browser, self.API_USERNAME, self.API_PASSWORD, "HTTP 403 - forbidden request")
+        WebDriverWait(browser, 10).until(EC.presence_of_element_located((By.ID, "username")))
+        page_text = browser.find_element_by_tag_name('body').text
+        assert "Login" in page_text, "Should be the login dialog"
+
+        browser.find_element_by_id("username").send_keys(self.API_USERNAME)
+        browser.find_element_by_id("password").send_keys(self.API_PASSWORD)
+        browser.find_element_by_id("login_button").click()
+        time.sleep(3)
+
+        # check that the user sees the expected title
+        page_text = browser.find_element_by_tag_name('body').text
+        assert "HTTP 403 - forbidden request" in page_text, "login may failed"
 
         # end session
-        browser.get(live_server + reverse("logout"))
+        browser.get(liveserver + reverse("logout"))
 
-    def test_regular_user_has_no_access_to_the_add_notification_settings(self, browser, live_server):
-        browser.get(live_server + reverse("productdb_config:notification-add"))
+    def test_regular_user_has_no_access_to_the_add_notification_settings(self, browser, liveserver):
+        self.api_helper.drop_all_data(liveserver)
+
+        browser.get(liveserver + reverse("productdb_config:notification-add"))
 
         # perform login using the regular API user
         # the user will be logged in but is again redirected to the login dialog because of missing permissions
-        self.login_user(browser, self.API_USERNAME, self.API_PASSWORD, "HTTP 403 - forbidden request")
+        WebDriverWait(browser, 10).until(EC.presence_of_element_located((By.ID, "username")))
+        page_text = browser.find_element_by_tag_name('body').text
+        assert "Login" in page_text, "Should be the login dialog"
+
+        browser.find_element_by_id("username").send_keys(self.API_USERNAME)
+        browser.find_element_by_id("password").send_keys(self.API_PASSWORD)
+        browser.find_element_by_id("login_button").click()
+        time.sleep(3)
+
+        # check that the user sees the expected title
+        page_text = browser.find_element_by_tag_name('body').text
+        assert "HTTP 403 - forbidden request" in page_text, "login may failed"
 
         # end session
-        browser.get(live_server + reverse("logout"))
+        browser.get(liveserver + reverse("logout"))
