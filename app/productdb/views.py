@@ -258,22 +258,23 @@ def view_product_details(request, product_id=None):
 
     if view_product.has_migration_options():
         db_preferred_replacement_option = view_product.get_preferred_replacement_option()
-        valid_replacement_product = db_preferred_replacement_option.get_valid_replacement_product()
-        dict_preferred_replacement_option = {
-            "migration_source": db_preferred_replacement_option.migration_source.name,
-            "migration_product_info_url": db_preferred_replacement_option.migration_product_info_url,
-            "comment": db_preferred_replacement_option.comment,
-            "replacement_product_id": db_preferred_replacement_option.replacement_product_id,
-            "is_valid_replacement": db_preferred_replacement_option.is_valid_replacement(),
-            "is_replacement_in_db": db_preferred_replacement_option.is_replacement_in_db(),
-            "get_valid_replacement_product": valid_replacement_product.id if valid_replacement_product else None,
-            "link_to_preferred_option": None,
-        }
-        if dict_preferred_replacement_option["is_valid_replacement"] and \
-                dict_preferred_replacement_option["is_replacement_in_db"]:
-            dict_preferred_replacement_option["link_to_preferred_option"] = reverse("productdb:product-detail", kwargs={
-                "product_id": dict_preferred_replacement_option["get_valid_replacement_product"]
-            })
+        if db_preferred_replacement_option is not None:
+            valid_replacement_product = db_preferred_replacement_option.get_valid_replacement_product()
+            dict_preferred_replacement_option = {
+                "migration_source": db_preferred_replacement_option.migration_source.name,
+                "migration_product_info_url": db_preferred_replacement_option.migration_product_info_url,
+                "comment": db_preferred_replacement_option.comment,
+                "replacement_product_id": db_preferred_replacement_option.replacement_product_id,
+                "is_valid_replacement": db_preferred_replacement_option.is_valid_replacement(),
+                "is_replacement_in_db": db_preferred_replacement_option.is_replacement_in_db(),
+                "get_valid_replacement_product": valid_replacement_product.id if valid_replacement_product else None,
+                "link_to_preferred_option": None,
+            }
+            if dict_preferred_replacement_option["is_valid_replacement"] and \
+                    dict_preferred_replacement_option["is_replacement_in_db"]:
+                dict_preferred_replacement_option["link_to_preferred_option"] = reverse("productdb:product-detail", kwargs={
+                    "product_id": dict_preferred_replacement_option["get_valid_replacement_product"]
+                })
 
     for migration_source_name in view_product.get_product_migration_source_names_set():
         db_migration_path = view_product.get_migration_path(migration_source_name)

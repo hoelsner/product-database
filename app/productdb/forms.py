@@ -12,10 +12,6 @@ logger = logging.getLogger("app.productdb.forms")
 class ProductMigrationOptionForm(forms.ModelForm):
     """custom form for the admin page to create or update Product Migration Options"""
     product_id = forms.CharField()
-    product = forms.CharField(
-        required=False,
-        widget=forms.HiddenInput
-    )
 
     def __init__(self, data=None, files=None, auto_id='id_%s', prefix=None, initial=None, error_class=ErrorList,
                  label_suffix=None, empty_permitted=False, instance=None):
@@ -50,11 +46,12 @@ class ProductMigrationOptionForm(forms.ModelForm):
                                           "replacement Product ID"
             })
 
+        return cleaned_data
+
     class Meta:
         model = ProductMigrationOption
         fields = {
             "product_id",
-            "product",
             "replacement_product_id",
             "migration_source",
             "comment",

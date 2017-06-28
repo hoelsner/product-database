@@ -33,6 +33,9 @@ def mock_synchronize_task(monkeypatch):
     )
 
 
+@pytest.mark.usefixtures("import_default_users")
+@pytest.mark.usefixtures("import_default_vendors")
+@pytest.mark.usefixtures("import_default_text_blocks")
 @pytest.mark.usefixtures("mock_synchronize_task")
 class TestStartCiscoEoxApiSyncNowView:
     URL_NAME = "cisco_api:start_cisco_eox_api_sync_now"

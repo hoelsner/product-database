@@ -127,6 +127,7 @@ def test_is_valid_regex():
     assert utils.is_valid_regex(["moh"]) is False
 
 
+@pytest.mark.usefixtures("import_default_vendors")
 def test_login_required_if_login_only_mode(monkeypatch):
     user = mixer.blend("auth.User")
 

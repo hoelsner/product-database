@@ -2378,7 +2378,8 @@ class TestNotificationMessageAPIEndpoint:
                     "title": "FooBar",
                     "type": "INFO",
                     "summary_message": "Test",
-                    "created": "2017-06-16T19:07:28.312467Z"
+                    "detailed_message": "Test",
+                    "created": ""
                 }
             ]
         }
@@ -2386,7 +2387,8 @@ class TestNotificationMessageAPIEndpoint:
         expected_result["data"][0]["id"] = nm.id
         expected_result["data"][0]["title"] = nm.title
         expected_result["data"][0]["summary_message"] = nm.summary_message
-        expected_result["data"][0]["created"] = nm.created.isoformat()
+        expected_result["data"][0]["detailed_message"] = nm.detailed_message
+        expected_result["data"][0]["created"] = nm.created.isoformat().replace("+00:00", "Z")
 
         client = APIClient()
         client.login(**AUTH_USER)
@@ -2398,13 +2400,8 @@ class TestNotificationMessageAPIEndpoint:
         assert "pagination" in jdata, "pagination information not provided"
         assert "data" in jdata, "data branch not found in result"
         assert jdata["pagination"]["total_records"] == 1, "unexpected result from API endpoint"
+        print(jdata)
         assert jdata == expected_result, "unexpected result from API endpoint"
-
-        # access first element of the list
-        response = client.get(jdata["data"][0]["url"])
-
-        assert response.status_code == status.HTTP_200_OK
-        assert jdata["data"][0] == response.json()
 
     def test_add_access_with_permission(self):
         test_user = "user"
@@ -2412,7 +2409,8 @@ class TestNotificationMessageAPIEndpoint:
             "id": 1,
             "title": "FooBar",
             "type": "INFO",
-            "summary_message": "",
+            "summary_message": "summary message",
+            "detailed_message": "detailed message",
             "created": None
         }
 
@@ -2421,19 +2419,23 @@ class TestNotificationMessageAPIEndpoint:
         assert p is not None
         u.user_permissions.add(p)
         u.save()
-        assert u.has_perm("productdb.add_notificationmessage")
+        assert u.has_perm("config.add_notificationmessage")
 
         client = APIClient()
         client.login(username=test_user, password=test_user)
 
         # create with name
-        response = client.post(REST_NOTIFICATIONMESSAGES_LIST, data={"title": expected_result["title"]})
+        response = client.post(REST_NOTIFICATIONMESSAGES_LIST, data={
+            "title": expected_result["title"],
+            "summary_message": expected_result["summary_message"],
+            "detailed_message": expected_result["detailed_message"]
+        })
 
         assert response.status_code == status.HTTP_201_CREATED, response.content.decode()
         # adjust ID values from Database
         nm_obj = NotificationMessage.objects.get(title=expected_result["title"])
         expected_result["id"] = nm_obj.id
-        expected_result["created"] = nm_obj.created.isoformat()
+        expected_result["created"] = nm_obj.created.isoformat().replace("+00:00", "Z")
         assert response.json() == expected_result, "Should provide the new notification message"
 
     def test_delete_access_with_permission(self):
@@ -2446,7 +2448,7 @@ class TestNotificationMessageAPIEndpoint:
         assert perm is not None
         u.user_permissions.add(perm)
         u.save()
-        assert u.has_perm("productdb.delete_notificationmessage")
+        assert u.has_perm("config.delete_notificationmessage")
 
         client = APIClient()
         client.login(username=test_user, password=test_user)

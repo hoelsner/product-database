@@ -242,6 +242,7 @@ class NotificationMessageSerializer(HyperlinkedModelSerializer):
             "title",
             "type",
             "summary_message",
+            "detailed_message",
             "created"
         )
         extra_kwargs = {

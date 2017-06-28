@@ -1,0 +1,40 @@
+# test data for the Selenium test cases
+- model: productdb.productmigrationsource
+  pk: 1
+  fields: {name: Someone, description: '', preference: 75}
+- fields:
+    email: 'api@localhost.localhost'
+    first_name: 'PasswordTest'
+    groups: []
+    is_active: true
+    is_staff: false
+    is_superuser: false
+    last_name: 'User'
+    password: pbkdf2_sha256$20000$gOZxwaBZDUtN$SGa1wDZXHQx87jUdQCdrF352OLo9wn/ULTWWzbsLlYQ=
+    user_permissions: []
+    username: testpasswordchange
+  model: auth.user
+- fields:
+    email: 'api@localhost.localhost'
+    first_name: 'PasswordTest'
+    groups: []
+    is_active: true
+    is_staff: false
+    is_superuser: false
+    last_name: 'User'
+    password: pbkdf2_sha256$20000$gOZxwaBZDUtN$SGa1wDZXHQx87jUdQCdrF352OLo9wn/ULTWWzbsLlYQ=
+    user_permissions: []
+    username: testuserprofilemail
+  model: auth.user
+- fields:
+    email: 'api@localhost.localhost'
+    first_name: 'PasswordTest'
+    groups: []
+    is_active: true
+    is_staff: false
+    is_superuser: false
+    last_name: 'User'
+    password: pbkdf2_sha256$20000$gOZxwaBZDUtN$SGa1wDZXHQx87jUdQCdrF352OLo9wn/ULTWWzbsLlYQ=
+    user_permissions: []
+    username: testregexsession
+  model: auth.user

@@ -156,6 +156,14 @@ def change_configuration(request):
                     if form.cleaned_data["cisco_api_client_secret"] != "" else "PlsChgMe"
                 app_config.set_cisco_api_client_secret(client_secret)
 
+                app_config.set_internal_product_id_label(form.cleaned_data["internal_product_id_label"])
+                app_config.set_periodic_sync_enabled(form.cleaned_data["eox_api_auto_sync_enabled"])
+                app_config.set_auto_create_new_products(form.cleaned_data["eox_auto_sync_auto_create_elements"])
+                app_config.set_cisco_eox_api_queries(form.cleaned_data["eox_api_queries"])
+                app_config.set_product_blacklist_regex(form.cleaned_data["eox_api_blacklist"])
+                if form.cleaned_data["eox_api_wait_time"]:
+                    app_config.set_cisco_eox_api_sync_wait_time(form.cleaned_data["eox_api_wait_time"])
+
                 if client_id != "PlsChgMe":
                     result = utils.check_cisco_eox_api_access(
                         form.cleaned_data["cisco_api_client_id"],
@@ -174,14 +182,6 @@ def change_configuration(request):
                         request,
                         "Please configure your Cisco API credentials within the Cisco API settings tab."
                     )
-
-                app_config.set_periodic_sync_enabled(form.cleaned_data["eox_api_auto_sync_enabled"])
-                app_config.set_internal_product_id_label(form.cleaned_data["internal_product_id_label"])
-                app_config.set_auto_create_new_products(form.cleaned_data["eox_auto_sync_auto_create_elements"])
-                app_config.set_cisco_eox_api_queries(form.cleaned_data["eox_api_queries"])
-                app_config.set_product_blacklist_regex(form.cleaned_data["eox_api_blacklist"])
-                if form.cleaned_data["eox_api_wait_time"]:
-                    app_config.set_cisco_eox_api_sync_wait_time(form.cleaned_data["eox_api_wait_time"])
 
             # expire cached settings
             cache.delete("LOGIN_ONLY_MODE_SETTING")

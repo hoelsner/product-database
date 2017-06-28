@@ -241,7 +241,8 @@ def test_datatables_search_on_list_product_groups_view():
     test_pg_search_term = "Test Product Group"
     uv = Vendor.objects.get(id=0)
     for e in range(1, 50):
-        mixer.blend("productdb.ProductGroup", vendor=uv)
+        mixer.blend("productdb.ProductGroup", vendor=uv, name="Product Group %d" % e)
+
     mixer.blend("productdb.ProductGroup", name=test_pg_search_term, vendor=uv)
     url = reverse('productdb:datatables_list_product_groups')
 

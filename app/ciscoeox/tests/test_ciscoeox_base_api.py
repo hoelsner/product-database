@@ -284,14 +284,14 @@ class TestCiscoHelloApi:
 
         json_result = cisco_hello_api.hello_api_call()
 
-        assert json_result == {'response': 'Hello World'}
+        assert json_result == {'helloResponse': {'response': 'Hello World!'}}
 
     def test_offline_hello_api_call(self, monkeypatch):
         class MockSession:
             def get(self, *args, **kwargs):
                 r = Response()
                 r.status_code = 200
-                r._content = json.dumps({'response': 'Hello World'}).encode("utf-8")
+                r._content = json.dumps({'helloResponse': {'response': 'Hello World!'}}).encode("utf-8")
                 return r
 
         monkeypatch.setattr(requests, "Session", MockSession)
@@ -307,7 +307,7 @@ class TestCiscoHelloApi:
         cisco_hello_api.create_temporary_access_token()
 
         json_result = cisco_hello_api.hello_api_call()
-        assert json_result == {'response': 'Hello World'}
+        assert json_result == {'helloResponse': {'response': 'Hello World!'}}
 
     def test_offline_hello_api_call_with_malformed_result(self, monkeypatch):
         class MockSession:

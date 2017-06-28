@@ -32,6 +32,7 @@ class LDAPBackendMock:
         return LDAPUserMock()
 
 
+@pytest.mark.usefixtures("import_default_vendors")
 class TestCustomPageViews:
     def test_custom_page_not_found(self):
         request = RequestFactory().get("/")
@@ -70,6 +71,7 @@ class TestCustomPageViews:
         assert "Form expired" in response.content.decode()
 
 
+@pytest.mark.usefixtures("import_default_vendors")
 class TestPasswordChangeView:
     URL_NAME = "change_password"
 
@@ -109,6 +111,7 @@ class TestPasswordChangeView:
         assert response.status_code == 403
 
 
+@pytest.mark.usefixtures("import_default_vendors")
 class TestPasswordChangeDoneView:
     URL_NAME = "custom_password_change_done"
 
@@ -148,6 +151,7 @@ class TestPasswordChangeDoneView:
         assert response.status_code == 403
 
 
+@pytest.mark.usefixtures("import_default_vendors")
 class TestLoginLogoutView:
     URL_NAME = "login"
 
@@ -280,9 +284,10 @@ class TestLoginLogoutView:
         response = views.login_user(request)
 
         assert response.status_code == 200
-        assert "User account was disabled." in response.content.decode()
+        assert "Login failed, invalid credentials" in response.content.decode()
 
 
+@pytest.mark.usefixtures("import_default_vendors")
 @pytest.mark.usefixtures("redis_server_required")
 class TestProgressView:
     URL_NAME = "task_in_progress"
@@ -330,6 +335,7 @@ class TestProgressView:
         assert "My Test Task" in response.content.decode()
 
 
+@pytest.mark.usefixtures("import_default_vendors")
 class TestStatusAjaxCall:
     URL_NAME = "task_state"
 

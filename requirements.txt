@@ -1,13 +1,12 @@
 anyjson==0.3.3
-billiard==3.5.0.2
 celery==3.1.25
-Django==1.9.12
+Django==1.11.2
 django-annoying==0.10.3
 django-celery==3.2.1
 django-datatables-view==1.14.0
 django-rest-swagger==2.1.2
 django-redis-cache==1.7.1
-django-cacheops==3.1.2
+django-cacheops==3.2.1
 djangorestframework==3.6.2
 djangorestframework-xml==1.3.0
 Markdown==2.6.7
@@ -28,6 +27,6 @@ django-auth-ldap==1.2.10
 django-bootstrap3==8.2.1
 django-reversion==2.0.8
 django-reversion-compare==0.7.3
-django-filter==1.0.1
+django-filter==1.0.4
 raven==6.0.0
 jtextfsm==0.3.1

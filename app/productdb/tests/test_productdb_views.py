@@ -26,6 +26,7 @@ def patch_contrib_messages(request):
     return messages
 
 
+@pytest.mark.usefixtures("import_default_vendors")
 class TestHomeView:
     URL_NAME = "productdb:home"
 
@@ -57,6 +58,7 @@ class TestHomeView:
         assert response.status_code == 200, "Should be callable"
 
 
+@pytest.mark.usefixtures("import_default_vendors")
 class TestAboutView:
     URL_NAME = "productdb:about"
 
@@ -185,6 +187,7 @@ class TestBrowseAllProductsView:
         assert response.status_code == 200, "Should be callable"
 
 
+@pytest.mark.usefixtures("import_default_vendors")
 class TestListProductGroupsView:
     URL_NAME = "productdb:list-product_groups"
 
@@ -216,6 +219,7 @@ class TestListProductGroupsView:
         assert response.status_code == 200, "Should be callable"
 
 
+@pytest.mark.usefixtures("import_default_vendors")
 class TestListProductListsView:
     URL_NAME = "productdb:list-product_lists"
 
@@ -511,6 +515,7 @@ class TestProductDetailsView:
             assert response.status_code == 200, "Should be callable"
 
 
+@pytest.mark.usefixtures("import_default_vendors")
 class TestAddProductListView:
     URL_NAME = "productdb:add-product_list"
 
@@ -861,6 +866,7 @@ class TestDeleteProductListView:
         assert ProductList.objects.count() == 0, "One element should be created in the database"
 
 
+@pytest.mark.usefixtures("import_default_vendors")
 class TestImportProductMigrationsView:
     URL_NAME = "productdb:import_product_migrations"
 
@@ -935,6 +941,7 @@ class TestImportProductMigrationsView:
         assert response.url == reverse("task_in_progress", kwargs={"task_id": "mock_task_id"})
 
 
+@pytest.mark.usefixtures("import_default_vendors")
 class TestImportProductsView:
     URL_NAME = "productdb:import_products"
 
@@ -1090,6 +1097,7 @@ class TestEditUserProfileView:
         assert response.url == reverse("productdb:about"), "Should return to the back_to reference"
 
 
+@pytest.mark.usefixtures("import_default_vendors")
 class TestListProductCheckView:
     URL_NAME = "productdb:list-product_checks"
 
@@ -1123,6 +1131,7 @@ class TestListProductCheckView:
         assert response.status_code == 200, "Should be callable"
 
 
+@pytest.mark.usefixtures("import_default_vendors")
 class TestDetailProductCheckView:
     URL_NAME = "productdb:detail-product_check"
 
@@ -1186,6 +1195,7 @@ class TestDetailProductCheckView:
         assert response.url.startswith("/productdb/task/")
 
 
+@pytest.mark.usefixtures("import_default_vendors")
 @pytest.mark.usefixtures("set_celery_always_eager")
 class TestCreateProductCheckView:
     URL_NAME = "productdb:create-product_check"

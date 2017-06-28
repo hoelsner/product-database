@@ -7,42 +7,42 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 print("Django BASE_DIR: %s" % BASE_DIR)
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'rest_framework',
-    'rest_framework_swagger',
-    'rest_framework.authtoken',
-    'bootstrap3',
-    'reversion',
-    'reversion_compare',
-    'app.productdb',
-    'app.config',
-    'app.ciscoeox',
-    'cacheops',
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    "rest_framework",
+    "rest_framework_swagger",
+    "rest_framework.authtoken",
+    "bootstrap3",
+    "reversion",
+    "reversion_compare",
+    "app.productdb",
+    "app.config",
+    "app.ciscoeox",
+    "cacheops",
 ]
 
 MIDDLEWARE_CLASSES = [
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'django.middleware.security.SecurityMiddleware',
-    'reversion.middleware.RevisionMiddleware',
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.auth.middleware.SessionAuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "django.middleware.security.SecurityMiddleware",
+    "reversion.middleware.RevisionMiddleware",
 ]
 
 if os.getenv("PDB_DEBUG", False) and os.getenv("PDB_DEBUG_NO_CACHE", False):
     print("!!!!!!!! use database caching and disable cacheops...")
     CACHES = {
-        'default': {
-            'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
-            'LOCATION': 'product_database_cache_table',
+        "default": {
+            "BACKEND": "django.core.cache.backends.db.DatabaseCache",
+            "LOCATION": "product_database_cache_table",
         }
     }
     CACHEOPS_ENABLED = False  # disable cacheops for debugging
@@ -51,14 +51,14 @@ else:
     redis_server = os.environ.get("PDB_REDIS_HOST", "127.0.0.1")
     redis_port = os.environ.get("PDB_REDIS_PORT", "6379")
     CACHES = {
-        'default': {
-            'BACKEND': 'redis_cache.RedisCache',
-            'LOCATION': '%s:%s' % (redis_server, redis_port),
-            'OPTIONS': {
-                'CONNECTION_POOL_CLASS': 'redis.BlockingConnectionPool',
-                'CONNECTION_POOL_CLASS_KWARGS': {
-                    'max_connections': 50,
-                    'timeout': 20,
+        "default": {
+            "BACKEND": "redis_cache.RedisCache",
+            "LOCATION": "%s:%s" % (redis_server, redis_port),
+            "OPTIONS": {
+                "CONNECTION_POOL_CLASS": "redis.BlockingConnectionPool",
+                "CONNECTION_POOL_CLASS_KWARGS": {
+                    "max_connections": 50,
+                    "timeout": 20,
                 }
             }
         },
@@ -70,54 +70,53 @@ else:
 
     else:
         CACHEOPS_REDIS = {
-            'host': redis_server,
-            'port': redis_port,
-            'socket_timeout': 3,
+            "host": redis_server,
+            "port": redis_port,
+            "socket_timeout": 3,
         }
         CACHEOPS_DEFAULTS = {
-            'timeout': 4 * 60 * 60
+            "timeout": 4 * 60 * 60
         }
         CACHEOPS = {
-            'auth.user': {
-                'ops': 'all',
-                'timeout': 15 * 60
+            "auth.user": {
+                "ops": "all",
+                "timeout": 15 * 60
             },
-            'productdb.ProductList': {
-                'ops': 'all',
-                'timeout': 48 * 60 * 60
+            "productdb.ProductList": {
+                "ops": "all",
+                "timeout": 48 * 60 * 60
             },
-            'config.*': {
-                'ops': 'all',
-                'timeout': 24 * 60 * 60
+            "config.*": {
+                "ops": "all",
+                "timeout": 24 * 60 * 60
             },
-            '*.*': {
-                'ops': 'all'
+            "*.*": {
+                "ops": "all"
             },
         }
 
-ROOT_URLCONF = 'django_project.urls'
+ROOT_URLCONF = "django_project.urls"
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, '../templates')]
-        ,
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
-                'django_project.context_processors.is_ldap_authenticated_user',
-                'django_project.context_processors.get_internal_product_id_label'
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [os.path.join(BASE_DIR, "../templates")],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
+                "django_project.context_processors.is_ldap_authenticated_user",
+                "django_project.context_processors.get_internal_product_id_label"
             ],
         },
     },
 ]
 
 if os.getenv("PDB_DEBUG", False) or os.getenv("DEBUG", False):
-    TEMPLATES[0]["OPTIONS"]["context_processors"].append('django_project.context_processors.is_debug_enabled')
+    TEMPLATES[0]["OPTIONS"]["context_processors"].append("django_project.context_processors.is_debug_enabled")
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "PlsChgMe")
 
@@ -129,17 +128,17 @@ DATABASE_HOST = os.getenv("PDB_DATABASE_HOST", "127.0.0.1")
 DATABASE_PORT = os.getenv("PDB_DATABASE_PORT", "5432")
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': DATABASE_NAME,
-        'USER': DATABASE_USER,
-        'PASSWORD': DATABASE_PASSWORD,
-        'HOST': DATABASE_HOST,
-        'PORT': DATABASE_PORT
+    "default": {
+        "ENGINE": "django.db.backends.postgresql_psycopg2",
+        "NAME": DATABASE_NAME,
+        "USER": DATABASE_USER,
+        "PASSWORD": DATABASE_PASSWORD,
+        "HOST": DATABASE_HOST,
+        "PORT": DATABASE_PORT
     }
 }
 
-WSGI_APPLICATION = 'django_project.wsgi.application'
+WSGI_APPLICATION = "django_project.wsgi.application"
 
 LANGUAGE_CODE = os.getenv("PDB_LANGUAGE_CODE", "en-us")
 TIME_ZONE = os.getenv("PDB_TIME_ZONE", "Europe/Berlin")
@@ -156,9 +155,9 @@ SHORT_DATETIME_FORMAT = os.getenv("PDB_SHORT_DATETIME_FORMAT", SHORT_DATE_FORMAT
 LOGIN_URL = "/productdb/login/"
 LOGOUT_URL = "/productdb/logout/"
 LOGIN_REDIRECT_URL = "/productdb/"
-CSRF_FAILURE_VIEW = 'django_project.views.custom_csrf_failure_page'
+CSRF_FAILURE_VIEW = "django_project.views.custom_csrf_failure_page"
 
-STATIC_URL = '/productdb/static/'
+STATIC_URL = "/productdb/static/"
 STATIC_ROOT = os.path.abspath(os.path.join(BASE_DIR, "..", "..", "static"))
 STATICFILES_DIRS = (
     os.path.join(BASE_DIR, "..", "static"),
@@ -172,23 +171,24 @@ else:
     SESSION_SAVE_EVERY_REQUEST = True
 
 SESSION_COOKIE_NAME = "productdb"
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 
 BOOTSTRAP3 = {
-    'jquery_url': 'lib/jquery/dist/jquery.min.js',
-    'base_url': 'lib/bootstrap/dist',
-    'css_url': None,
-    'theme_url': None,
-    'javascript_url': None,
-    'javascript_in_head': False,
-    'include_jquery': False,
-    'horizontal_label_class': 'col-md-3',
-    'horizontal_field_class': 'col-md-9',
-    'set_required': True,
-    'set_disabled': False,
-    'set_placeholder': False,
-    'required_css_class': '',
-    'error_css_class': 'has-error',
-    'success_css_class': 'has-success',
+    "jquery_url": "lib/jquery/dist/jquery.min.js",
+    "base_url": "lib/bootstrap/dist",
+    "css_url": None,
+    "theme_url": None,
+    "javascript_url": None,
+    "javascript_in_head": False,
+    "include_jquery": False,
+    "horizontal_label_class": "col-md-3",
+    "horizontal_field_class": "col-md-9",
+    "set_required": True,
+    "set_disabled": False,
+    "set_placeholder": False,
+    "required_css_class": "",
+    "error_css_class": "has-error",
+    "success_css_class": "has-success",
 }
 
 DATA_DIRECTORY = os.path.join(os.path.join("..", "data"))
@@ -205,8 +205,8 @@ if os.getenv("PDB_DEBUG"):
     # enable django debug toolbar (only installed with the dev requirements)
     debug_ip = os.getenv("DEBUG_IP", "127.0.0.1/32")
     INTERNAL_IPS = [str(host) for host in IPv4Interface(debug_ip).network]
-    INSTALLED_APPS += ['debug_toolbar']
-    MIDDLEWARE_CLASSES += ['debug_toolbar.middleware.DebugToolbarMiddleware']
+    INSTALLED_APPS += ["debug_toolbar"]
+    MIDDLEWARE_CLASSES += ["debug_toolbar.middleware.DebugToolbarMiddleware"]
     CELERY_ALWAYS_EAGER = True
     CELERY_EAGER_PROPAGATES_EXCEPTIONS = True
 
@@ -214,4 +214,4 @@ if os.getenv("PDB_DEBUG"):
 if not os.getenv("PDB_DEBUG") and not os.getenv("PDB_TESTING", False):
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
-    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")

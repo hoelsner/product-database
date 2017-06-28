@@ -82,6 +82,7 @@ def mock_cisco_eox_api_access_disabled():
     app.set_cisco_api_enabled(False)
 
 
+@pytest.mark.usefixtures("import_default_vendors")
 class TestAddNotificationView:
     URL_NAME = "productdb_config:notification-add"
 
@@ -149,6 +150,7 @@ class TestAddNotificationView:
         assert response.status_code == 200
 
 
+@pytest.mark.usefixtures("import_default_vendors")
 class TestStatusView:
     URL_NAME = "productdb_config:status"
 
@@ -280,6 +282,7 @@ class TestStatusView:
         cache.delete("CISCO_EOX_API_TEST")
 
 
+@pytest.mark.usefixtures("import_default_vendors")
 class TestChangeConfiguration:
     URL_NAME = "productdb_config:change_settings"
 
@@ -436,6 +439,7 @@ class TestChangeConfiguration:
         assert msgs.added_new
 
 
+@pytest.mark.usefixtures("import_default_vendors")
 class TestServerMessagesList:
     URL_NAME = "productdb_config:notification-list"
 
@@ -472,6 +476,7 @@ class TestServerMessagesList:
         assert response.status_code == 200, "Should be callable"
 
 
+@pytest.mark.usefixtures("import_default_vendors")
 class TestServerMessagesDetail:
     URL_NAME = "productdb_config:notification-detail"
 
@@ -517,6 +522,7 @@ class TestServerMessagesDetail:
             views.server_message_detail(request, 9999)
 
 
+@pytest.mark.usefixtures("import_default_vendors")
 class TestFlushCache:
     URL_NAME = "productdb_config:flush_cache"
 
