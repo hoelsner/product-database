@@ -429,6 +429,7 @@ class TestProductLists(BaseSeleniumTest):
         browser.find_element_by_xpath("id('product_list_table')/tbody/tr[1]/td[2]").click()
         time.sleep(3)
         browser.find_element_by_xpath(edit_button_xpath).click()
+        time.sleep(3)
 
         browser.find_element_by_id("id_description").send_keys(" EDITED")
         test_pl_description += " EDITED"

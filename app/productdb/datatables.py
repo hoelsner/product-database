@@ -51,7 +51,6 @@ class VendorProductListJson(BaseDatatableView, ColumnSearchMixin):
         'list_price',
         'tags'
     ]
-
     column_based_filter = {  # parameters that are required for the column based filtering
         "product_id": {
             "order": 0,
@@ -76,6 +75,7 @@ class VendorProductListJson(BaseDatatableView, ColumnSearchMixin):
         }
 
     }
+    max_display_length = 250
 
     # if no vendor is given, we use the "unassigned" vendor
     vendor_id = 0
@@ -152,6 +152,7 @@ class ListProductGroupsJson(BaseDatatableView, ColumnSearchMixin):
             "expr": "name",
         }
     }
+    max_display_length = 250
 
     def get_initial_queryset(self):
         return ProductGroup.objects.all().prefetch_related("vendor")
@@ -215,6 +216,7 @@ class ListProductsByGroupJson(BaseDatatableView, ColumnSearchMixin):
             "expr": "tags"
         },
     }
+    max_display_length = 250
 
     # used if only products from a specific product ID should be shown
     product_group_id = None
@@ -305,6 +307,7 @@ class ListProductsJson(BaseDatatableView, ColumnSearchMixin):
             "expr": "tags"
         }
     }
+    max_display_length = 250
 
     def get_initial_queryset(self):
         return Product.objects.all().prefetch_related("vendor", "product_group")

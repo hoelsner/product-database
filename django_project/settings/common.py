@@ -171,7 +171,7 @@ else:
     SESSION_SAVE_EVERY_REQUEST = True
 
 SESSION_COOKIE_NAME = "productdb"
-SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
 
 BOOTSTRAP3 = {
     "jquery_url": "lib/jquery/dist/jquery.min.js",

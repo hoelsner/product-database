@@ -29,7 +29,9 @@ class TestApiUseCases(BaseSeleniumTest):
         test regular expression search on API
         """
         self.api_helper.drop_all_data(liveserver)
-        today_string = DateFormat(datetime.now()).format(get_format("Y-m-d"))
+
+        # API responds always in UTC timezone
+        today_string = DateFormat(datetime.utcnow()).format(get_format("Y-m-d"))
 
         self.api_helper.create_product(liveserver, product_id="WS-C2960+24TC-LS", vendor_id=1)
         first_product = self.api_helper.create_product(liveserver, product_id="WS-C2960-24TC-L", vendor_id=1)

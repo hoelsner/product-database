@@ -128,7 +128,12 @@ class TestBulkEolCheckFunction(BaseSeleniumTest):
         with open(file, "r") as f:
             content = f.read().splitlines()
             assert header_line == content[0]
-            assert "http://www.cisco.com/en/" in content[3]
+            for line in content:
+                if "http://www.cisco.com/en/" in line:
+                    break
+            else:
+                # no line matches, test failed
+                pytest.fail("expected content not found in file")
 
         # test that the table view is stored
         browser.execute_script("window.scrollTo(0, 0)")
@@ -243,6 +248,8 @@ class TestBulkEolCheckFunction(BaseSeleniumTest):
         # logout
         browser.find_element_by_id("navbar_loggedin").click()
         browser.find_element_by_id("navbar_loggedin_logout").click()
+        time.sleep(3)
+
         browser.get(liveserver + reverse("productdb:list-product_checks"))
 
         # verify table entries

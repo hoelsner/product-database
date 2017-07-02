@@ -122,7 +122,7 @@ services:
   nginx:
     container_name: ${COMPOSE_PROJECT_NAME:-productdb}_nginx
     restart: always
-    image: productdb/nginx
+    image: productdb/nginx:stable
     build:
       context: .
       dockerfile: deploy/docker/Dockerfile-nginx
