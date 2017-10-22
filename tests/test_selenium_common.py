@@ -729,7 +729,7 @@ class TestProductDatabaseViews(BaseSeleniumTest):
 
         # verify that the file is a CSV formatted field (with ";" as delimiter)
         file = os.path.join(test_download_dir, "export products - %s.csv" % vendor_name)
-        with open(file, "r+") as f:
+        with open(file, "r+", encoding="utf-8") as f:
             assert "\ufeffProduct ID;Description;List Price;Lifecycle State\n" == f.readline()
 
     def test_search_function_on_browse_vendor_products_view(self, browser, liveserver):
@@ -874,7 +874,7 @@ class TestProductDatabaseViews(BaseSeleniumTest):
 
         # verify that the file is a CSV formatted field (with ";" as delimiter)
         file = os.path.join(test_download_dir, "export products.csv")
-        with open(file, "r+") as f:
+        with open(file, "r+", encoding="utf-8") as f:
             assert "\ufeffVendor;Product ID;Description;List Price;Lifecycle State\n" == f.readline()
 
     def test_search_function_on_all_products_view(self, browser, liveserver):

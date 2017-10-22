@@ -8,7 +8,7 @@ services:
   redis:
     container_name: ${COMPOSE_PROJECT_NAME:-productdb}_redis
     restart: always
-    image: redis:latest
+    image: redis:4
     command: redis-server --appendonly yes
     volumes:
       - redis_data:/data

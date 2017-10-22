@@ -65,7 +65,7 @@ class SettingsForm(forms.Form):
         initial=False,
         required=False,
         label="<strong>auto-create new products</strong>",
-        help_text="If enabled, a new products will be create (if not already existing) if an EoL message is found. "
+        help_text="If enabled, new products are created (if not already existing) if an EoL message is found. "
                   "Otherwise, these entries are ignored."
     )
 

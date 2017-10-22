@@ -27,7 +27,6 @@
                     {% if is_cisco_api_enabled %}
                         <li><a href="#cisco_api_settings" role="tab" data-toggle="tab">Cisco API settings</a></li>
                     {% endif %}
-                    <li><a href="#notification_settings" role="tab" data-toggle="tab">Notification Settings</a></li>
                 </ul>
                 <div class="tab-content">
                     <div class="tab-pane fade in active" role="tabpanel" id="app_settings">
@@ -38,9 +37,6 @@
                             {% include "config/tabs/cisco_api_settings.html" %}
                         </div>
                     {% endif %}
-                    <div class="tab-pane fade" role="tabpanel" id="notification_settings">
-                        {% include "config/tabs/notification_settings.html" %}
-                    </div>
                 </div>
             </div>
             <input type="submit" class="btn btn-primary btn-block" id="submit" value="Save settings" />

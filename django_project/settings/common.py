@@ -72,7 +72,7 @@ else:
         CACHEOPS_REDIS = {
             "host": redis_server,
             "port": redis_port,
-            "socket_timeout": 3,
+            "socket_timeout": 10,
         }
         CACHEOPS_DEFAULTS = {
             "timeout": 4 * 60 * 60

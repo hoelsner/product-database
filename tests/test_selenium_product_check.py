@@ -125,7 +125,7 @@ class TestBulkEolCheckFunction(BaseSeleniumTest):
         file = os.path.join(test_download_dir, "product check - Test.csv")
         header_line = "\ufeffProduct ID;Amount;Lifecycle State;Replacement Product ID;Replacement suggested by;" \
                       "Vendor Bulletin;LC auto-sync"
-        with open(file, "r") as f:
+        with open(file, "r", encoding="utf-8") as f:
             content = f.read().splitlines()
             assert header_line == content[0]
             for line in content:

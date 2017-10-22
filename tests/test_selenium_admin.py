@@ -422,10 +422,15 @@ class TestSyncLocalDatabaseWithCiscoEoxApi(BaseSeleniumTest):
         # enable the automatic synchronization with the Cisco EoX states and click save settings
         browser.find_element_by_id("id_eox_api_auto_sync_enabled").click()
         browser.find_element_by_id("submit").click()
+        time.sleep(3)
+
+        # after the submit of the page, select the correct tab
+        browser.find_element_by_link_text("Cisco API settings").click()
+        browser.find_element_by_link_text("Cisco API settings").send_keys(Keys.ENTER)
 
         # After the page refreshes the more detailed configuration section for the synchronization of the Cisco EoX
         # is visible
-        header_text = "If enabled, a new products will be create (if not already existing) i"
+        header_text = "If enabled, new products are created (if not already existing)"
         page_text = browser.find_element_by_tag_name("form").text
         assert header_text in page_text
 

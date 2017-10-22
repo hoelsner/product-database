@@ -279,7 +279,7 @@ class TestUpdateLocalDbBasedOnRecord:
 
         result = api_crawler.update_local_db_based_on_record(invalid_record, create_missing=True)
 
-        assert result == "Product Data update failed: must be str, not None"
+        assert result == "Product Data update failed: strptime() argument 1 must be str, not None"
         assert Product.objects.count() == 1, "The transaction should rollback to avoid inconsistent entries in the DB"
 
         # verify that the change were not saved
@@ -294,7 +294,7 @@ class TestUpdateLocalDbBasedOnRecord:
 
         result = api_crawler.update_local_db_based_on_record(invalid_record, create_missing=True)
 
-        assert result == "Product Data update failed: must be str, not None"
+        assert result == "Product Data update failed: strptime() argument 1 must be str, not None"
         assert Product.objects.count() == 1, "The transaction should rollback to avoid inconsistent entries in the DB"
 
         p = Product.objects.get(product_id="WS-C2960-24T-S")
