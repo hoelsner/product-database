@@ -1,7 +1,0 @@
-# parameter for the LDAP enabled Product Database VM
-ldap_server_url: ""
-ldap_bind_dn: ""
-ldap_bind_password: ""
-ldap_user_search: ""
-ldap_group_search: ""
-ldap_require_group: ""

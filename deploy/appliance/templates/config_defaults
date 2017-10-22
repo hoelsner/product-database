@@ -1,8 +1,0 @@
-#
-# Product Database configuration file
-# ===================================
-#
-
-PDB_HTTPS_ONLY=1
-LANG='en_US.UTF-8'
-LC_ALL='en_US.UTF-8'
