@@ -47,39 +47,39 @@ After cloning the Product Database from GitHub copy the `env.prod_template` to `
 
 The following table shows all configuration options that are available in the system:
 
-^ environment variable   ^ description                 ^ default value  ^
-|------------------------|-----------------------------|----------------|
-| DJANGO_SECRET_KEY      | Django secret key           | plschgme       |
-| DJANGO_LOG_LEVEL       | Django log level            | info           |
-| PDB_DATABASE_NAME      | Database name               | postgres       |
-| PDB_DATABASE_USER      | Database user               | postgres       |
-| PDB_DATABASE_PASSWORD  | Database password           | <not set>      |
-| PDB_DATABASE_HOST      | Database host               | 127.0.0.1      |
-| PDB_DATABASE_PORT      | Database port               | 5432           |
-| PDB_REDIS_HOST         | redis-server host           | localhost      |
-| PDB_REDIS_PORT         | redis-server port           | 6379           |
-| PDB_GUNICORN_WORKER    | worker processes per web container    | 3           |
-| PDB_CELERY_CONCURRENCY | worker processes per celery worker    | 4           |
-| PDB_LANGUAGE_CODE      | language code for django           | en-us          |
-| PDB_TIME_ZONE          | time zone in django config         | Europe/Berlin  |
-| PDB_TIME_FORMAT        | time format in django config       | P              |
-| PDB_DATE_FORMAT        | date format in django config       | N j, Y         |
-| PDB_SHORT_DATE_FORMAT  | short date format in django config | Y-m-d          |
-| PDB_ENABLE_SENTRY      | enable sentry logging              | <not set>     |
-| PDB_SENTRY_DSN         | sentry DSN                         | <not set>     |
-| PDB_LDAP_ENABLE         | enable LDAP authentication         | <not set>                           |
-| PDB_LDAP_SERVER_URL     | LDAP Server URL                    | ldap://127.0.0.1:389/               |
-| PDB_LDAP_BIND_DN        | LDAP server user                   | cn=django-agent,dc=example,dc=com   |
-| PDB_LDAP_BIND_PASSWORD  | LDAP server passowrd               |                                     |
-| PDB_LDAP_USER_SEARCH    | where to search for the user       | ou=users,dc=example,dc=com          |
-| PDB_LDAP_GROUP_SEARCH   | where to search for the groups     |                                     |
-| PDB_LDAP_REQUIRE_GROUP  | group of the user that is required |                                     |
-| PDB_DEBUG              | enable debug mode                  | <not set>     |
-| PDB_TESTING            | used when running the test cases   | <not set>     |
-| PDB_DEBUG_CACHE        | enable redis cache in debug mode   | <not set>     |
-| PDB_DISABLE_CACHE      | disable cacheops database caching  | <not set>     |
-| HTTPS_SELF_SIGNED_CERT_COUNTRY        |          |               |
-| HTTPS_SELF_SIGNED_CERT_FQDN           | Full Qualified Hostname         |               |
+| environment variable   | description                 | default value  |
+| ---------------------- | --------------------------- | -------------- |
+| `DJANGO_SECRET_KEY`      | Django secret key           | plschgme       |
+| `DJANGO_LOG_LEVEL`       | Django log level            | info           |
+| `PDB_DATABASE_NAME`      | Database name               | postgres       |
+| `PDB_DATABASE_USER`      | Database user               | postgres       |
+| `PDB_DATABASE_PASSWORD`  | Database password           | <not set>      |
+| `PDB_DATABASE_HOST`      | Database host               | 127.0.0.1      |
+| `PDB_DATABASE_PORT`      | Database port               | 5432           |
+| `PDB_REDIS_HOST`         | redis-server host           | localhost      |
+| `PDB_REDIS_PORT`         | redis-server port           | 6379           |
+| `PDB_GUNICORN_WORKER`    | worker processes per web container    | 3           |
+| `PDB_CELERY_CONCURRENCY` | worker processes per celery worker    | 4           |
+| `PDB_LANGUAGE_CODE`      | language code for django           | en-us          |
+| `PDB_TIME_ZONE`          | time zone in django config         | Europe/Berlin  |
+| `PDB_TIME_FORMAT`        | time format in django config       | P              |
+| `PDB_DATE_FORMAT`        | date format in django config       | N j, Y         |
+| `PDB_SHORT_DATE_FORMAT`  | short date format in django config | Y-m-d          |
+| `PDB_ENABLE_SENTRY`      | enable sentry logging              | <not set>     |
+| `PDB_SENTRY_DSN`         | sentry DSN                         | <not set>     |
+| `PDB_LDAP_ENABLE`         | enable LDAP authentication         | <not set>                           |
+| `PDB_LDAP_SERVER_URL`     | LDAP Server URL                    | ldap://127.0.0.1:389/               |
+| `PDB_LDAP_BIND_DN`        | LDAP server user                   | cn=django-agent,dc=example,dc=com   |
+| `PDB_LDAP_BIND_PASSWORD`  | LDAP server passowrd               |                                     |
+| `PDB_LDAP_USER_SEARCH`    | where to search for the user       | ou=users,dc=example,dc=com          |
+| `PDB_LDAP_GROUP_SEARCH`   | where to search for the groups     |                                     |
+| `PDB_LDAP_REQUIRE_GROUP`  | group of the user that is required |                                     |
+| `PDB_DEBUG`              | enable debug mode                  | <not set>     |
+| `PDB_TESTING`            | used when running the test cases   | <not set>     |
+| `PDB_DEBUG_CACHE`        | enable redis cache in debug mode   | <not set>     |
+| `PDB_DISABLE_CACHE`      | disable cacheops database caching  | <not set>     |
+| `HTTPS_SELF_SIGNED_CERT_COUNTRY`        |          |               |
+| `HTTPS_SELF_SIGNED_CERT_FQDN`           | Full Qualified Hostname         |               |
 
 Now use the following commands to start the Product Database:
 
