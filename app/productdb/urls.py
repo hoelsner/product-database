@@ -25,7 +25,7 @@ schema_view = get_swagger_view(title="Product Database REST API")
 urlpatterns = [
     # API related URLs
     url(r'^api-docs/', schema_view, name="apidocs"),
-    url(r'^api/v0/', include(router.urls)),
+    url(r'^api/v1/', include(router.urls)),
     url(r'^api/token-auth/', authtoken_views.obtain_auth_token, name="api-token-auth"),
     url(r'^api/$', RedirectView.as_view(url="v0/", permanent=False), name="api_redirect"),
 

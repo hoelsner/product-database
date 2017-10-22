@@ -200,17 +200,17 @@ class TestVendorAPIEndpoint:
                 {
                     "name": "unassigned",
                     "id": 0,
-                    "url": "http://testserver/productdb/api/v0/vendors/0/"
+                    "url": "http://testserver/productdb/api/v1/vendors/0/"
                 },
                 {
                     "name": "Cisco Systems",
                     "id": 1,
-                    "url": "http://testserver/productdb/api/v0/vendors/1/"
+                    "url": "http://testserver/productdb/api/v1/vendors/1/"
                 },
                 {
                     "name": "Juniper Networks",
                     "id": 2,
-                    "url": "http://testserver/productdb/api/v0/vendors/2/"
+                    "url": "http://testserver/productdb/api/v1/vendors/2/"
                 }
             ]
         }
@@ -313,7 +313,7 @@ class TestVendorAPIEndpoint:
                 {
                     "name": "Cisco Systems",
                     "id": 1,
-                    "url": "http://testserver/productdb/api/v0/vendors/1/"
+                    "url": "http://testserver/productdb/api/v1/vendors/1/"
                 }
             ]
         }
@@ -346,7 +346,7 @@ class TestVendorAPIEndpoint:
                 {
                     "name": "Cisco Systems",
                     "id": 1,
-                    "url": "http://testserver/productdb/api/v0/vendors/1/"
+                    "url": "http://testserver/productdb/api/v1/vendors/1/"
                 }
             ]
         }
@@ -419,7 +419,7 @@ class TestProductMigrationOptionAPIEndpoint:
                 {
                     "migration_source": 1,
                     "migration_product_info_url": None,
-                    "url": "http://testserver/productdb/api/v0/productmigrationoptions/%d/",
+                    "url": "http://testserver/productdb/api/v1/productmigrationoptions/%d/",
                     "replacement_product_id": "replacement",
                     "id": 1,
                     "product": 1,
@@ -428,7 +428,7 @@ class TestProductMigrationOptionAPIEndpoint:
                 {
                     "migration_source": 1,
                     "migration_product_info_url": None,
-                    "url": "http://testserver/productdb/api/v0/productmigrationoptions/%d/",
+                    "url": "http://testserver/productdb/api/v1/productmigrationoptions/%d/",
                     "replacement_product_id": "replacement2",
                     "id": 2,
                     "product": 2,
@@ -543,7 +543,7 @@ class TestProductMigrationOptionAPIEndpoint:
                 {
                     "migration_source": 1,
                     "migration_product_info_url": None,
-                    "url": "http://testserver/productdb/api/v0/productmigrationoptions/%d/",
+                    "url": "http://testserver/productdb/api/v1/productmigrationoptions/%d/",
                     "replacement_product_id": "replacement",
                     "id": 1,
                     "product": 1,
@@ -552,7 +552,7 @@ class TestProductMigrationOptionAPIEndpoint:
                 {
                     "migration_source": 1,
                     "migration_product_info_url": None,
-                    "url": "http://testserver/productdb/api/v0/productmigrationoptions/%d/",
+                    "url": "http://testserver/productdb/api/v1/productmigrationoptions/%d/",
                     "replacement_product_id": "replacement2",
                     "id": 2,
                     "product": 2,
@@ -606,7 +606,7 @@ class TestProductMigrationOptionAPIEndpoint:
                 {
                     "migration_source": 1,
                     "migration_product_info_url": None,
-                    "url": "http://testserver/productdb/api/v0/productmigrationoptions/%d/",
+                    "url": "http://testserver/productdb/api/v1/productmigrationoptions/%d/",
                     "replacement_product_id": "replacement1",
                     "id": 1,
                     "product": 1,
@@ -615,7 +615,7 @@ class TestProductMigrationOptionAPIEndpoint:
                 {
                     "migration_source": 2,
                     "migration_product_info_url": None,
-                    "url": "http://testserver/productdb/api/v0/productmigrationoptions/%d/",
+                    "url": "http://testserver/productdb/api/v1/productmigrationoptions/%d/",
                     "replacement_product_id": "replacement2",
                     "id": 2,
                     "product": 2,
@@ -740,14 +740,14 @@ class TestProductMigrationSourceAPIEndpoint:
                 {
                     "id": 1,
                     "preference": 50,
-                    "url": "http://testserver/productdb/api/v0/productmigrationsources/1/",
+                    "url": "http://testserver/productdb/api/v1/productmigrationsources/1/",
                     "description": "My description",
                     "name": "Cisco",
                 },
                 {
                     "id": 2,
                     "preference": 50,
-                    "url": "http://testserver/productdb/api/v0/productmigrationsources/2/",
+                    "url": "http://testserver/productdb/api/v1/productmigrationsources/2/",
                     "description": "My other description",
                     "name": "other",
                 }
@@ -846,7 +846,7 @@ class TestProductMigrationSourceAPIEndpoint:
             "data": [
                 {
                     "name": "Cisco Systems",
-                    "url": "http://testserver/productdb/api/v0/productmigrationsources/%d/",
+                    "url": "http://testserver/productdb/api/v1/productmigrationsources/%d/",
                     "id": 1,
                     "preference": 50,
                     "description": None,
@@ -887,7 +887,7 @@ class TestProductMigrationSourceAPIEndpoint:
                     "id": 1,
                     "name": "Cisco Systems",
                     "preference": 50,
-                    "url": "http://testserver/productdb/api/v0/productmigrationsources/%d/"
+                    "url": "http://testserver/productdb/api/v1/productmigrationsources/%d/"
                 }
             ]
         }
@@ -950,19 +950,19 @@ class TestProductGroupAPIEndpoint:
         expected_result = {
             "data": [
                 {
-                    "url": "http://testserver/productdb/api/v0/productgroups/1/",
+                    "url": "http://testserver/productdb/api/v1/productgroups/1/",
                     "name": "product group 1",
                     "id": 1,
                     "vendor": 0
                 },
                 {
-                    "url": "http://testserver/productdb/api/v0/productgroups/2/",
+                    "url": "http://testserver/productdb/api/v1/productgroups/2/",
                     "name": "product group 2",
                     "id": 2,
                     "vendor": 0
                 },
                 {
-                    "url": "http://testserver/productdb/api/v0/productgroups/3/",
+                    "url": "http://testserver/productdb/api/v1/productgroups/3/",
                     "name": "product group 3",
                     "id": 3,
                     "vendor": 0
@@ -995,7 +995,7 @@ class TestProductGroupAPIEndpoint:
         # adjust ID values from Database
         for c in range(0, 3):
             expected_result["data"][c]["id"] = ProductGroup.objects.get(name="product group %d" % (c+1)).id
-            expected_result["data"][c]["url"] = "http://testserver/productdb/api/v0/productgroups/%d/" % expected_result["data"][c]["id"]
+            expected_result["data"][c]["url"] = "http://testserver/productdb/api/v1/productgroups/%d/" % expected_result["data"][c]["id"]
         assert jdata == expected_result, "unexpected result from API endpoint"
 
         # access first element of the list
@@ -1010,7 +1010,7 @@ class TestProductGroupAPIEndpoint:
         expected_result = {
             "vendor": 1,
             "name": test_product_group_name,
-            "url": "http://testserver/productdb/api/v0/productgroups/1/",
+            "url": "http://testserver/productdb/api/v1/productgroups/1/",
             "id": 1
         }
 
@@ -1036,14 +1036,14 @@ class TestProductGroupAPIEndpoint:
         assert response.status_code == status.HTTP_201_CREATED
         # adjust ID values from Database
         expected_result["id"] = ProductGroup.objects.get(name=test_product_group_name).id
-        expected_result["url"] = "http://testserver/productdb/api/v0/productgroups/%d/" % expected_result["id"]
+        expected_result["url"] = "http://testserver/productdb/api/v1/productgroups/%d/" % expected_result["id"]
         assert response.json() == expected_result, "Should provide the new product group"
 
     def test_change_access_with_permission(self):
         test_product_group = "renamed product group"
         pg = mixer.blend("productdb.ProductGroup", name="product group")
         expected_result = {
-            "url": "http://testserver/productdb/api/v0/productgroups/%d/",
+            "url": "http://testserver/productdb/api/v1/productgroups/%d/",
             "vendor": 0,
             "name": test_product_group,
             "id": 0
@@ -1117,31 +1117,31 @@ class TestProductGroupAPIEndpoint:
                     "vendor": 0,
                     "id": 0,
                     "name": "product group 0",
-                    "url": "http://testserver/productdb/api/v0/productgroups/%d/"
+                    "url": "http://testserver/productdb/api/v1/productgroups/%d/"
                 },
                 {
                     "vendor": 0,
                     "id": 0,
                     "name": "product group 1",
-                    "url": "http://testserver/productdb/api/v0/productgroups/%d/"
+                    "url": "http://testserver/productdb/api/v1/productgroups/%d/"
                 },
                 {
                     "vendor": 0,
                     "id": 0,
                     "name": "product group 2",
-                    "url": "http://testserver/productdb/api/v0/productgroups/%d/"
+                    "url": "http://testserver/productdb/api/v1/productgroups/%d/"
                 },
                 {
                     "vendor": 0,
                     "id": 0,
                     "name": "product group 3",
-                    "url": "http://testserver/productdb/api/v0/productgroups/%d/"
+                    "url": "http://testserver/productdb/api/v1/productgroups/%d/"
                 },
                 {
                     "vendor": 0,
                     "id": 0,
                     "name": "product group 4",
-                    "url": "http://testserver/productdb/api/v0/productgroups/%d/"
+                    "url": "http://testserver/productdb/api/v1/productgroups/%d/"
                 }
             ]
         }
@@ -1183,7 +1183,7 @@ class TestProductGroupAPIEndpoint:
                     "vendor": 0,
                     "id": 1,
                     "name": "TBD",
-                    "url": "http://testserver/productdb/api/v0/productgroups/%d/"
+                    "url": "http://testserver/productdb/api/v1/productgroups/%d/"
                 },
             ]
         }
@@ -1224,7 +1224,7 @@ class TestProductGroupAPIEndpoint:
                     "vendor": 0,
                     "id": 1,
                     "name": "",
-                    "url": "http://testserver/productdb/api/v0/productgroups/%d/"
+                    "url": "http://testserver/productdb/api/v1/productgroups/%d/"
                 },
             ]
         }
@@ -1265,7 +1265,7 @@ class TestProductGroupAPIEndpoint:
                     "vendor": 0,
                     "id": 1,
                     "name": "TBD",
-                    "url": "http://testserver/productdb/api/v0/productgroups/%d/"
+                    "url": "http://testserver/productdb/api/v1/productgroups/%d/"
                 },
             ]
         }
@@ -1330,7 +1330,7 @@ class TestProductAPIEndpoint:
                     "description": "",
                     "eol_reference_url": None,
                     "eol_ext_announcement_date": None,
-                    "url": "http://testserver/productdb/api/v0/products/%d/",
+                    "url": "http://testserver/productdb/api/v1/products/%d/",
                     "end_of_sec_vuln_supp_date": None,
                     "end_of_service_contract_renewal": None,
                     "end_of_support_date": None,
@@ -1382,7 +1382,7 @@ class TestProductAPIEndpoint:
             "currency": "USD",
             "end_of_service_contract_renewal": None,
             "eol_reference_url": None,
-            "url": "http://testserver/productdb/api/v0/products/%d/",
+            "url": "http://testserver/productdb/api/v1/products/%d/",
             "eol_reference_number": None,
             "product_group": None,
             "end_of_sale_date": None,
@@ -1421,7 +1421,7 @@ class TestProductAPIEndpoint:
         assert response.status_code == status.HTTP_201_CREATED, response.content.decode()
         # adjust ID values from Database
         expected_result["id"] = Product.objects.get(product_id=test_product_id).id
-        expected_result["url"] = "http://testserver/productdb/api/v0/products/%d/" % expected_result["id"]
+        expected_result["url"] = "http://testserver/productdb/api/v1/products/%d/" % expected_result["id"]
         assert response.json() == expected_result, "Should provide the new product"
 
     def test_create_product_with_lc_state_sync_field(self):
@@ -1431,7 +1431,7 @@ class TestProductAPIEndpoint:
             "currency": "USD",
             "end_of_service_contract_renewal": None,
             "eol_reference_url": None,
-            "url": "http://testserver/productdb/api/v0/products/%d/",
+            "url": "http://testserver/productdb/api/v1/products/%d/",
             "eol_reference_number": None,
             "product_group": None,
             "end_of_sale_date": None,
@@ -1470,7 +1470,7 @@ class TestProductAPIEndpoint:
         assert response.status_code == status.HTTP_201_CREATED
         # adjust ID values from Database
         expected_result["id"] = Product.objects.get(product_id=test_product_id).id
-        expected_result["url"] = "http://testserver/productdb/api/v0/products/%d/" % expected_result["id"]
+        expected_result["url"] = "http://testserver/productdb/api/v1/products/%d/" % expected_result["id"]
         assert response.json() == expected_result, "Should provide the new product"
 
     def test_change_lc_state_sync(self):
@@ -1479,7 +1479,7 @@ class TestProductAPIEndpoint:
             "currency": "USD",
             "end_of_service_contract_renewal": None,
             "eol_reference_url": None,
-            "url": "http://testserver/productdb/api/v0/products/%d/",
+            "url": "http://testserver/productdb/api/v1/products/%d/",
             "eol_reference_number": None,
             "product_group": None,
             "end_of_sale_date": None,
@@ -1531,7 +1531,7 @@ class TestProductAPIEndpoint:
             "currency": "USD",
             "end_of_service_contract_renewal": None,
             "eol_reference_url": None,
-            "url": "http://testserver/productdb/api/v0/products/%d/",
+            "url": "http://testserver/productdb/api/v1/products/%d/",
             "eol_reference_number": None,
             "product_group": None,
             "end_of_sale_date": None,
@@ -1583,7 +1583,7 @@ class TestProductAPIEndpoint:
             "currency": "USD",
             "end_of_service_contract_renewal": None,
             "eol_reference_url": None,
-            "url": "http://testserver/productdb/api/v0/products/%d/" % p.id,
+            "url": "http://testserver/productdb/api/v1/products/%d/" % p.id,
             "eol_reference_number": None,
             "product_group": valid_pg.id,
             "end_of_sale_date": None,
@@ -1680,7 +1680,7 @@ class TestProductAPIEndpoint:
                     "description": "",
                     "eol_reference_url": None,
                     "eol_ext_announcement_date": None,
-                    "url": "http://testserver/productdb/api/v0/products/%d/",
+                    "url": "http://testserver/productdb/api/v1/products/%d/",
                     "end_of_sec_vuln_supp_date": None,
                     "end_of_service_contract_renewal": None,
                     "end_of_support_date": None,
@@ -1706,7 +1706,7 @@ class TestProductAPIEndpoint:
                     "description": "",
                     "eol_reference_url": None,
                     "eol_ext_announcement_date": None,
-                    "url": "http://testserver/productdb/api/v0/products/%d/",
+                    "url": "http://testserver/productdb/api/v1/products/%d/",
                     "end_of_sec_vuln_supp_date": None,
                     "end_of_service_contract_renewal": None,
                     "end_of_support_date": None,
@@ -1768,7 +1768,7 @@ class TestProductAPIEndpoint:
                     "description": "my search description",
                     "eol_reference_url": None,
                     "eol_ext_announcement_date": None,
-                    "url": "http://testserver/productdb/api/v0/products/%d/",
+                    "url": "http://testserver/productdb/api/v1/products/%d/",
                     "end_of_sec_vuln_supp_date": None,
                     "end_of_service_contract_renewal": None,
                     "end_of_support_date": None,
@@ -1794,7 +1794,7 @@ class TestProductAPIEndpoint:
                     "description": "other search description",
                     "eol_reference_url": None,
                     "eol_ext_announcement_date": None,
-                    "url": "http://testserver/productdb/api/v0/products/%d/",
+                    "url": "http://testserver/productdb/api/v1/products/%d/",
                     "end_of_sec_vuln_supp_date": None,
                     "end_of_service_contract_renewal": None,
                     "end_of_support_date": None,
@@ -1860,7 +1860,7 @@ class TestProductAPIEndpoint:
                     "description": "",
                     "eol_reference_url": None,
                     "eol_ext_announcement_date": None,
-                    "url": "http://testserver/productdb/api/v0/products/%d/",
+                    "url": "http://testserver/productdb/api/v1/products/%d/",
                     "end_of_sec_vuln_supp_date": None,
                     "end_of_service_contract_renewal": None,
                     "end_of_support_date": None,
@@ -1922,7 +1922,7 @@ class TestProductAPIEndpoint:
                     "description": "",
                     "eol_reference_url": None,
                     "eol_ext_announcement_date": None,
-                    "url": "http://testserver/productdb/api/v0/products/%d/",
+                    "url": "http://testserver/productdb/api/v1/products/%d/",
                     "end_of_sec_vuln_supp_date": None,
                     "end_of_service_contract_renewal": None,
                     "end_of_support_date": None,
@@ -1993,7 +1993,7 @@ class TestProductAPIEndpoint:
                     "description": "",
                     "eol_reference_url": None,
                     "eol_ext_announcement_date": None,
-                    "url": "http://testserver/productdb/api/v0/products/%d/",
+                    "url": "http://testserver/productdb/api/v1/products/%d/",
                     "end_of_sec_vuln_supp_date": None,
                     "end_of_service_contract_renewal": None,
                     "end_of_support_date": None,
@@ -2055,7 +2055,7 @@ class TestProductAPIEndpoint:
                     "description": "",
                     "eol_reference_url": None,
                     "eol_ext_announcement_date": None,
-                    "url": "http://testserver/productdb/api/v0/products/%d/",
+                    "url": "http://testserver/productdb/api/v1/products/%d/",
                     "end_of_sec_vuln_supp_date": None,
                     "end_of_service_contract_renewal": None,
                     "end_of_support_date": None,
@@ -2182,7 +2182,7 @@ class TestProductListAPIEndpoint:
                     "string_product_list": self.TEST_PRODUCTS,
                     "update_date": "",
                     "contact_email": "",
-                    "url": "http://testserver/productdb/api/v0/productlists/%d/"
+                    "url": "http://testserver/productdb/api/v1/productlists/%d/"
                 }
             ]
         }
@@ -2300,7 +2300,7 @@ class TestProductListAPIEndpoint:
                     "string_product_list": self.TEST_PRODUCTS,
                     "update_date": "",
                     "contact_email": "admin@localhost.localhost",
-                    "url": "http://testserver/productdb/api/v0/productlists/%d/"
+                    "url": "http://testserver/productdb/api/v1/productlists/%d/"
                 }
             ]
         }

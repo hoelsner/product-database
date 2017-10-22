@@ -13,10 +13,10 @@ from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 
-PRODUCTS_API_ENDPOINT = "/productdb/api/v0/products/"
-PRODUCT_LISTS_API_ENDPOINT = "/productdb/api/v0/productlists/"
-NOTIFICATION_MESSAGES_API_ENDPOINT = "/productdb/api/v0/notificationmessages/"
-PRODUCT_GROUPS_API_ENDPOINT = "/productdb/api/v0/productgroups/"
+PRODUCTS_API_ENDPOINT = "/productdb/api/v1/products/"
+PRODUCT_LISTS_API_ENDPOINT = "/productdb/api/v1/productlists/"
+NOTIFICATION_MESSAGES_API_ENDPOINT = "/productdb/api/v1/notificationmessages/"
+PRODUCT_GROUPS_API_ENDPOINT = "/productdb/api/v1/productgroups/"
 
 
 class ProductDatabaseAPIHelper:
