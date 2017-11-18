@@ -78,68 +78,53 @@ def update_local_db_based_on_record(eox_record, create_missing=False):
 
     # update the lifecycle information
     try:
-        update = True
-        if product.eox_update_time_stamp is None:
-            logger.debug("%15s: update product because no EoX timestamp defined" % pid)
+        logger.debug("%15s: update product lifecycle values" % pid)
 
-        else:
-            date_format = convert_time_format(eox_record['UpdatedTimeStamp']['dateFormat'])
-            updated_time_stamp = datetime.strptime(eox_record['UpdatedTimeStamp']['value'], date_format).date()
+        # save datetime values from Cisco EoX API record
+        value_map = {
+            # <API value> : <class attribute>
+            "UpdatedTimeStamp": "eox_update_time_stamp",
+            "EndOfSaleDate": "end_of_sale_date",
+            "LastDateOfSupport": "end_of_support_date",
+            "EOXExternalAnnouncementDate": "eol_ext_announcement_date",
+            "EndOfSWMaintenanceReleases": "end_of_sw_maintenance_date",
+            "EndOfRoutineFailureAnalysisDate": "end_of_routine_failure_analysis",
+            "EndOfServiceContractRenewal": "end_of_service_contract_renewal",
+            "EndOfSvcAttachDate": "end_of_new_service_attachment_date",
+            "EndOfSecurityVulSupportDate": "end_of_sec_vuln_supp_date",
+        }
 
-            if product.eox_update_time_stamp >= updated_time_stamp:
-                logger.debug("%15s: update of product not required: %s >= %s " % (pid, product.eox_update_time_stamp,
-                                                                                  updated_time_stamp))
-                update = False
+        for key in value_map.keys():
+            if eox_record.get(key, None):
+                value = eox_record[key].get("value", None)
+                if value != " ":
+                    setattr(
+                        product,
+                        value_map[key],
+                        datetime.strptime(
+                            value,
+                            convert_time_format(eox_record[key].get("dateFormat", "%Y-%m-%d"))
+                        ).date()
+                    )
 
-            else:
-                logger.debug("%15s: data update required" % pid)
+        # save string values from Cisco EoX API record
+        if "LinkToProductBulletinURL" in eox_record.keys():
+            value = clean_api_url_response(eox_record.get('LinkToProductBulletinURL', ""))
+            if value != "":
+                val = URLValidator()
+                try:
+                    val(value)
+                    product.eol_reference_url = value
 
-        if update:
-            # save datetime values from Cisco EoX API record
-            value_map = {
-                # <API value> : <class attribute>
-                "UpdatedTimeStamp": "eox_update_time_stamp",
-                "EndOfSaleDate": "end_of_sale_date",
-                "LastDateOfSupport": "end_of_support_date",
-                "EOXExternalAnnouncementDate": "eol_ext_announcement_date",
-                "EndOfSWMaintenanceReleases": "end_of_sw_maintenance_date",
-                "EndOfRoutineFailureAnalysisDate": "end_of_routine_failure_analysis",
-                "EndOfServiceContractRenewal": "end_of_service_contract_renewal",
-                "EndOfSvcAttachDate": "end_of_new_service_attachment_date",
-                "EndOfSecurityVulSupportDate": "end_of_sec_vuln_supp_date",
-            }
+                except ValidationError:
+                    raise Exception("invalid EoL reference URL")
 
-            for key in value_map.keys():
-                if eox_record.get(key, None):
-                    value = eox_record[key].get("value", None)
-                    if value != " ":
-                        setattr(
-                            product,
-                            value_map[key],
-                            datetime.strptime(
-                                value,
-                                convert_time_format(eox_record[key].get("dateFormat", "%Y-%m-%d"))
-                            ).date()
-                        )
+                if "ProductBulletinNumber" in eox_record.keys():
+                    product.eol_reference_number = eox_record.get('ProductBulletinNumber', "EoL bulletin")
 
-            # save string values from Cisco EoX API record
-            if "LinkToProductBulletinURL" in eox_record.keys():
-                value = clean_api_url_response(eox_record.get('LinkToProductBulletinURL', ""))
-                if value != "":
-                    val = URLValidator()
-                    try:
-                        val(value)
-                        product.eol_reference_url = value
-
-                    except ValidationError:
-                        raise Exception("invalid EoL reference URL")
-
-                    if "ProductBulletinNumber" in eox_record.keys():
-                        product.eol_reference_number = eox_record.get('ProductBulletinNumber', "EoL bulletin")
-
-            with transaction.atomic(), reversion.create_revision():
-                product.save()
-                reversion.set_comment("Updated by the Cisco EoX API crawler")
+        with transaction.atomic(), reversion.create_revision():
+            product.save()
+            reversion.set_comment("Updated by the Cisco EoX API crawler")
 
     except Exception as ex:
         if created:

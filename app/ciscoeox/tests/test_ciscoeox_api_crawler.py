@@ -266,7 +266,16 @@ class TestUpdateLocalDbBasedOnRecord:
         assert Product.objects.count() == 1, "The product was only updated"
 
         p = Product.objects.get(product_id="WS-C2960-24T-S")
+        assert p.eox_update_time_stamp == datetime.date(2016, 10, 3), "update must be processed"
         assert p.end_of_service_contract_renewal == datetime.date(2016, 10, 4), "Should be the value prior the update"
+
+        # TODO remove the conditional update
+
+        # test update if the eox_update_time_stamp equals value within the API (DB update should be performed)
+
+        # test update if the eox_update_time_stamp is smaller than the API value (DB update should be performed)
+
+        # test update if the eox_update_time_stamp is larger than the API value (DB update should not be performed)
 
         # test crash of the update method during update
         p = Product.objects.get(product_id="WS-C2960-24T-S")
