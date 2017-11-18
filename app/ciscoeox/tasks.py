@@ -49,19 +49,12 @@ def cisco_eox_populate_product_lc_state_sync_field():
 
         with transaction.atomic():
             # reset all entries for the vendor
-            pl = Product.objects.filter(vendor=cis_vendor)
-            for p in pl:
-                p.lc_state_sync = False
-                p.save()
+            Product.objects.filter(vendor=cis_vendor).update(lc_state_sync=False)
 
             # only set the state sync to true if the periodic synchronization is enabled
             if app_config.is_periodic_sync_enabled():
                 for query in queries:
-                    pl = Product.objects.filter(product_id__regex=query, vendor=cis_vendor)
-
-                    for p in pl:
-                        p.lc_state_sync = True
-                        p.save()
+                    Product.objects.filter(product_id__regex=query, vendor=cis_vendor).update(lc_state_sync=True)
 
         return {"status": "Database updated"}
 
@@ -70,7 +63,7 @@ def cisco_eox_populate_product_lc_state_sync_field():
 
 
 @app.task(
-    serializer='json',
+    serializer="json",
     name="ciscoeox.synchronize_with_cisco_eox_api",
     bind=True
 )
