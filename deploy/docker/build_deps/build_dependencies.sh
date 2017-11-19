@@ -14,7 +14,7 @@ echo ""
 python3 manage.py migrate
 
 flag_file="/var/www/productdb/data/provisioning"
-if [ ! -f "$flag_file" ] || [ $REBUILD_DB == "1" ]
+if [ ! -f "$flag_file" ] || [ "$REBUILD_DB" == "1" ]
 then
     echo ""
     echo "==> create database defaults..."

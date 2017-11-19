@@ -24,4 +24,6 @@ CMD gunicorn django_project.wsgi:application --bind 0.0.0.0:8000 \
         --log-level=${DJANGO_LOG_LEVEL} \
         --limit-request-line 6144 \
         --timeout 600 \
-        --access-logfile=-
+        --access-logfile=- \
+        --error-logfile=- \
+        --enable-stdio-inheritance
