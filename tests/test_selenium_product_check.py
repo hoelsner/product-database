@@ -123,7 +123,7 @@ class TestBulkEolCheckFunction(BaseSeleniumTest):
         # verify that the file is a CSV formatted field (with ";" as delimiter)
         # verify that the second line contains a link (not the Bulletin number)
         file = os.path.join(test_download_dir, "product check - Test.csv")
-        header_line = "\ufeffProduct ID;Amount;Lifecycle State;Replacement Product ID;Replacement suggested by;" \
+        header_line = "Product ID;Amount;Lifecycle State;Replacement Product ID;Replacement suggested by;" \
                       "Vendor Bulletin;LC auto-sync"
         with open(file, "r", encoding="utf-8") as f:
             content = f.read().splitlines()

@@ -25,7 +25,7 @@ ADD . /var/www/productdb/source
 WORKDIR /var/www/productdb/source
 
 RUN npm install  && \
-    /var/www/productdb/source/node_modules/.bin/bower install --allow-root && \
+    /var/www/productdb/source/node_modules/.bin/grunt copy && \
     /var/www/productdb/source/node_modules/.bin/grunt clean
 
 # copy static directory to container directory
