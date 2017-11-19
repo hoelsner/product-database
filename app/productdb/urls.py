@@ -27,7 +27,7 @@ urlpatterns = [
     url(r'^api-docs/', schema_view, name="apidocs"),
     url(r'^api/v1/', include(router.urls)),
     url(r'^api/token-auth/', authtoken_views.obtain_auth_token, name="api-token-auth"),
-    url(r'^api/$', RedirectView.as_view(url="v0/", permanent=False), name="api_redirect"),
+    url(r'^api/$', RedirectView.as_view(url="v1/", permanent=False), name="api_redirect"),
 
     # Datatables endpoints
     url(
