@@ -1,6 +1,6 @@
-selenium==3.4.3
+selenium==3.10.0
 mixer==5.6.6
-pytest==3.1.2
+pytest==3.4.1
 pytest-django==3.1.2
 pytest-html==1.14.2
 pytest-cov==2.4.0

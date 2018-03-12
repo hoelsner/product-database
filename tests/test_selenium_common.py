@@ -69,7 +69,7 @@ class TestCommonFunctions(BaseSeleniumTest):
             "id('product_list_table_wrapper')")
         ))
 
-        browser.find_element_by_link_text("Add New").click()
+        browser.find_element_by_xpath("//button[span='Add New']").click()
         WebDriverWait(browser, 10).until(EC.presence_of_element_located((By.ID, "id_name")))
 
         browser.find_element_by_id("id_name").send_keys(test_pl_name)
@@ -139,7 +139,7 @@ class TestCommonFunctions(BaseSeleniumTest):
         browser.get(liveserver + reverse("productdb:list-product_lists"))
         browser.find_element_by_xpath("id('product_list_table')/tbody/tr[1]/td[2]").click()
         time.sleep(1)
-        browser.find_element_by_xpath("id('product_list_table_wrapper')/div[1]/div[2]/div/div/a[3]").click()
+        browser.find_element_by_xpath("//button[span='Delete Selected']").click()
         time.sleep(3)
 
         body = browser.find_element_by_tag_name("body").text
@@ -362,9 +362,9 @@ class TestProductLists(BaseSeleniumTest):
         self.api_helper.drop_all_data(liveserver)
         self.api_helper.load_base_test_data(liveserver)
 
-        add_button_xpath = "id('product_list_table_wrapper')/div[1]/div[2]/div/div/a[1]"
-        edit_button_xpath = "id('product_list_table_wrapper')/div[1]/div[2]/div/div/a[2]"
-        delete_button_xpath = "id('product_list_table_wrapper')/div[1]/div[2]/div/div/a[3]"
+        add_button_xpath = "//button[span='Add New']"
+        edit_button_xpath = "//button[span='Edit Selected']"
+        delete_button_xpath = "//button[span='Delete Selected']"
 
         test_pl_name = "Test Product List"
         test_pl_description = "A sample description for the Product List."
@@ -659,10 +659,10 @@ class TestProductDatabaseViews(BaseSeleniumTest):
         # the table has three buttons: Copy, CSV and a PDF
         dt_buttons = browser.find_element_by_class_name("dt-buttons")
 
-        assert "PDF" == dt_buttons.find_element_by_link_text("PDF").text
-        assert "Copy" == dt_buttons.find_element_by_link_text("Copy").text
-        assert "CSV" == dt_buttons.find_element_by_link_text("CSV").text
-        assert "Excel" == dt_buttons.find_element_by_link_text("Excel").text
+        assert "PDF" == dt_buttons.find_element_by_xpath("//button[span='PDF']").text
+        assert "Copy" == dt_buttons.find_element_by_xpath("//button[span='Copy']").text
+        assert "CSV" == dt_buttons.find_element_by_xpath("//button[span='CSV']").text
+        assert "Excel" == dt_buttons.find_element_by_xpath("//button[span='Excel']").text
 
         # the table shows 10 entries from the list (below the table, there is a string "Showing 1 to 10 of \d+ entries"
         dt_wrapper = browser.find_element_by_id("product_table_info")
@@ -722,7 +722,7 @@ class TestProductDatabaseViews(BaseSeleniumTest):
 
         # the user hits the button CSV
         dt_buttons = browser.find_element_by_class_name("dt-buttons")
-        dt_buttons.find_element_by_link_text("CSV").click()
+        dt_buttons.find_element_by_xpath("//button[span='CSV']").click()
 
         # the file should download automatically (firefox is configured this way)
         time.sleep(2)
@@ -749,7 +749,7 @@ class TestProductDatabaseViews(BaseSeleniumTest):
 
         # show product groups
         dt_buttons = browser.find_element_by_class_name("dt-buttons")
-        dt_buttons.find_element_by_link_text("show additional columns").click()
+        dt_buttons.find_element_by_xpath("//button[span='show additional columns ']").click()
         browser.find_element_by_link_text("Internal Product ID").click()
         browser.find_element_by_link_text("Product Group").click()
 
@@ -825,10 +825,10 @@ class TestProductDatabaseViews(BaseSeleniumTest):
         # the table has three buttons: Copy, CSV and a PDF
         dt_buttons = browser.find_element_by_class_name("dt-buttons")
 
-        assert "PDF" == dt_buttons.find_element_by_link_text("PDF").text
-        assert "Copy" == dt_buttons.find_element_by_link_text("Copy").text
-        assert "CSV" == dt_buttons.find_element_by_link_text("CSV").text
-        assert "Excel" == dt_buttons.find_element_by_link_text("Excel").text
+        assert "PDF" == dt_buttons.find_element_by_xpath("//button[span='PDF']").text
+        assert "Copy" == dt_buttons.find_element_by_xpath("//button[span='Copy']").text
+        assert "CSV" == dt_buttons.find_element_by_xpath("//button[span='CSV']").text
+        assert "Excel" == dt_buttons.find_element_by_xpath("//button[span='Excel']").text
 
         # the table shows 10 entries from the list (below the table, there is a string "Showing 1 to 10 of \d+ entries"
         dt_wrapper = browser.find_element_by_id("product_table_info")
@@ -867,7 +867,7 @@ class TestProductDatabaseViews(BaseSeleniumTest):
 
         # the user hits the button CSV
         dt_buttons = browser.find_element_by_class_name("dt-buttons")
-        dt_buttons.find_element_by_link_text("CSV").click()
+        dt_buttons.find_element_by_xpath("//button[span='CSV']").click()
 
         # the file should download automatically (firefox is configured this way)
         time.sleep(2)

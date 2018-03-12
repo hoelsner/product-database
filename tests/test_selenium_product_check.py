@@ -5,8 +5,11 @@ import os
 import pytest
 import time
 from django.core.urlresolvers import reverse
-from selenium.webdriver.common.keys import Keys
 from tests import BaseSeleniumTest
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.wait import WebDriverWait
 
 pytestmark = pytest.mark.django_db
 selenium_test = pytest.mark.skipif(not pytest.config.getoption("--selenium"),
@@ -110,12 +113,23 @@ class TestBulkEolCheckFunction(BaseSeleniumTest):
         browser.execute_script("return arguments[0].scrollIntoView();", text_element)
 
         # view the Vendor Bulletin
-        dt_buttons = browser.find_element_by_class_name("dt-buttons")
-        dt_buttons.find_element_by_link_text("show additional columns").click()
+        browser.find_element_by_xpath("//button[span='show additional columns ']").click()
         browser.find_element_by_link_text("Vendor Bulletin").click()
+        browser.find_element_by_xpath("//button[span='show additional columns ']").send_keys(Keys.SPACE)
+        time.sleep(3)
+
+        WebDriverWait(browser, 10).until(EC.invisibility_of_element_located((
+            By.XPATH,
+            "//div[@class='dt-button-background']")
+        ))
+
+        WebDriverWait(browser, 10).until(EC.element_to_be_clickable((
+            By.XPATH,
+            "//button[span='CSV']")
+        ))
 
         # test CSV download of the result table
-        dt_buttons.find_element_by_link_text("CSV").send_keys(Keys.ENTER)
+        browser.find_element_by_xpath("//button[span='CSV']").click()
         time.sleep(5)
 
         # The file should download automatically (firefox is configured this way)

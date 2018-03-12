@@ -1,9 +1,11 @@
+import os
 from django_project.settings.common import *
 
 
 def configure_logging(log_level, basedir, filename, enable_sentry=False):
     u_logfile_size = 2 * 1024 * 1024
     u_logfile_count = 5
+    os.makedirs(basedir, exist_ok=True)
     #
     # configure development logging
     #
