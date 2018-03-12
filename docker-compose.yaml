@@ -8,7 +8,7 @@ services:
   redis:
     container_name: ${COMPOSE_PROJECT_NAME:-productdb}_redis
     restart: always
-    image: redis:4
+    image: redis:4.0
     command: redis-server --appendonly yes
     volumes:
       - redis_data:/data
@@ -48,10 +48,11 @@ services:
   camera:
     container_name: ${COMPOSE_PROJECT_NAME:-productdb}_camera
     restart: always
-    image: productdb/camera:latest
+    image: productdb/django:latest
     build:
       context: .
-      dockerfile: deploy/docker/Dockerfile-camera
+      dockerfile: deploy/docker/Dockerfile-django
+    command: start_celery_camera
     env_file: env.${INSTANCE_CONFIG:-demo}
     networks:
       - internal
@@ -66,10 +67,11 @@ services:
   beat:
     container_name: ${COMPOSE_PROJECT_NAME:-productdb}_beat
     restart: always
-    image: productdb/beat:latest
+    image: productdb/django:latest
     build:
       context: .
-      dockerfile: deploy/docker/Dockerfile-beat
+      dockerfile: deploy/docker/Dockerfile-django
+    command: start_celery_beat
     env_file: env.${INSTANCE_CONFIG:-demo}
     networks:
       - default
@@ -84,10 +86,11 @@ services:
 
   worker:
     restart: always
-    image: productdb/worker:latest
+    image: productdb/django:latest
     build:
       context: .
-      dockerfile: deploy/docker/Dockerfile-worker
+      dockerfile: deploy/docker/Dockerfile-django
+    command: start_celery_worker
     env_file: env.${INSTANCE_CONFIG:-demo}
     networks:
       - default
@@ -103,10 +106,11 @@ services:
 
   web:
     restart: always
-    image: productdb/web:latest
+    image: productdb/django:latest
     build:
       context: .
-      dockerfile: deploy/docker/Dockerfile-web
+      dockerfile: deploy/docker/Dockerfile-django
+    command: start_gunicorn
     env_file: env.${INSTANCE_CONFIG:-demo}
     networks:
       - default

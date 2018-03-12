@@ -36,10 +36,10 @@ Package Control.cache/
 Package Control.ca-certs/
 bh_unicode_properties.cache
 GitHub.sublime-settings
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
+**/__pycache__/
+**/*.py[cod]
+**/*$py.class
+**/*.so
 .Python
 env/
 build/
@@ -119,4 +119,5 @@ deploy
 !deploy/docker/build_deps
 !deploy/docker/nginx
 !deploy/docker/postgres
+!deploy/docker/django
 !deploy/docker/Dockerfile-*
