@@ -45,7 +45,7 @@ staging_inventory
 *.key
 htmlcov
 .coverage
-coverage_report.html
+coverage_report
 /assets
 /.cache
 /tmp
@@ -53,3 +53,5 @@ coverage_report.html
 env.*
 !env.demo
 !env.prod_template
+!env.compose_test
+.pytest_cache

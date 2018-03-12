@@ -1,0 +1,163 @@
+                                   #
+# Dockerfile that creates a test instance and runs all test cases (online and selenium) within docker containers
+#
+#
+# the value of the INSTANCE_CONFIG is used to identify the correct environment file located at
+#   env.INSTANCE_CONFIG (default to demo)
+#
+version: '3'
+
+services:
+  redis:
+    container_name: ${COMPOSE_PROJECT_NAME:-productdbtesting}_redis
+    restart: always
+    image: redis:4.0
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - internal
+
+  database:
+    container_name: ${COMPOSE_PROJECT_NAME:-productdbtesting}_database
+    restart: always
+    image: productdb/database:testing
+    build:
+      context: .
+      dockerfile: deploy/docker/Dockerfile-postgres
+    env_file: env.compose_test
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - postgres_backup:/backups
+    networks:
+      - internal
+
+  build_deps:
+    container_name: ${COMPOSE_PROJECT_NAME:-productdbtesting}_build_deps
+    image: productdb/build_deps:testing
+    build:
+      context: .
+      dockerfile: deploy/docker/Dockerfile-build_deps
+    env_file: env.compose_test
+    volumes:
+      - static_files:/var/www/productdb/static
+      - ssl_files:/var/www/productdb/ssl
+      - data:/var/www/productdb/data
+      - logs:/var/www/productdb/logs
+    networks:
+      - default
+      - internal
+
+  camera:
+    container_name: ${COMPOSE_PROJECT_NAME:-productdbtesting}_camera
+    restart: always
+    image: productdb/django:testing
+    build:
+      context: .
+      dockerfile: deploy/docker/Dockerfile-django
+    command: start_celery_camera
+    env_file: env.compose_test
+    networks:
+      - internal
+    volumes:
+      - data:/var/www/productdb/data
+      - logs:/var/www/productdb/logs
+    depends_on:
+      - build_deps
+      - database
+      - redis
+
+  beat:
+    container_name: ${COMPOSE_PROJECT_NAME:-productdbtesting}_beat
+    restart: always
+    image: productdb/django:testing
+    build:
+      context: .
+      dockerfile: deploy/docker/Dockerfile-django
+    command: start_celery_beat
+    env_file: env.compose_test
+    networks:
+      - default
+      - internal
+    volumes:
+      - data:/var/www/productdb/data
+      - logs:/var/www/productdb/logs
+    depends_on:
+      - build_deps
+      - database
+      - redis
+
+  worker:
+    restart: always
+    image: productdb/django:testing
+    build:
+      context: .
+      dockerfile: deploy/docker/Dockerfile-django
+    command: start_celery_worker
+    env_file: env.compose_test
+    networks:
+      - default
+      - internal
+    volumes:
+      - data:/var/www/productdb/data
+      - logs:/var/www/productdb/logs
+    depends_on:
+      - build_deps
+      - database
+      - redis
+      - beat
+
+  web:
+    restart: always
+    image: productdb/django:testing
+    build:
+      context: .
+      dockerfile: deploy/docker/Dockerfile-django
+    command: start_gunicorn
+    env_file: env.compose_test
+    networks:
+      - default
+      - internal
+    volumes:
+      - data:/var/www/productdb/data
+      - logs:/var/www/productdb/logs
+    depends_on:
+      - build_deps
+      - database
+      - redis
+
+  nginx:
+    container_name: ${COMPOSE_PROJECT_NAME:-productdbtesting}_nginx
+    restart: always
+    image: productdb/nginx:testing
+    build:
+      context: .
+      dockerfile: deploy/docker/Dockerfile-nginx
+    env_file: env.compose_test
+    ports:
+      - "${EXPOSE_IP:-127.0.0.1}:${NGINX_HTTP_PORT:-80}:80"
+      - "${EXPOSE_IP:-127.0.0.1}:${NGINX_HTTPS_PORT:-27443}:443"
+    networks:
+      - default
+    volumes:
+      - static_files:/var/www/productdb/static:ro
+      - ssl_files:/var/www/productdb/ssl:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - logs:/var/www/productdb/logs
+    depends_on:
+      - build_deps
+      - web
+
+networks:
+  default:
+  internal:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  static_files:
+  ssl_files:
+  data:
+  postgres_backup:
+  redis_data:
+  logs:
