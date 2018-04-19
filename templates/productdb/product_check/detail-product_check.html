@@ -33,7 +33,7 @@
             <dt>execute time:</dt>
             <dd>{{ product_check.last_change|date:"SHORT_DATETIME_FORMAT" }}</dd>
         </dl>
-        <p class="text-muted small">Move the mouse over the price information (if displayed and defined) to see the update timestamp for the list price.</p>
+        <p class="text-muted small">Move the mouse over the price information (if displayed and defined) to see the update timestamp for the list price. Red rows are Product ID's that are not found within the database. Yellow rows are found in the database, but they are not synchronized periodically.</p>
         <table id="product_check_table_{{ product_check.id }}" class="table table-striped table-hover table-responsive" cellspacing="0" width="100%">
             <thead>
                 <tr id="tour_table_head">
@@ -63,7 +63,7 @@
             </thead>
             <tbody>
                 {% for product_check_entry in product_check.productcheckentry_set.all %}
-                    <tr{% if not product_check_entry.in_database %} class="danger"{% endif %}>
+                    <tr{% if not product_check_entry.in_database %} class="danger"{% elif not product_check_entry.lc_state_sync %} class="warning"{% endif %}>
                         <td>
                             {% if product_check_entry.in_database %}
                                 {{ product_check_entry.product_in_database.vendor.name }}
@@ -133,9 +133,13 @@
                                 </td>
                                 <td>
                                     {% if product.lc_state_sync %}
-                                        Yes
+                                        <span data-toggle="tooltip" title="periodic End-of-Life check enabled for this product ID">
+                                            Yes
+                                        </span>
                                     {% else %}
-                                        No
+                                        <span data-toggle="tooltip" title="no periodic End-of-Life check enabled for this product ID">
+                                            No
+                                        </span>
                                     {% endif %}
                                 </td>
                                 <td>
