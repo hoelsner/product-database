@@ -16,6 +16,7 @@ if LDAP_ENABLE:
     AUTH_LDAP_SERVER_URI = os.getenv("PDB_LDAP_SERVER_URL", "ldap://127.0.0.1:389/")
     if os.environ.get("PDB_LDAP_BIND_AS_AUTHENTICATING_USER", None):
         AUTH_LDAP_BIND_AS_AUTHENTICATING_USER = True
+        AUTH_LDAP_USER_DN_TEMPLATE = "uid=%(user)s," + os.getenv("PDB_LDAP_USER_SEARCH", "ou=users,dc=example,dc=com")
 
     else:
         AUTH_LDAP_BIND_DN = os.getenv("PDB_LDAP_BIND_DN", "cn=django-agent,dc=example,dc=com")
@@ -38,6 +39,8 @@ if LDAP_ENABLE:
 
     # Populate the Django user from the LDAP directory.
     AUTH_LDAP_USER_ATTR_MAP = {
+        "first_name": "givenName",
+        "last_name": "sn",
         "email": "mail"
     }
 
@@ -48,6 +51,6 @@ if LDAP_ENABLE:
     # enable LDAP authentication along with the Model Backend (fallback to local DB authentication is enabled by
     # default)
     AUTHENTICATION_BACKENDS = (
-        'django_auth_ldap.backend.LDAPBackend',
-        'django.contrib.auth.backends.ModelBackend',
+        "django_auth_ldap.backend.LDAPBackend",
+        "django.contrib.auth.backends.ModelBackend",
     )

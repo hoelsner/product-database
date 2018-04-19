@@ -24,21 +24,21 @@ from django_project.settings.celery import *
 """
 Configure logging settings
 """
-DJANGO_LOG_LEVEL = os.getenv('DJANGO_LOG_LEVEL', 'info').upper()
+DJANGO_LOG_LEVEL = os.getenv("DJANGO_LOG_LEVEL", "info").upper()
 
 # if debug mode is enabled in Django, also set the global logging level to Debug
 if PDB_DEBUG:
-    DJANGO_LOG_LEVEL = 'DEBUG'
+    DJANGO_LOG_LEVEL = "DEBUG"
 
 PDB_SENTRY_DSN = os.getenv("PDB_SENTRY_DSN", None)
 
 if PDB_ENABLE_SENTRY and PDB_SENTRY_DSN:
-    INSTALLED_APPS += ['raven.contrib.django.raven_compat']
+    INSTALLED_APPS += ["raven.contrib.django.raven_compat"]
     RAVEN_CONFIG = {
-        'dsn': PDB_SENTRY_DSN,
-        'release': raven.fetch_git_sha(os.path.dirname(os.pardir)),
+        "dsn": PDB_SENTRY_DSN,
+        "release": raven.fetch_git_sha(os.path.dirname(os.pardir)),
     }
-    MIDDLEWARE_CLASSES += ['raven.contrib.django.raven_compat.middleware.Sentry404CatchMiddleware']
+    MIDDLEWARE_CLASSES += ["raven.contrib.django.raven_compat.middleware.Sentry404CatchMiddleware"]
     print("enable Sentry logging...")
 
 log_file = os.path.join(BASE_DIR, "..", "..", "logs")
