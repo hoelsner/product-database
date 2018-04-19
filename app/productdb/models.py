@@ -249,6 +249,7 @@ class Product(models.Model):
     eol_reference_url = models.URLField(
         null=True,
         blank=True,
+        max_length=1024,
         verbose_name="EoL reference URL",
         help_text="URL to the Product bulletin or EoL reference"
     )
