@@ -1,8 +1,6 @@
 
 # Product Database
 
-*Version 0.9 (development) - see [changelog](CHANGELOG.md) for details*
-
 This web service provides a central point of management for product information. The current focus are the lifecycle data (EoL checks) for network products.
 
 The following features are implemented:
@@ -10,7 +8,7 @@ The following features are implemented:
 * automatic check of the lifecycle state for a list of products against the local database (Product Check)
 * synchronization with the Cisco EoX API (initial sync and periodic sync for specific Product ID's
 * REST API to access the data
-* data import using Excel
+* data import using Excel (to add lifecycle data for other vendors)
 
 ## Setup & Installation
 
