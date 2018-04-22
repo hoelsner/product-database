@@ -10,7 +10,6 @@ from mixer.backend.django import mixer
 from requests import Response
 from app.ciscoeox import api_crawler
 from app.ciscoeox.exception import CiscoApiCallFailed, ConnectionFailedException
-from app.config.settings import AppSettings
 from app.productdb.models import Vendor, Product, ProductMigrationSource, ProductMigrationOption
 
 pytestmark = pytest.mark.django_db
@@ -69,24 +68,6 @@ valid_eox_record = {
 }
 
 
-@pytest.fixture
-def enable_cisco_api():
-    app = AppSettings()
-    app.set_cisco_api_enabled(True)
-
-
-@pytest.fixture
-def enabled_autocreate_new_products():
-    app = AppSettings()
-    app.set_auto_create_new_products(True)
-
-
-@pytest.fixture
-def disable_cisco_api():
-    app = AppSettings()
-    app.set_cisco_api_enabled(False)
-
-
 def test_convert_time_format():
     """test the translation function for the time format (from Cisco API to python)"""
     assert api_crawler.convert_time_format("YYYY-MM-DD") == "%Y-%m-%d"
@@ -100,6 +81,11 @@ class TestGetRawApiData:
     def test_invalid_cisco_eox_database_query(self):
         with pytest.raises(ValueError) as exinfo:
             api_crawler.get_raw_api_data(None)
+
+        assert exinfo.match("either year or the api_query must be provided")
+
+        with pytest.raises(ValueError) as exinfo:
+            api_crawler.get_raw_api_data(123)
 
         assert exinfo.match("api_query must be a string value")
 
@@ -191,6 +177,28 @@ class TestGetRawApiData:
             assert "EOXMigrationDetails" in e.keys()
             assert "ProductIDDescription" in e.keys()
 
+    @pytest.mark.usefixtures("mock_cisco_api_authentication_server")
+    @pytest.mark.usefixtures("enable_cisco_api")
+    def test_year_query(self, monkeypatch):
+        # mock the underlying GET request
+        class MockSession:
+            def get(self, *args, **kwargs):
+                r = Response()
+                r.status_code = 200
+                with open("app/ciscoeox/tests/data/cisco_eox_response_page_1_of_1.json") as f:
+                    r._content = f.read().encode("utf-8")
+                return r
+        monkeypatch.setattr(requests, "Session", MockSession)
+
+        result = api_crawler.get_raw_api_data(year=2018)
+
+        assert len(result) == 3, "Three products should be imported"
+        # every product should contain the following values
+        for e in result:
+            assert "EOLProductID" in e.keys()
+            assert "EOXMigrationDetails" in e.keys()
+            assert "ProductIDDescription" in e.keys()
+
 
 @pytest.mark.usefixtures("import_default_vendors")
 class TestUpdateLocalDbBasedOnRecord:
@@ -268,14 +276,6 @@ class TestUpdateLocalDbBasedOnRecord:
         p = Product.objects.get(product_id="WS-C2960-24T-S")
         assert p.eox_update_time_stamp == datetime.date(2016, 10, 3), "update must be processed"
         assert p.end_of_service_contract_renewal == datetime.date(2016, 10, 4), "Should be the value prior the update"
-
-        # TODO remove the conditional update
-
-        # test update if the eox_update_time_stamp equals value within the API (DB update should be performed)
-
-        # test update if the eox_update_time_stamp is smaller than the API value (DB update should be performed)
-
-        # test update if the eox_update_time_stamp is larger than the API value (DB update should not be performed)
 
         # test crash of the update method during update
         p = Product.objects.get(product_id="WS-C2960-24T-S")

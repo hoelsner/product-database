@@ -1,7 +1,7 @@
 import json
 import logging
 
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.validators import URLValidator
 from reversion import revisions as reversion
 from django.db import transaction
@@ -58,23 +58,24 @@ def update_local_db_based_on_record(eox_record, create_missing=False):
     """
     pid = eox_record['EOLProductID']
 
-    try:
-        product = Product.objects.get(product_id=pid)
-        created = False
+    if create_missing:
+        product, created = Product.objects.get_or_create(product_id=pid)
 
-    except Exception:
-        if create_missing:
-            product, created = Product.objects.get_or_create(product_id=pid)
-            if created:
-                product.product_id = pid
-                product.description = eox_record['ProductIDDescription']
-                # it is a Cisco API and the vendors are predefined in the database
-                product.vendor = Vendor.objects.get(name="Cisco Systems")
-                logger.debug("%15s: Product created" % pid)
+    else:
+        try:
+            product = Product.objects.get(product_id=pid)
+            created = False
 
-        else:
+        except ObjectDoesNotExist:
             logger.debug("%15s: Product not found in database (create disabled)" % pid, exc_info=True)
             return None
+
+    if created:
+        product.product_id = pid
+        product.description = eox_record['ProductIDDescription']
+        # it is a Cisco API and the vendors are predefined in the database
+        product.vendor = Vendor.objects.get(name="Cisco Systems")
+        logger.debug("%15s: Product created" % pid)
 
     # update the lifecycle information
     try:
@@ -147,42 +148,57 @@ def update_local_db_based_on_record(eox_record, create_missing=False):
             product_migration_source.save()
 
         if "MigrationOption" in migration_details:
-            # only a single migration option per migration source is allowed
-            pmo, _ = ProductMigrationOption.objects.get_or_create(product=product,
-                                                                  migration_source=product_migration_source)
-            if migration_details["MigrationOption"] == "Enter PID(s)":
-                # product replacement available, add replacement PID
-                pmo.replacement_product_id = migration_details["MigrationProductId"].strip()
-                pmo.migration_product_info_url = clean_api_url_response(migration_details["MigrationProductInfoURL"])
+            candidate_replacement_pid = migration_details["MigrationProductId"].strip()
 
-            elif migration_details["MigrationOption"] == "See Migration Section" or \
-                    migration_details["MigrationOption"] == "Enter Product Name(s)":
-                # complex product migration, only add comment
-                mig_strat = migration_details["MigrationStrategy"].strip()
-                pmo.comment = mig_strat if mig_strat != "" else migration_details["MigrationProductName"].strip()
-                pmo.migration_product_info_url = clean_api_url_response(migration_details["MigrationProductInfoURL"])
+            if candidate_replacement_pid == pid:
+                logger.error("Product ID '%s' should be replaced by itself, which is not possible" % pid)
 
             else:
-                # no replacement available, only add comment
-                pmo.comment = migration_details["MigrationOption"].strip()  # some data separated by blank
-                pmo.migration_product_info_url = clean_api_url_response(migration_details["MigrationProductInfoURL"])
+                # only a single migration option per migration source is allowed
+                pmo, _ = ProductMigrationOption.objects.get_or_create(product=product,
+                                                                      migration_source=product_migration_source)
+                if migration_details["MigrationOption"] == "Enter PID(s)":
+                    # product replacement available, add replacement PID
+                    pmo.replacement_product_id = candidate_replacement_pid
+                    pmo.migration_product_info_url = clean_api_url_response(migration_details["MigrationProductInfoURL"])
 
-            # add message if only a single entry was saved
-            if pmo.migration_product_info_url != migration_details["MigrationProductInfoURL"].strip():
-                return "Multiple URL values from the Migration Note received, only the first one is saved"
+                elif migration_details["MigrationOption"] == "See Migration Section" or \
+                        migration_details["MigrationOption"] == "Enter Product Name(s)":
+                    # complex product migration, only add comment
+                    mig_strat = migration_details["MigrationStrategy"].strip()
+                    pmo.comment = mig_strat if mig_strat != "" else migration_details["MigrationProductName"].strip()
+                    pmo.migration_product_info_url = clean_api_url_response(migration_details["MigrationProductInfoURL"])
 
-            pmo.save()
+                else:
+                    # no replacement available, only add comment
+                    pmo.comment = migration_details["MigrationOption"].strip()  # some data separated by blank
+                    pmo.migration_product_info_url = clean_api_url_response(migration_details["MigrationProductInfoURL"])
+
+                # add message if only a single entry was saved
+                if pmo.migration_product_info_url != migration_details["MigrationProductInfoURL"].strip():
+                    return "Multiple URL values from the Migration Note received, only the first one is saved"
+
+                pmo.save()
 
 
-def get_raw_api_data(api_query):
+def get_raw_api_data(api_query=None, year=None):
     """
     returns all EoX records for a specific query (from all pages)
     :param api_query: single query that is send to the Cisco EoX API
+    :param year: get all EoX data that are announced in a specific year
     :raises CiscoApiCallFailed: exception raised if Cisco EoX API call failed
     :return: list that contains all EoX records from the Cisco EoX API
     """
-    if type(api_query) is not str:
-        raise ValueError("api_query must be a string value")
+    if api_query is None and year is None:
+        raise ValueError("either year or the api_query must be provided")
+
+    if api_query:
+        if type(api_query) is not str:
+            raise ValueError("api_query must be a string value")
+
+    if year:
+        if type(year) is not int:
+            raise ValueError("year must be an integer value")
 
     # load application settings and check, that the API is enabled
     app_settings = AppSettings()
@@ -204,14 +220,15 @@ def get_raw_api_data(api_query):
         result_pages = 999
 
         while current_page <= result_pages:
-            if current_page == 1:
-                logger.info("Executing API query '%s' on first page" % api_query)
-
-            else:
-                logger.info("Executing API query '%s' on page '%d" % (api_query, current_page))
+            logger.info("Executing API query %s on page '%d" % ('%s' % api_query if api_query else "for year %d" % year, current_page))
 
             # will raise a CiscoApiCallFailed exception on error
-            eoxapi.query_product(product_id=api_query, page=current_page)
+            if year:
+                eoxapi.query_year(year_to_query=year, page=current_page)
+
+            else:
+                eoxapi.query_product(product_id=api_query, page=current_page)
+
             result_pages = eoxapi.amount_of_pages()
 
             if eoxapi.get_page_record_count() > 0:
@@ -226,5 +243,7 @@ def get_raw_api_data(api_query):
     except CiscoApiCallFailed:
         logger.fatal("Query failed: %s" % api_query, exc_info=True)
         raise
+
+    logger.debug("found %d records for year %s" % (len(results), year))
 
     return results

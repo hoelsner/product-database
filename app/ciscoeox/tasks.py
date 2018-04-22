@@ -1,6 +1,5 @@
 import logging
 import re
-
 import time
 from django.core.cache import cache
 from django.db import transaction
@@ -60,6 +59,97 @@ def cisco_eox_populate_product_lc_state_sync_field():
 
     else:
         return {"error": "No Products associated to \"Cisco Systems\" found in database"}
+
+
+@app.task(
+    serializer="json",
+    name="ciscoeox.initial_sync_with_cisco_eox_api",
+    bind=True
+)
+def initial_sync_with_cisco_eox_api(self, years_list):
+    """
+    synchronize all entries from the EoX API for a given amount of years (today - n-years), ignores the create missing
+    entries and the configurable blacklist.
+    :param self:
+    :param years_list: list of years to sync (e.g. [2018, 2017, 2016]
+    :return:
+    """
+    if type(years_list) is not list:
+        raise AttributeError("years_list must be a list")
+
+    for val in years_list:
+        if type(val) is not int:
+            raise AttributeError("years_list must be a list of integers")
+
+    if len(years_list) == 0:
+        return {
+            "status_message": "No years provided, nothing to do."
+        }
+
+    app_config = AppSettings()
+
+    # test Cisco EoX API access
+    test_result = utils.check_cisco_eox_api_access(
+        app_config.get_cisco_api_client_id(),
+        app_config.get_cisco_api_client_secret(),
+        False
+    )
+    failed_years = []
+    successful_years = []
+
+    if test_result:
+        # perform synchronization
+        self.update_state(state=TaskState.PROCESSING, meta={
+            "status_message": "start initial synchronization with the Cisco EoX API..."
+        })
+        all_records = []
+        for year in years_list:
+            self.update_state(state=TaskState.PROCESSING, meta={
+                "status_message": "fetch all information for year %d..." % year
+            })
+            # wait some time between the query calls
+            time.sleep(int(app_config.get_cisco_eox_api_sync_wait_time()))
+
+            # fetch all API entries for a specific year
+            try:
+                records = cisco_eox_api_crawler.get_raw_api_data(year=year)
+                successful_years += [year]
+
+                all_records += records
+
+            except CiscoApiCallFailed as ex:
+                msg = "Cisco EoX API call failed (%s)" % str(ex)
+                logger.error("Query for year %s to Cisco EoX API failed (%s)" % (year, msg), exc_info=True)
+                failed_years += [year]
+
+            except Exception as ex:
+                msg = "Unexpected Exception, cannot access the Cisco API. Please ensure that the server is " \
+                      "connected to the internet and that the authentication settings are valid."
+                logger.error("Query for year %s to Cisco EoX API failed (%s)" % (year, msg), exc_info=True)
+                failed_years += [year]
+
+        self.update_state(state=TaskState.PROCESSING, meta={
+            "status_message": "Update database entries (may take a long time)..."
+        })
+        # update local database (asynchronous task)
+        for record in all_records:
+            cisco_eox_api_crawler.update_local_db_based_on_record(record, True)
+
+    time.sleep(10)
+    # remove in progress flag with the cache
+    cache.delete("CISCO_EOX_INITIAL_SYN_IN_PROGRESS")
+
+    success_msg = ",".join([str(e) for e in successful_years])
+    if len(success_msg) == 0:
+        success_msg = "None"
+    failed_msg = ""
+    if len(failed_years) != 0:
+        failed_msg = " (for %s the synchronization failed)" % ",".join([str(e) for e in failed_years])
+
+    return {
+        "status_message": "The EoX data were successfully imported for the following years: %s%s" % (success_msg,
+                                                                                                     failed_msg)
+    }
 
 
 @app.task(
@@ -130,7 +220,7 @@ def execute_task_to_synchronize_cisco_eox_states(self, ignore_periodic_sync_flag
                     # wait some time between the query calls
                     time.sleep(int(app_config.get_cisco_eox_api_sync_wait_time()))
                     try:
-                        query_eox_records[query] = cisco_eox_api_crawler.get_raw_api_data(query)
+                        query_eox_records[query] = cisco_eox_api_crawler.get_raw_api_data(api_query=query)
                         successful_queries.append(query)
 
                     except CiscoApiCallFailed as ex:
@@ -143,7 +233,6 @@ def execute_task_to_synchronize_cisco_eox_states(self, ignore_periodic_sync_flag
                         msg = "Unexpected Exception, cannot access the Cisco API. Please ensure that the server is " \
                               "connected to the internet and that the authentication settings are " \
                               "valid."
-
                         logger.error("Query %s to Cisco EoX API failed (%s)" % (query, msg), exc_info=True)
                         failed_queries.append(query)
                         failed_query_msgs[query] = str(ex)

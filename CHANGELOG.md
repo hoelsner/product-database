@@ -4,8 +4,7 @@
 
 * add ```show inventory``` parser to the new Product Check
 * preferred migration options must have a preference greater than 25
-* REST API authentication is now possible with user specific tokens (available in the User Profile, 
-[see Django REST framework for details](http://www.django-rest-framework.org/api-guide/authentication/#tokenauthentication)) 
+* REST API authentication is now also possible using token based authentication ([see Django REST framework for details](http://www.django-rest-framework.org/api-guide/authentication/#tokenauthentication))
 * the input Product IDs field in the Product Check has now an unlimited length
 * the web-service now notifies a super user, if no backend worker is active/registered
 * **HTTPs is now mandatory**

@@ -41,7 +41,7 @@ def use_test_api_configuration():
 @pytest.mark.usefixtures("redis_server_required")
 @pytest.mark.usefixtures("import_default_vendors")
 class TestExecuteTaskToSynchronizeCiscoEoxStateTask:
-    def mock_api_call(sel, monkeypatch):
+    def mock_api_call(self, monkeypatch):
         # mock the underlying API call
         class MockSession:
             def get(self, *args, **kwargs):
@@ -277,7 +277,11 @@ class TestExecuteTaskToSynchronizeCiscoEoxStateTask:
             raise CiscoApiCallFailed("Cisco API call failed message")
 
         monkeypatch.setattr(utils, "check_cisco_eox_api_access", lambda x, y, z: True)
-        monkeypatch.setattr(cisco_eox_api_crawler, "get_raw_api_data", lambda query: raise_ciscoapicallfailed())
+        monkeypatch.setattr(
+            cisco_eox_api_crawler,
+            "get_raw_api_data",
+            lambda api_query=None, year=None: raise_ciscoapicallfailed()
+        )
 
         # test automatic trigger
         app = AppSettings()
@@ -302,7 +306,6 @@ class TestExecuteTaskToSynchronizeCiscoEoxStateTask:
 @pytest.mark.usefixtures("set_celery_always_eager")
 @pytest.mark.usefixtures("redis_server_required")
 class TestPopulateProductLifecycleStateSyncTask:
-
     def test_no_cisco_vendor(self):
         result = tasks.cisco_eox_populate_product_lc_state_sync_field.delay()
 
@@ -406,3 +409,74 @@ class TestPopulateProductLifecycleStateSyncTask:
         assert result.status == "SUCCESS"
         assert filterquery.count() == 0, "Periodic sync disabled, no value should be true"
 
+
+@pytest.mark.usefixtures("mock_cisco_api_authentication_server")
+@pytest.mark.usefixtures("use_test_api_configuration")
+@pytest.mark.usefixtures("set_celery_always_eager")
+@pytest.mark.usefixtures("redis_server_required")
+@pytest.mark.usefixtures("import_default_vendors")
+class TestInitialSyncWithCiscoEoXApiTask:
+    def mock_api_call(self, monkeypatch):
+        # mock the underlying API call
+        class MockSession:
+            def get(self, *args, **kwargs):
+                r = Response()
+                r.status_code = 200
+                with open("app/ciscoeox/tests/data/cisco_eox_response_page_1_of_1.json") as f:
+                    r._content = f.read().encode("utf-8")
+                return r
+
+        monkeypatch.setattr(requests, "Session", MockSession)
+
+    def test_initial_import_with_invalid_parameters(self):
+        with pytest.raises(AttributeError) as ex:
+            tasks.initial_sync_with_cisco_eox_api.delay(years_list="invalid parameter")
+
+        assert ex.match("years_list must be a list")
+
+        with pytest.raises(AttributeError) as ex:
+            tasks.initial_sync_with_cisco_eox_api.delay(years_list=["12", "13"])
+
+        assert ex.match("years_list must be a list of integers")
+
+        task = tasks.initial_sync_with_cisco_eox_api.delay(years_list=[])
+
+        assert task is not None
+        assert task.status == "SUCCESS", task.traceback
+        assert task.state == TaskState.SUCCESS
+        assert task.info.get("status_message") == "No years provided, nothing to do."
+
+    def test_initial_import(self, monkeypatch):
+        self.mock_api_call(monkeypatch)
+
+        # start initial import
+        task = tasks.initial_sync_with_cisco_eox_api.delay(years_list=[2018, 2017])
+        expected_result = "The EoX data were successfully imported for the following years: 2018,2017"
+
+        assert task is not None
+        assert task.status == "SUCCESS", task.traceback
+        assert task.state == TaskState.SUCCESS
+        assert task.info.get("status_message") == expected_result
+        assert Product.objects.count() == 3, "Three products are part of the update (mocked)"
+
+    def test_initial_import_with_failed_api_query(self, monkeypatch):
+        def raise_ciscoapicallfailed():
+            raise CiscoApiCallFailed("Cisco API call failed message")
+
+        monkeypatch.setattr(utils, "check_cisco_eox_api_access", lambda x, y, z: True)
+        monkeypatch.setattr(
+            cisco_eox_api_crawler,
+            "get_raw_api_data",
+            lambda api_query=None, year=None: raise_ciscoapicallfailed()
+        )
+
+        # test initial import
+        task = tasks.initial_sync_with_cisco_eox_api.delay(years_list=[2018, 2017])
+
+        expected_status_message = "The EoX data were successfully imported for the following years: None " \
+                                  "(for 2018,2017 the synchronization failed)"
+
+        assert task is not None
+        assert task.status == "SUCCESS", task.traceback
+        assert task.state == TaskState.SUCCESS
+        assert task.info.get("status_message") == expected_status_message

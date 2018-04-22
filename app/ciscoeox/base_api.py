@@ -214,7 +214,6 @@ class BaseCiscoApiConsole:
 
         except:
             logger.debug(response.text)
-            print(response.text)
             logger.error("unexpected response from API endpoint (malformed JSON content)")
             raise CiscoApiCallFailed("unexpected content from API endpoint")
 
@@ -239,6 +238,8 @@ class CiscoEoxApi(BaseCiscoApiConsole):
     Implementation for the Cisco EoX API Version 5 endpoint
     """
     EOX_API_URL = "https://api.cisco.com/supporttools/eox/rest/5/EOXByProductID/%d/%s"
+    EOX_YEAR_API_URL = "https://api.cisco.com/supporttools/eox/rest/5/EOXByDates/" \
+                       "%(pageIndex)d/%(startDate)s/%(endDate)s"
 
     last_json_result = None
     last_page_call = 0
@@ -251,9 +252,41 @@ class CiscoEoxApi(BaseCiscoApiConsole):
         :param page: page, that should be called
         :return:
         """
-        logger.debug("call to Cisco EoX API endpoint with '%s'" % product_id)
+        logger.debug("call to Cisco EoX API endpoint with '%s' on page %d" % (product_id, page))
         if self.is_ready_for_use():
             url = self.EOX_API_URL % (page, product_id)
+            self.last_json_result = self.get_request(url)
+            self.last_page_call = page
+
+            # check for API error
+            if self.has_api_error():
+                # if the API error message only states that no EoX information are available, just return nothing
+                if not self.get_api_error_message().startswith("EOX information does not exist for the following "
+                                                               "product ID(s):"):
+                    msg = "Cisco EoX API error: %s" % self.get_api_error_message()
+                    logger.fatal(msg)
+                    raise CiscoApiCallFailed(msg)
+
+            return self.last_json_result
+
+        raise CiscoApiCallFailed("Client not ready (credentials or token missing)")
+
+    def query_year(self, year_to_query, page=1):
+        """
+        query products that are EoL announced in a specific year
+        :param year_to_query: year that should be used (e.g. 2017)
+        :param page:
+        :return:
+        """
+        logger.debug("call to Cisco EoX API endpoint for year '%s' on page %d%s" % (
+            year_to_query, page, " of " + str(self.last_page_call) if page != 1 else "")
+        )
+        if self.is_ready_for_use():
+            url = self.EOX_YEAR_API_URL % {
+                "pageIndex": page,
+                "startDate": "%d-01-01" % year_to_query,
+                "endDate": "%d-12-31" % year_to_query
+            }
             self.last_json_result = self.get_request(url)
             self.last_page_call = page
 

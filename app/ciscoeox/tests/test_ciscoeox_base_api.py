@@ -38,6 +38,9 @@ class BaseCiscoApiConsoleSettings:
     def is_cisco_api_enabled(self):
         return True
 
+    def close(self):
+        pass
+
     def get_cisco_api_client_id(self):
         try:
             with open(self.CREDENTIALS_FILE) as f:
@@ -347,6 +350,7 @@ class TestCiscoHelloApi:
 
 class TestCiscoEoxApi:
     TEST_QUERY = "WS-C2950G-48-EI"
+    TEST_YEAR = 2017
     EXPECTED_VALID_TEST_QUERY_RESPONSE = {
         "EOXRecord": [
             {
@@ -600,3 +604,64 @@ class TestCiscoEoxApi:
         assert cisco_eox_api.has_api_error() is True
         assert cisco_eox_api.get_api_error_message() == "EOX information does not exist for the following product " \
                                                         "ID(s): NOTHING (SSA_ERR_026)"
+
+    def test_offline_query_year(self, monkeypatch):
+        class MockSession:
+            def get(self, *args, **kwargs):
+                r = Response()
+                r.status_code = 200
+                with open("app/ciscoeox/tests/data/cisco_eox_response_page_1_of_1.json") as f:
+                    r._content = f.read().encode("utf-8")
+                return r
+
+        monkeypatch.setattr(requests, "Session", MockSession)
+
+        cisco_eox_api = CiscoEoxApi()
+        monkeypatch.setattr(cisco_eox_api, "create_temporary_access_token", lambda force_new_token=True: mock_access_token_generation())
+        cisco_eox_api.load_client_credentials()
+        cisco_eox_api.create_temporary_access_token()
+
+        assert cisco_eox_api.get_eox_records() == []
+        assert cisco_eox_api.amount_of_pages() == 0
+        assert cisco_eox_api.get_current_page() == 0
+        assert cisco_eox_api.amount_of_total_records() == 0
+        assert cisco_eox_api.get_page_record_count() == 0
+
+        jresult = cisco_eox_api.query_year(self.TEST_YEAR, 1)
+
+        assert "EOXRecord" in jresult
+        assert "PaginationResponseRecord" in jresult
+        assert len(jresult["EOXRecord"]) == 3
+        assert cisco_eox_api.get_eox_records() == jresult["EOXRecord"]
+        assert cisco_eox_api.amount_of_pages() == 1
+        assert cisco_eox_api.get_current_page() == 1
+        assert cisco_eox_api.amount_of_total_records() == 3
+        assert cisco_eox_api.get_page_record_count() == 3
+        assert cisco_eox_api.has_api_error() is False
+        assert cisco_eox_api.get_api_error_message() == "no error"
+        assert cisco_eox_api.get_error_description(jresult["EOXRecord"][0]) == ""
+        assert cisco_eox_api.get_error_description(jresult["EOXRecord"][0]) == ""
+
+    @pytest.mark.usefixtures("use_test_api_configuration")
+    @online
+    def test_online_query_year(self):
+        cisco_eox_api = CiscoEoxApi()
+
+        with pytest.raises(CiscoApiCallFailed):
+            cisco_eox_api.query_year(self.TEST_YEAR, 1)
+
+        cisco_eox_api.load_client_credentials()
+        cisco_eox_api.create_temporary_access_token()
+
+        assert cisco_eox_api.amount_of_pages() == 0
+        assert cisco_eox_api.get_current_page() == 0
+        assert cisco_eox_api.amount_of_total_records() == 0
+        assert cisco_eox_api.get_page_record_count() == 0
+
+        _ = cisco_eox_api.query_year(self.TEST_YEAR, 1)
+
+        assert cisco_eox_api.amount_of_pages() == 14
+        assert cisco_eox_api.get_current_page() == 1
+        assert cisco_eox_api.amount_of_total_records() >= 13203
+        assert cisco_eox_api.get_page_record_count() == 1000
+        assert cisco_eox_api.has_api_error() is False
