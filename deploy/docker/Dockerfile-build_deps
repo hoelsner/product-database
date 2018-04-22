@@ -1,5 +1,6 @@
 FROM ubuntu:16.04
 
+ENV PYTHONIOENCODING utf-8
 ENV DJANGO_SECRET_KEY PlsChgMe
 ENV DJANGO_LOG_LEVEL info
 ENV POSTGRES_DB productdb
@@ -32,7 +33,6 @@ RUN echo \
 
 ADD . /var/www/productdb/source
 RUN echo \
-    && pip3 install --no-cache-dir --upgrade pip setuptools \
     && pip3 install --no-cache-dir -r /var/www/productdb/source/requirements.txt \
     && mkdir /var/www/productdb/logs
 
