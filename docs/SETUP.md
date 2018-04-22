@@ -127,3 +127,14 @@ docker-compose down
 git pull origin master
 docker-compose up -d --build --force-recreate
 ```
+
+### initial data import from Cisco EoX API
+
+To fetch all data initially from the Cisco EoX API (one time import), you can now use the following management command within a `web` container:
+
+```
+initialimport <years>
+```
+
+Before the import will work, the Cisco EoX API must be configured in the webfrontend. The command expects a list of years that should be imported
+ (e.g. `2017 2018` to import all Cisco EoX records that are announced in 2017 and 2018). To verify the state of the import, use the command `initialimportstatus`

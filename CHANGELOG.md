@@ -1,19 +1,25 @@
 # changelog
 
-## Version 0.5 (development)
+## Version 0.9
 
+* API endpoint now Version 1
 * add ```show inventory``` parser to the new Product Check
 * preferred migration options must have a preference greater than 25
 * REST API authentication is now also possible using token based authentication ([see Django REST framework for details](http://www.django-rest-framework.org/api-guide/authentication/#tokenauthentication))
 * the input Product IDs field in the Product Check has now an unlimited length
 * the web-service now notifies a super user, if no backend worker is active/registered
-* **HTTPs is now mandatory**
-* **add Dockerfile**
+* HTTPs is now mandatory
+* add Dockerfiles and docker-compose (removed the Vagrant/Ansible deployment option)
+* minor user interface changes (including a shortcut to search within the database)
+* add LDAP authentication with TLS
+* add XML renderer to REST API (read-only)
+* add API endpoint for the Notification Messages
+* add initial data import for the Cisco EoX API (see section "initial data import" in the [Setup & Installation](docs/SETUP.md))
 
 ## Version 0.4
 
-**Before updating from Version 0.3 to Version 0.4, please save your current configuration values. Version 0.4 
-stores the configuration values in the database, not the configuration file. After the update, you must reconfigure 
+**Before updating from Version 0.3 to Version 0.4, please save your current configuration values. Version 0.4
+stores the configuration values in the database, not the configuration file. After the update, you must reconfigure
 the Product Database settings.**
 
 * add new **Product Check** (enhanced version of the Bulk EoL Check)
