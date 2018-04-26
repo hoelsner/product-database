@@ -136,5 +136,7 @@ To fetch all data initially from the Cisco EoX API (one time import), you can no
 initialimport <years>
 ```
 
-Before the import will work, the Cisco EoX API must be configured in the webfrontend. The command expects a list of years that should be imported
- (e.g. `2017 2018` to import all Cisco EoX records that are announced in 2017 and 2018). To verify the state of the import, use the command `initialimportstatus`
+Before starting the import you need to configure the Cisco EoX API in the webfrontend (Login as `pdb_admin` and enable the Cisco API with the credentials).
+ The `initialimport` command requires a list of years that should be imported (e.g. `2017 2018` to import all Cisco EoX records that are announced in 2017 and 2018).
+ Use the command `initialimportstatus` to verify the download-process.
+ After the database update is finished, a notification will be shown in the webfrontend.
