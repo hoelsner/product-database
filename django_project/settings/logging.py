@@ -91,17 +91,17 @@ def configure_logging(log_level, basedir, filename, enable_sentry=False):
                 "level": log_level,
             },
             "raven": {
-                "level": "DEBUG",
+                "level": log_level,
                 "handlers": ["console"],
                 "propagate": False,
             },
             "sentry.errors": {
-                "level": "DEBUG",
+                "level": log_level,
                 "handlers": ["console"],
                 "propagate": False,
             },
             "celery": {
-                "level": "WARNING",
+                "level": log_level,
                 "handlers": ["console"],
                 "propagate": False,
             }

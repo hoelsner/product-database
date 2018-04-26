@@ -451,13 +451,14 @@ class TestInitialSyncWithCiscoEoXApiTask:
 
         # start initial import
         task = tasks.initial_sync_with_cisco_eox_api.delay(years_list=[2018, 2017])
-        expected_result = "The EoX data were successfully imported for the following years: 2018,2017"
+        expected_result = "The EoX data were successfully downloaded for the following years: 2018,2017"
 
         assert task is not None
         assert task.status == "SUCCESS", task.traceback
         assert task.state == TaskState.SUCCESS
         assert task.info.get("status_message") == expected_result
         assert Product.objects.count() == 3, "Three products are part of the update (mocked)"
+        assert NotificationMessage.objects.filter(title="Initial data import finished").count() == 1
 
     def test_initial_import_with_failed_api_query(self, monkeypatch):
         def raise_ciscoapicallfailed():
@@ -473,10 +474,12 @@ class TestInitialSyncWithCiscoEoXApiTask:
         # test initial import
         task = tasks.initial_sync_with_cisco_eox_api.delay(years_list=[2018, 2017])
 
-        expected_status_message = "The EoX data were successfully imported for the following years: None " \
+        expected_status_message = "The EoX data were successfully downloaded for the following years: None " \
                                   "(for 2018,2017 the synchronization failed)"
 
         assert task is not None
         assert task.status == "SUCCESS", task.traceback
         assert task.state == TaskState.SUCCESS
         assert task.info.get("status_message") == expected_status_message
+        msg_count = NotificationMessage.objects.filter(title="Initial data import failed").count()
+        assert msg_count == 2, "Message is created per year"

@@ -278,9 +278,7 @@ class CiscoEoxApi(BaseCiscoApiConsole):
         :param page:
         :return:
         """
-        logger.debug("call to Cisco EoX API endpoint for year '%s' on page %d%s" % (
-            year_to_query, page, " of " + str(self.last_page_call) if page != 1 else "")
-        )
+        logger.debug("call to Cisco EoX API endpoint for year '%s' on page %d" % (year_to_query, page))
         if self.is_ready_for_use():
             url = self.EOX_YEAR_API_URL % {
                 "pageIndex": page,

@@ -1,9 +1,11 @@
 import logging
 import re
 import time
+from celery import chain
 from django.core.cache import cache
 from django.db import transaction
 from django.core.exceptions import ValidationError
+from cacheops import invalidate_model
 
 import app.ciscoeox.api_crawler as cisco_eox_api_crawler
 from app.ciscoeox.exception import CiscoApiCallFailed
@@ -55,10 +57,39 @@ def cisco_eox_populate_product_lc_state_sync_field():
                 for query in queries:
                     Product.objects.filter(product_id__regex=query, vendor=cis_vendor).update(lc_state_sync=True)
 
+        invalidate_model(Product)
+
         return {"status": "Database updated"}
 
     else:
         return {"error": "No Products associated to \"Cisco Systems\" found in database"}
+
+
+@app.task(
+    serializer="json",
+    name="ciscoeox.update_local_database_records"
+)
+def update_local_database_records(results, year, records):
+    for record in records:
+        cisco_eox_api_crawler.update_local_db_based_on_record(record, True)
+
+    results[str(year)] = "success"
+    return results
+
+
+@app.task(
+    serializer="json",
+    name="ciscoeox.notify_initial_import_result"
+)
+def notify_initial_import_result(results):
+    msg = "The following years were successful imported: " + ",".join(results.keys())
+
+    NotificationMessage.objects.create(
+        title="Initial data import finished",
+        summary_message=msg,
+        detailed_message=msg,
+        type=NotificationMessage.MESSAGE_INFO
+    )
 
 
 @app.task(
@@ -115,12 +146,22 @@ def initial_sync_with_cisco_eox_api(self, years_list):
                 records = cisco_eox_api_crawler.get_raw_api_data(year=year)
                 successful_years += [year]
 
-                all_records += records
+                all_records.append({
+                    "year": year,
+                    "records": records
+                })
 
             except CiscoApiCallFailed as ex:
                 msg = "Cisco EoX API call failed (%s)" % str(ex)
                 logger.error("Query for year %s to Cisco EoX API failed (%s)" % (year, msg), exc_info=True)
                 failed_years += [year]
+
+                NotificationMessage.objects.create(
+                    title="Initial data import failed",
+                    summary_message="Unable to collect Cisco EoX data for year %d" % year,
+                    detailed_message=msg,
+                    type=NotificationMessage.MESSAGE_ERROR
+                )
 
             except Exception as ex:
                 msg = "Unexpected Exception, cannot access the Cisco API. Please ensure that the server is " \
@@ -128,12 +169,23 @@ def initial_sync_with_cisco_eox_api(self, years_list):
                 logger.error("Query for year %s to Cisco EoX API failed (%s)" % (year, msg), exc_info=True)
                 failed_years += [year]
 
-        self.update_state(state=TaskState.PROCESSING, meta={
-            "status_message": "Update database entries (may take a long time)..."
-        })
+                NotificationMessage.objects.create(
+                    title="Initial data import failed",
+                    summary_message="Unable to collect Cisco EoX data for year %d" % year,
+                    detailed_message=msg,
+                    type=NotificationMessage.MESSAGE_ERROR
+                )
+
         # update local database (asynchronous task)
-        for record in all_records:
-            cisco_eox_api_crawler.update_local_db_based_on_record(record, True)
+        if len(all_records) != 0:
+            tasks = [
+                update_local_database_records.s({}, all_records[0]["year"], all_records[0]["records"])
+            ]
+            for r in all_records[1:]:
+                tasks.append(update_local_database_records.s(r["year"], r["records"]))
+
+            tasks.append(notify_initial_import_result.s())
+            chain(*tasks).apply_async()
 
     time.sleep(10)
     # remove in progress flag with the cache
@@ -147,8 +199,8 @@ def initial_sync_with_cisco_eox_api(self, years_list):
         failed_msg = " (for %s the synchronization failed)" % ",".join([str(e) for e in failed_years])
 
     return {
-        "status_message": "The EoX data were successfully imported for the following years: %s%s" % (success_msg,
-                                                                                                     failed_msg)
+        "status_message": "The EoX data were successfully downloaded for the following years: %s%s" % (success_msg,
+                                                                                                       failed_msg)
     }
 
 

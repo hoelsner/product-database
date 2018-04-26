@@ -63,7 +63,7 @@
             </thead>
             <tbody>
                 {% for product_check_entry in product_check.productcheckentry_set.all %}
-                    <tr{% if not product_check_entry.in_database %} class="danger"{% elif not product_check_entry.lc_state_sync %} class="warning"{% endif %}>
+                    <tr{% if not product_check_entry.in_database %} class="danger"{% else %}{% if not product_check_entry.product_in_database.lc_state_sync %} class="warning"{% endif %}{% endif %}>
                         <td>
                             {% if product_check_entry.in_database %}
                                 {{ product_check_entry.product_in_database.vendor.name }}
