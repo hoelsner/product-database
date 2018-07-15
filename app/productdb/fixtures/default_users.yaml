@@ -24,3 +24,53 @@
     username: api
   model: auth.user
   pk: 2
+- model: auth.group
+  fields:
+    name: product_maintainer
+    permissions:
+    - [change_product, productdb, product]
+    - [change_productgroup, productdb, productgroup]
+    - [change_productmigrationoption, productdb, productmigrationoption]
+- model: auth.group
+  fields:
+    name: productlist_maintainer
+    permissions:
+    - [change_productlist, productdb, productlist]
+- model: auth.group
+  fields:
+    name: productlist_admin
+    permissions:
+    - [add_productlist, productdb, productlist]
+    - [change_productlist, productdb, productlist]
+    - [delete_productlist, productdb, productlist]
+- model: auth.group
+  fields:
+    name: product_admin
+    permissions:
+    - [add_product, productdb, product]
+    - [change_product, productdb, product]
+    - [delete_product, productdb, product]
+    - [add_productgroup, productdb, productgroup]
+    - [change_productgroup, productdb, productgroup]
+    - [delete_productgroup, productdb, productgroup]
+    - [add_productmigrationoption, productdb, productmigrationoption]
+    - [change_productmigrationoption, productdb, productmigrationoption]
+    - [delete_productmigrationoption, productdb, productmigrationoption]
+- model: auth.group
+  fields:
+    name: backend_admin
+    permissions:
+    - [change_configoption, config, configoption]
+    - [add_notificationmessage, config, notificationmessage]
+    - [change_notificationmessage, config, notificationmessage]
+    - [change_textblock, config, textblock]
+    - [add_productmigrationsource, productdb, productmigrationsource]
+    - [change_productmigrationsource, productdb, productmigrationsource]
+    - [add_vendor, productdb, vendor]
+    - [change_vendor, productdb, vendor]
+- model: auth.group
+  fields:
+    name: user_editor
+    permissions:
+    - [add_user, auth, user]
+    - [change_user, auth, user]

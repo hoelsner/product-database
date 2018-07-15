@@ -91,7 +91,7 @@
                             </li>
                         </ul>
                     </li>
-                    {% if user.is_staff or perms.productdb.change_product %}
+                    {% if user.is_staff or perms.productdb.change_product or perms.productdb.change_productmigrationoption %}
                         <li class="dropdown">
                             <a class="dropdown-toggle" data-toggle="dropdown" aria-expanded="false" href="#" id="navbar_admin">
                                 <i class="fa fa-wrench" aria-hidden="true"></i>&nbsp;
