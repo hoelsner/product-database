@@ -138,6 +138,9 @@ DATABASES = {
     }
 }
 
+# HTTP proxy setting used with the Cisco Support API
+HTTP_PROXY_SERVER = os.getenv("PDB_HTTP_PROXY", None)
+HTTPS_PROXY_SERVER = os.getenv("PDB_HTTPS_PROXY", None)
 WSGI_APPLICATION = "django_project.wsgi.application"
 
 LANGUAGE_CODE = os.getenv("PDB_LANGUAGE_CODE", "en-us")

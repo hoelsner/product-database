@@ -176,7 +176,7 @@ class TestCiscoHelloApi:
             r.status_code = 401
             return r
 
-        monkeypatch.setattr(requests, "post", lambda x, params: get_invalid_authentication_response())
+        monkeypatch.setattr(requests, "post", lambda x, params, proxies=None: get_invalid_authentication_response())
 
         cisco_hello_api = CiscoHelloApi()
         cisco_hello_api.load_client_credentials()
@@ -205,7 +205,7 @@ class TestCiscoHelloApi:
             r._content = "<h1>Not Authorized</h1>".encode("utf-8")
             return r
 
-        monkeypatch.setattr(requests, "post", lambda x, params: get_invalid_authentication_response())
+        monkeypatch.setattr(requests, "post", lambda x, params, proxies=None: get_invalid_authentication_response())
 
         cisco_hello_api = CiscoHelloApi()
         cisco_hello_api.load_client_credentials()
@@ -221,7 +221,7 @@ class TestCiscoHelloApi:
             r._content = "<h1>Developer Inactive</h1>".encode("utf-8")
             return r
 
-        monkeypatch.setattr(requests, "post", lambda x, params: get_invalid_authentication_response())
+        monkeypatch.setattr(requests, "post", lambda x, params, proxies=None: get_invalid_authentication_response())
 
         cisco_hello_api = CiscoHelloApi()
         cisco_hello_api.load_client_credentials()
@@ -237,7 +237,7 @@ class TestCiscoHelloApi:
             r._content = "".encode("utf-8")
             return r
 
-        monkeypatch.setattr(requests, "post", lambda x, params: get_invalid_authentication_response())
+        monkeypatch.setattr(requests, "post", lambda x, params, proxies=None: get_invalid_authentication_response())
 
         cisco_hello_api = CiscoHelloApi()
         cisco_hello_api.load_client_credentials()
@@ -253,7 +253,7 @@ class TestCiscoHelloApi:
             r._content = "<h1>Gateway Timeout</h1>".encode("utf-8")
             return r
 
-        monkeypatch.setattr(requests, "post", lambda x, params: get_invalid_authentication_response())
+        monkeypatch.setattr(requests, "post", lambda x, params, proxies=None: get_invalid_authentication_response())
 
         cisco_hello_api = CiscoHelloApi()
         cisco_hello_api.load_client_credentials()
@@ -269,7 +269,7 @@ class TestCiscoHelloApi:
             r._content = "My invalid JSON string".encode("utf-8")
             return r
 
-        monkeypatch.setattr(requests, "post", lambda x, params: get_invalid_authentication_response())
+        monkeypatch.setattr(requests, "post", lambda x, params, proxies=None: get_invalid_authentication_response())
 
         cisco_hello_api = CiscoHelloApi()
         cisco_hello_api.load_client_credentials()
@@ -354,57 +354,57 @@ class TestCiscoEoxApi:
     EXPECTED_VALID_TEST_QUERY_RESPONSE = {
         "EOXRecord": [
             {
-                "EndOfServiceContractRenewal": {
-                    "dateFormat": "YYYY-MM-DD",
-                    "value": "2011-03-31"
-                },
-                "ProductBulletinNumber": "EOL1094",
                 "LinkToProductBulletinURL": "http://www.cisco.com/en/US/products/hw/switches/ps628/prod_eol_notice"
                                             "0900aecd804658c9.html",
-                "EOLProductID": "WS-C2950G-48-EI",
-                "EndOfSvcAttachDate": {
-                    "dateFormat": "YYYY-MM-DD",
-                    "value": "2007-12-31"
+                "EndOfRoutineFailureAnalysisDate": {
+                    "value": "2007-12-31",
+                    "dateFormat": "YYYY-MM-DD"
                 },
-                "ProductIDDescription": "Catalyst 2950, 48 10/100 with 2 GBIC slots, Enhanced Image",
+                "EOXExternalAnnouncementDate": {
+                    "value": "2006-04-17",
+                    "dateFormat": "YYYY-MM-DD"
+                },
+                "EndOfServiceContractRenewal": {
+                    "value": "2011-03-31",
+                    "dateFormat": "YYYY-MM-DD"
+                },
                 "LastDateOfSupport": {
-                    "dateFormat": "YYYY-MM-DD",
-                    "value": "2011-12-31"
+                    "value": "2011-12-31",
+                    "dateFormat": "YYYY-MM-DD"
+                },
+                "EndOfSvcAttachDate": {
+                    "value": "2007-12-31",
+                    "dateFormat": "YYYY-MM-DD"
                 },
                 "EOXInputValue": "WS-C2950G-48-EI ",
                 "EOXMigrationDetails": {
-                    "MigrationProductName": " ",
                     "MigrationOption": "Enter PID(s)",
-                    "MigrationInformation": "^Catalyst 2960 48 10/100/1000,  4 T/SFP  LAN Base Image",
-                    "MigrationProductInfoURL": " ",
-                    "MigrationStrategy": " ",
+                    "MigrationProductName": "",
                     "PIDActiveFlag": "Y",
-                    "MigrationProductId": "WS-C2960G-48TC-L"
+                    "MigrationProductId": "WS-C2960G-48TC-L",
+                    "MigrationProductInfoURL": "",
+                    "MigrationInformation": "^Catalyst 2960 48 10/100/1000,  4 T/SFP  LAN Base Image",
+                    "MigrationStrategy": ""
                 },
-                "EOXExternalAnnouncementDate": {
-                    "dateFormat": "YYYY-MM-DD",
-                    "value": "2006-04-17"
-                },
+                "ProductBulletinNumber": "EOL1094",
+                "EOLProductID": "WS-C2950G-48-EI",
                 "UpdatedTimeStamp": {
-                    "dateFormat": "YYYY-MM-DD",
-                    "value": "2015-08-14"
-                },
-                "EndOfRoutineFailureAnalysisDate": {
-                    "dateFormat": "YYYY-MM-DD",
-                    "value": "2007-12-31"
-                },
-                "EOXInputType": "ShowEOXByPids",
-                "EndOfSecurityVulSupportDate": {
-                    "dateFormat": "YYYY-MM-DD",
-                    "value": " "
+                    "value": "2015-08-14",
+                    "dateFormat": "YYYY-MM-DD"
                 },
                 "EndOfSaleDate": {
-                    "dateFormat": "YYYY-MM-DD",
-                    "value": "2006-12-31"
+                    "value": "2006-12-31",
+                    "dateFormat": "YYYY-MM-DD"
                 },
+                "ProductIDDescription": "Catalyst 2950, 48 10/100 with 2 GBIC slots, Enhanced Image",
+                "EOXInputType": "ShowEOXByPids",
                 "EndOfSWMaintenanceReleases": {
-                    "dateFormat": "YYYY-MM-DD",
-                    "value": " "
+                    "value": "",
+                    "dateFormat": "YYYY-MM-DD"
+                },
+                "EndOfSecurityVulSupportDate": {
+                    "value": "",
+                    "dateFormat": "YYYY-MM-DD"
                 }
             }
         ],
@@ -660,8 +660,9 @@ class TestCiscoEoxApi:
 
         _ = cisco_eox_api.query_year(self.TEST_YEAR, 1)
 
-        assert cisco_eox_api.amount_of_pages() == 14
+        assert cisco_eox_api.amount_of_pages() == 13
         assert cisco_eox_api.get_current_page() == 1
-        assert cisco_eox_api.amount_of_total_records() >= 13203
+        assert cisco_eox_api.amount_of_total_records() >= 12604
         assert cisco_eox_api.get_page_record_count() == 1000
         assert cisco_eox_api.has_api_error() is False
+

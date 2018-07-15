@@ -15,6 +15,7 @@
 * add XML renderer to REST API (read-only)
 * add API endpoint for the Notification Messages
 * add initial data import for the Cisco EoX API (see section "initial data import" in the [Setup & Installation](docs/SETUP.md))
+* add HTTP/HTTPs proxy option (`PDB_HTTP_PROXY` and `PDB_HTTPS_PROXY`)
 
 ## Version 0.4
 

@@ -2,6 +2,7 @@ import datetime
 import json
 import logging
 import requests
+from django.conf import settings
 from django.core.cache import cache
 from app.ciscoeox.exception import *
 from app.config.settings import AppSettings
@@ -26,6 +27,12 @@ class BaseCiscoApiConsole:
     http_auth_header = None
     token_expire_datetime = datetime.datetime.now()
     _session = None
+
+    def __init__(self):
+        self.proxies = {
+          "http": settings.HTTP_PROXY_SERVER,
+          "https": settings.HTTPS_PROXY_SERVER,
+        }
 
     def __del__(self):
         if self._session is not None:
@@ -132,7 +139,7 @@ class BaseCiscoApiConsole:
             else:
                 logger.debug("cached token invalid or not existing (force:%s)" % force_new_token)
                 try:
-                    response = requests.post(self.AUTHENTICATION_URL, params=authz_header)
+                    response = requests.post(self.AUTHENTICATION_URL, params=authz_header, proxies=self.proxies)
 
                 except Exception as ex:
                     logger.error("cannot contact authentication server at %s" % self.AUTHENTICATION_URL, exc_info=True)
@@ -202,7 +209,7 @@ class BaseCiscoApiConsole:
             self._session = requests.Session()
 
         try:
-            response = self._session.get(url, headers=self.http_auth_header)
+            response = self._session.get(url, headers=self.http_auth_header, proxies=self.proxies)
 
         except Exception as ex:
             logger.error("cannot contact API endpoint at %s" % url, exc_info=True)
