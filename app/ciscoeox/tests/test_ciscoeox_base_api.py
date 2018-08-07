@@ -662,7 +662,7 @@ class TestCiscoEoxApi:
 
         assert cisco_eox_api.amount_of_pages() == 13
         assert cisco_eox_api.get_current_page() == 1
-        assert cisco_eox_api.amount_of_total_records() >= 12604
+        assert cisco_eox_api.amount_of_total_records() >= 12559
         assert cisco_eox_api.get_page_record_count() == 1000
         assert cisco_eox_api.has_api_error() is False
 

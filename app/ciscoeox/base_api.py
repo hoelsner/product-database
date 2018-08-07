@@ -39,11 +39,7 @@ class BaseCiscoApiConsole:
             self._session.close()
 
     def __repr__(self):
-        return {
-            "cliend_id": self.client_id,
-            "http_auth_header": self.http_auth_header,
-            "current_access_token": self.current_access_token
-        }
+        return "Base Cisco Support API: Client ID %s" % self.client_id
 
     def __save_cached_temp_token__(self, timeout_seconds):
         logger.debug("save token to cache")

@@ -2,9 +2,13 @@
 common Django settings for project
 """
 import os
+import logging as _logging
+
+logger = _logging.getLogger()
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-print("Django BASE_DIR: %s" % BASE_DIR)
+if os.getenv("PDB_DEBUG", False):
+    logger.warning("DJANGO CONFIG: Django BASE_DIR: %s" % BASE_DIR)
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -38,7 +42,7 @@ MIDDLEWARE_CLASSES = [
 ]
 
 if os.getenv("PDB_DEBUG", False) and os.getenv("PDB_DEBUG_NO_CACHE", False):
-    print("!!!!!!!! use database caching and disable cacheops...")
+    logger.warning("DJANGO CONFIG: use database caching and disable cacheops...")
     CACHES = {
         "default": {
             "BACKEND": "django.core.cache.backends.db.DatabaseCache",
@@ -65,7 +69,7 @@ else:
     }
 
     if os.getenv("PDB_DISABLE_CACHEOPS", False):
-        print("!!!!!!!! use redis caching and disable cacheops...")
+        logger.warning("DJANGO CONFIG: use redis caching and disable cacheops...")
         CACHEOPS_ENABLED = False  # disable cacheops for debugging
 
     else:
@@ -217,4 +221,5 @@ if os.getenv("PDB_DEBUG"):
 if not os.getenv("PDB_DEBUG") and not os.getenv("PDB_TESTING", False):
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+    CSRF_COOKIE_AGE = 60 * 60 * 24 * 30
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")

@@ -40,7 +40,6 @@ services:
       - static_files:/var/www/productdb/static
       - ssl_files:/var/www/productdb/ssl
       - data:/var/www/productdb/data
-      - logs:/var/www/productdb/logs
     networks:
       - default
       - internal
@@ -58,7 +57,6 @@ services:
       - internal
     volumes:
       - data:/var/www/productdb/data
-      - logs:/var/www/productdb/logs
     depends_on:
       - build_deps
       - database
@@ -78,7 +76,6 @@ services:
       - internal
     volumes:
       - data:/var/www/productdb/data
-      - logs:/var/www/productdb/logs
     depends_on:
       - build_deps
       - database
@@ -97,7 +94,6 @@ services:
       - internal
     volumes:
       - data:/var/www/productdb/data
-      - logs:/var/www/productdb/logs
     depends_on:
       - build_deps
       - database
@@ -117,7 +113,6 @@ services:
       - internal
     volumes:
       - data:/var/www/productdb/data
-      - logs:/var/www/productdb/logs
     depends_on:
       - build_deps
       - database
@@ -140,7 +135,6 @@ services:
       - static_files:/var/www/productdb/static:ro
       - ssl_files:/var/www/productdb/ssl:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - logs:/var/www/productdb/logs
     depends_on:
       - build_deps
       - web
@@ -157,4 +151,3 @@ volumes:
   data:
   postgres_backup:
   redis_data:
-  logs:

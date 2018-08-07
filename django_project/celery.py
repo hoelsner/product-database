@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import logging
 import os
 import celery
@@ -11,7 +9,6 @@ from raven.contrib.celery import register_signal, register_logger_signal
 
 
 class Celery(celery.Celery):
-
     def on_configure(self):
         if settings.PDB_SENTRY_DSN:  # ignore for coverage
             client = raven.Client(settings.PDB_SENTRY_DSN)
@@ -24,11 +21,10 @@ class Celery(celery.Celery):
             register_signal(client)
 
 
-# set the default Django settings module for the 'celery' program.
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'django_project.settings')
-app = Celery('product_db')
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "django_project.settings")
+app = Celery("product_db")
 
-app.config_from_object('django.conf:settings')
+app.config_from_object("django.conf:settings")
 app.autodiscover_tasks(lambda: settings.INSTALLED_APPS)
 
 

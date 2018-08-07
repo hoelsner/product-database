@@ -1,125 +1,72 @@
 import os
-from django_project.settings.common import *
+
+DEFAULT_LOG_FORMAT_STRING = "[%(levelname)7s %(asctime)s] %(message)s"
+DEFAULT_LOG_DATEFORMAT = "%d/%b/%Y %H:%M:%S"
 
 
-def configure_logging(log_level, basedir, filename, enable_sentry=False):
-    u_logfile_size = 2 * 1024 * 1024
-    u_logfile_count = 5
-    os.makedirs(basedir, exist_ok=True)
+def configure_logging(log_level, django_log_level, sentry_log_level, enable_sentry=False):
     #
-    # configure development logging
+    # configure django logging
     #
     logging_config = {
         "version": 1,
-        "disable_existing_loggers": True,
         "formatters": {
-            "verbose": {
-                "format": "[%(levelname)s %(asctime)s] %(module)s %(process)d %(thread)d %(message)s",
-                "datefmt": "%d/%b/%Y %H:%M:%S"
-            },
-            "regular": {
-                "format": "[%(levelname)s %(asctime)s] [%(module)s] %(message)s",
-                "datefmt": "%d/%b/%Y %H:%M:%S"
-            },
-            "simple": {
-                "format": "[%(levelname)s %(asctime)s] [%(module)s] %(message)s",
-                "datefmt": "%H:%M:%S"
-            },
+            "configured": {
+                "format": os.environ.get("PDB_LOG_FORMAT", DEFAULT_LOG_FORMAT_STRING),
+                "datefmt": os.environ.get("PDB_LOG_DATETIME_FORMAT", DEFAULT_LOG_DATEFORMAT)
+            }
         },
         "handlers": {
             "console": {
                 "class": "logging.StreamHandler",
-                "formatter": "simple",
-            },
-            "productdb": {
-                "level": log_level,
-                "class": "logging.handlers.RotatingFileHandler",
-                "maxBytes": u_logfile_size,
-                "backupCount": u_logfile_count,
-                "filename": os.path.join(basedir, "app." + filename),
-                "formatter": "verbose",
-            },
-            "django_logfile": {
-                "level": log_level,
-                "class": "logging.handlers.RotatingFileHandler",
-                "maxBytes": u_logfile_size,
-                "backupCount": u_logfile_count,
-                "filename": os.path.join(basedir, "django." + filename),
-                "formatter": "verbose",
-            },
-            "catch_all": {
-                "level": log_level,
-                "class": "logging.handlers.RotatingFileHandler",
-                "maxBytes": u_logfile_size,
-                "backupCount": u_logfile_count,
-                "filename": os.path.join(basedir, "catch_all." + filename),
-                "formatter": "verbose",
-            },
-            "root": {
-                "level": log_level,
-                "class": "logging.handlers.RotatingFileHandler",
-                "maxBytes": u_logfile_size,
-                "backupCount": u_logfile_count,
-                "filename": os.path.join(basedir, "root." + filename),
-                "formatter": "verbose",
+                "formatter": "configured",
             }
         },
         "loggers": {
             "productdb": {
-                "handlers": ["console", "productdb"],
+                "handlers": ["console"],
                 "level": log_level,
                 "propagate": True,
             },
             "django_auth_ldap": {
-                "handlers": ["console", "django_logfile"],
+                "handlers": ["console"],
                 "level": log_level,
                 "propagate": True,
             },
-            "": {
-                "handlers": ["console", "catch_all"],
+            "celery": {
                 "level": log_level,
+                "handlers": ["console"],
                 "propagate": True,
-            },
-            "django": {
-                "handlers": ["console", "django_logfile"],
-                "level": "INFO",
-                "propagate": False,
-            },
-            "django.db.backends": {
-                "handlers": ["catch_all"],
-                "propagate": False,
-                "level": log_level,
             },
             "raven": {
                 "level": log_level,
                 "handlers": ["console"],
                 "propagate": False,
             },
-            "sentry.errors": {
+            "sentry": {
                 "level": log_level,
                 "handlers": ["console"],
                 "propagate": False,
             },
-            "celery": {
-                "level": log_level,
+            "django": {
                 "handlers": ["console"],
+                "level": django_log_level,
+                "propagate": False,
+            },
+            "": {
+                "handlers": ["console"],
+                "level": log_level,
                 "propagate": False,
             }
-        },
-        "root": {
-            "handlers": ["console", "root"],
-            "level": log_level,
-            "propagate": True,
         }
     }
 
     if enable_sentry:
         logging_config["handlers"]["sentry"] = {
-            "level": os.environ.get("PDB_SENTRY_LOG_LEVEL", "WARNING"),
+            "level": sentry_log_level,
             "class": "raven.contrib.django.raven_compat.handlers.SentryHandler"
         }
-        logging_config["loggers"]["productdb"]["handlers"] += ["sentry"]
-        logging_config["loggers"]["celery"]["handlers"] += ["sentry"]
-        logging_config["loggers"][""]["handlers"] += ["sentry"]
+        for item in logging_config["loggers"].keys():
+            logging_config["loggers"][item]["handlers"] += ["sentry"]
 
     return logging_config

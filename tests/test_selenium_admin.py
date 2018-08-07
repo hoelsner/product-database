@@ -502,7 +502,7 @@ class TestSyncLocalDatabaseWithCiscoEoxApi(BaseSeleniumTest):
         time.sleep(2)
 
         # on the homepage, you should see a recent message from the Cisco EoX API sync
-        assert "recent events" in browser.find_element_by_tag_name("body").text
+        assert "Recent Notifications" in browser.find_element_by_tag_name("body").text
         assert "Synchronization with Cisco EoX API" in browser.find_element_by_tag_name("body").text
         assert "The synchronization with the Cisco EoX API was" in browser.find_element_by_tag_name("body").text
 
