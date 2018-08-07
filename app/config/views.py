@@ -222,8 +222,9 @@ def server_messages_list(request):
     if login_required_if_login_only_mode(request):
         return redirect('%s?next=%s' % (settings.LOGIN_URL, request.path))
 
+    # by default, view only the recent 30 messages
     context = {
-        "recent_events": NotificationMessage.objects.all().order_by("-created")
+        "recent_events": NotificationMessage.objects.all().order_by("-created")[:30]
     }
 
     return render(request, "config/notification-list.html", context=context)
