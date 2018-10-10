@@ -23,15 +23,6 @@ def enable_login_only_mode(monkeypatch):
     monkeypatch.setattr(views, "login_required_if_login_only_mode", lambda request: True)
 
 
-class LDAPUserMock:
-    ldap_username = "ldap_user"
-
-
-class LDAPBackendMock:
-    def populate_user(self, request):
-        return LDAPUserMock()
-
-
 @pytest.mark.usefixtures("import_default_vendors")
 class TestCustomPageViews:
     def test_custom_page_not_found(self):
@@ -95,9 +86,6 @@ class TestPasswordChangeView:
 
     def test_authenticated_ldap_user(self, monkeypatch, settings):
         """LDAP users are not allowed to change there passwords, this must happen in the directory itself"""
-        # mock the custom LDAP backend
-        monkeypatch.setattr(context_processors, "LDAPBackend", LDAPBackendMock)
-
         # when using the LDAP integration, a custom LDAP backend exists for the user
         # if they are readable, the account is an LDAP account
         settings.LDAP_ENABLE = True
@@ -105,6 +93,7 @@ class TestPasswordChangeView:
         url = reverse(self.URL_NAME)
         request = RequestFactory().get(url)
         request.user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+        request.user.ldap_user = True
 
         response = views.custom_password_change(request)
 
@@ -134,10 +123,7 @@ class TestPasswordChangeDoneView:
         assert response.status_code == 200, "Should be callable"
 
     def test_authenticated_ldap_user(self, monkeypatch, settings):
-        """LDAP users are not allowed to change there passwords, this must happen in the directory itself"""
-        # mock the custom LDAP backend
-        monkeypatch.setattr(context_processors, "LDAPBackend", LDAPBackendMock)
-
+        """LDAP users are not allowed to change there passwords, this must happen in the LDAP directory itself"""
         # when using the LDAP integration, a custom LDAP backend exists for the user
         # if they are readable, the account is an LDAP account
         settings.LDAP_ENABLE = True
@@ -145,6 +131,7 @@ class TestPasswordChangeDoneView:
         url = reverse(self.URL_NAME)
         request = RequestFactory().get(url)
         request.user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+        request.user.ldap_user = True
 
         response = views.custom_password_change_done(request)
 

@@ -8,6 +8,9 @@ from django_auth_ldap.config import LDAPSearch, GroupOfNamesType
 
 
 LDAP_ENABLE = os.getenv("PDB_LDAP_ENABLE", False)
+# password change is not visible to LDAP users by default, populate the following configuration option to
+# redirect to a custom password portal
+LDAP_PASSWORD_CHANGE_URL = os.getenv("PDB_LDAP_PASSWORD_CHANGE_URL", None)
 
 if LDAP_ENABLE:
     logging.getLogger().warning("LDAP authentication enabled on server")
@@ -44,12 +47,10 @@ if LDAP_ENABLE:
         "email": "mail"
     }
 
-    AUTH_LDAP_FIND_GROUP_PERMS = True
     AUTH_LDAP_CACHE_GROUPS = True
     AUTH_LDAP_GROUP_CACHE_TIMEOUT = 15 * 60
 
-    # enable LDAP authentication along with the Model Backend (fallback to local DB authentication is enabled by
-    # default)
+    # enable LDAP authentication along with the Model Backend (fallback to local DB authentication is always enabled)
     AUTHENTICATION_BACKENDS = (
         "django_auth_ldap.backend.LDAPBackend",
         "django.contrib.auth.backends.ModelBackend",

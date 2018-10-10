@@ -159,6 +159,13 @@
                                         Change Password
                                     </a>
                                 </li>
+                            {% elif LDAP_PASSWORD_CHANGE_URL %}
+                                <li role="presentation">
+                                    <a href="{{ LDAP_PASSWORD_CHANGE_URL }}" id="navbar_loggedin_ldap_change_password" target="_blank">
+                                        <i class="fa fa-key"></i>&nbsp;&nbsp;
+                                        Change Password
+                                    </a>
+                                </li>
                             {% endif %}
                             <li role="presentation">
                                 <a href="{% url 'productdb:edit-user_profile' %}?back_to={{ request.path|urlencode }}" id="navbar_loggedin_user_profile" id="navbar_loggedin_user_settings">

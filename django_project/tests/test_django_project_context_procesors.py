@@ -10,19 +10,10 @@ from django_project import context_processors
 pytestmark = pytest.mark.django_db
 
 
-class LDAPUserMock:
-    ldap_username = "ldap_user"
-
-
-class LDAPBackendMock:
-    def populate_user(self, request):
-        return LDAPUserMock()
-
-
 class TestDjangoProjectContextProcessors:
     @pytest.mark.usefixtures("import_default_users")
     @pytest.mark.usefixtures("import_default_vendors")
-    def test_is_ldap_authenticated_user(self, settings, monkeypatch):
+    def test_is_ldap_authenticated_user(self, settings):
         test_user = User.objects.get(username="api")
         rf = RequestFactory()
 
@@ -46,10 +37,9 @@ class TestDjangoProjectContextProcessors:
         assert "IS_LDAP_ACCOUNT" in result
         assert result["IS_LDAP_ACCOUNT"] is False
 
-        # mock the custom LDAP backend
-        monkeypatch.setattr(context_processors, "LDAPBackend", LDAPBackendMock)
-
         request = rf.get(reverse("productdb:home"))
+        # ldap_user is populated by the LDAPBackend in production
+        test_user.ldap_user = True
         request.user = test_user
 
         result = context_processors.is_ldap_authenticated_user(request)
