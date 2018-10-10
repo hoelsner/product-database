@@ -277,38 +277,6 @@ class TestUpdateLocalDbBasedOnRecord:
         assert p.eox_update_time_stamp == datetime.date(2016, 10, 3), "update must be processed"
         assert p.end_of_service_contract_renewal == datetime.date(2016, 10, 4), "Should be the value prior the update"
 
-        # test crash of the update method during update
-        p = Product.objects.get(product_id="WS-C2960-24T-S")
-        p.eox_update_time_stamp = datetime.datetime(1999, 1, 1)  # reset the eox timestamp to trigger the update
-        p.save()
-
-        invalid_record = deepcopy(valid_eox_record)
-        invalid_record["EndOfSWMaintenanceReleases"]["value"] = None
-        invalid_record["EndOfServiceContractRenewal"]["value"] = "2016-10-30"  # value in db at this time: "2016-10-04"
-
-        result = api_crawler.update_local_db_based_on_record(invalid_record, create_missing=True)
-
-        assert result == "Product Data update failed: strptime() argument 1 must be str, not None"
-        assert Product.objects.count() == 1, "The transaction should rollback to avoid inconsistent entries in the DB"
-
-        # verify that the change were not saved
-        p = Product.objects.get(product_id="WS-C2960-24T-S")
-        assert p.eox_update_time_stamp == datetime.date(1999, 1, 1), "Should be the value prior the update"
-        assert p.end_of_service_contract_renewal == datetime.date(2016, 10, 4), "Should be the value prior the update"
-
-        # test crash of the update method during create
-        invalid_record = deepcopy(valid_eox_record)
-        invalid_record["EOLProductID"] = "MyTest123"
-        invalid_record["EndOfRoutineFailureAnalysisDate"]["value"] = None
-
-        result = api_crawler.update_local_db_based_on_record(invalid_record, create_missing=True)
-
-        assert result == "Product Data update failed: strptime() argument 1 must be str, not None"
-        assert Product.objects.count() == 1, "The transaction should rollback to avoid inconsistent entries in the DB"
-
-        p = Product.objects.get(product_id="WS-C2960-24T-S")
-        assert p.end_of_service_contract_renewal == datetime.date(2016, 10, 4), "Should be the value prior the update"
-
         # test record with invalid URL
         invalid_record = deepcopy(valid_eox_record)
         invalid_record["LinkToProductBulletinURL"] = "Not yet provided"
@@ -321,6 +289,29 @@ class TestUpdateLocalDbBasedOnRecord:
 
         p = Product.objects.get(product_id="WS-C2960-24T-S")
         assert p.end_of_service_contract_renewal == datetime.date(2016, 10, 4), "Should be the value prior the update"
+
+        # test empty/None values in update (should be ignored)
+        p = Product.objects.get(product_id="WS-C2960-24T-S")
+        p.eox_update_time_stamp = datetime.datetime(1999, 1, 1)  # reset the eox timestamp to trigger the update
+        p.save()
+
+        invalid_record = deepcopy(valid_eox_record)
+        invalid_record["EndOfSWMaintenanceReleases"]["value"] = None
+        invalid_record["EndOfRoutineFailureAnalysisDate"]["value"] = ""
+        invalid_record["EndOfServiceContractRenewal"]["value"] = "2016-10-30"  # value in db at this time: "2016-10-04"
+
+        result = api_crawler.update_local_db_based_on_record(invalid_record, create_missing=True)
+
+        assert result is None, "the invalid data within the update should be ignored (no message is thrown)"
+
+        # verify that the valid values are updated
+        p = Product.objects.get(product_id="WS-C2960-24T-S")
+        assert p.eox_update_time_stamp == datetime.date(2016, 10, 3), \
+            "should be updated to the value provided by the API"
+        assert p.end_of_routine_failure_analysis == datetime.date(2016, 10, 6), \
+            "Should be the same value as before"
+        assert p.end_of_service_contract_renewal == datetime.date(2016, 10, 30), \
+            "Should be the same value as before"
 
     def test_migration_options_from_update_local_db_based_on_eox_record(self):
         mixer.blend("productdb.ProductGroup", name="Catalyst 2960")

@@ -98,7 +98,8 @@ def update_local_db_based_on_record(eox_record, create_missing=False):
         for key in value_map.keys():
             if eox_record.get(key, None):
                 value = eox_record[key].get("value", None)
-                if value != " ":
+                value = value.strip() if value else ""
+                if value != "":
                     setattr(
                         product,
                         value_map[key],
