@@ -16,7 +16,7 @@ class UserProfileInline(admin.StackedInline):
     model = UserProfile
     can_delete = False
     verbose_name = "user profile"
-    verbose_name_plural = 'user profiles'
+    verbose_name_plural = "user profiles"
 
 
 @admin.register(User)
@@ -37,30 +37,30 @@ class UserAdmin(BaseUserAdmin):
 @admin.register(Product)
 class ProductAdmin(CompareVersionAdmin, admin.ModelAdmin):
     list_display = (
-        'product_id',
-        'description',
-        'tags',
-        'vendor',
-        'current_lifecycle_states',
-        'has_migration_options',
-        'product_migration_source_names',
-        'product_migration_source_names',
-        'lc_state_sync',
+        "product_id",
+        "description",
+        "vendor",
+        "eox_update_time_stamp",
+        "end_of_sale_date",
+        "end_of_support_date",
+        "has_migration_options",
+        "product_migration_source_names",
+        "lc_state_sync",
     )
 
     search_fields = (
-        'product_id',
-        'description',
-        'tags',
-        'vendor__name',
+        "product_id",
+        "description",
+        "tags",
+        "vendor__name",
     )
 
     readonly_fields = (
-        'current_lifecycle_states',
-        'has_migration_options',
-        'preferred_replacement_option',
-        'product_migration_source_names',
-        'lc_state_sync',
+        "current_lifecycle_states",
+        "has_migration_options",
+        "preferred_replacement_option",
+        "product_migration_source_names",
+        "lc_state_sync",
     )
 
     def has_migration_options(self, obj):
@@ -86,13 +86,13 @@ class ProductAdmin(CompareVersionAdmin, admin.ModelAdmin):
 @admin.register(ProductGroup)
 class ProductGroupAdmin(CompareVersionAdmin, admin.ModelAdmin):
     list_display = (
-        'name',
-        'vendor'
+        "name",
+        "vendor"
     )
 
     search_fields = (
-        'name',
-        'vendor__name'
+        "name",
+        "vendor__name"
     )
 
     history_latest_first = True
@@ -102,7 +102,7 @@ class ProductGroupAdmin(CompareVersionAdmin, admin.ModelAdmin):
 @admin.register(Vendor)
 class VendorAdmin(CompareVersionAdmin, admin.ModelAdmin):
     fields = (
-        'name',
+        "name",
     )
 
     history_latest_first = True
@@ -157,22 +157,22 @@ class ProductMigrationOptionAdmin(CompareVersionAdmin, admin.ModelAdmin):
 @admin.register(ProductList)
 class ProductListAdmin(CompareVersionAdmin, admin.ModelAdmin):
     list_display = [
-        'name',
-        'description',
-        'update_user',
-        'update_date'
+        "name",
+        "description",
+        "update_user",
+        "update_date"
     ]
     fields = [
-        'name',
-        'description',
-        'string_product_list',
-        'version_note',
-        'update_user',
-        'update_date'
+        "name",
+        "description",
+        "string_product_list",
+        "version_note",
+        "update_user",
+        "update_date"
     ]
 
     readonly_fields = [
-        'update_date'
+        "update_date"
     ]
 
     history_latest_first = True
