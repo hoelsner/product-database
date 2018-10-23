@@ -2,7 +2,7 @@
 
 ## Version 0.9
 
-* API endpoint now Version 1
+* API endpoint is now Version 1
 * add ```show inventory``` parser to the new Product Check
 * preferred migration options must have a preference greater than 25
 * REST API authentication is now also possible using token based authentication ([see Django REST framework for details](http://www.django-rest-framework.org/api-guide/authentication/#tokenauthentication))
@@ -16,6 +16,9 @@
 * add API endpoint for the Notification Messages
 * add initial data import for the Cisco EoX API (see section "initial data import" in the [Setup & Installation](docs/SETUP.md))
 * add HTTP/HTTPs proxy option (`PDB_HTTP_PROXY` and `PDB_HTTPS_PROXY`)
+* fix an issue with the Cisco EoX API sync
+* add external link to change passwords when using LDAP for authentication (`PDB_LDAP_PASSWORD_CHANGE_URL` config setting)
+* add password authentication to redis
 
 ## Version 0.4
 
