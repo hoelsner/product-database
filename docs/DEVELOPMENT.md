@@ -8,8 +8,8 @@ Prior starting a local Django development server, a redis and postgres server mu
  The following commands will start these services as docker containers with the expected parameters.
 
 ```
-docker container run -d --rm -p 127.0.0.1:5432:5432 -v productdb_dev_postgres:/var/lib/postgresql/data -e POSTGRES_DB=productdb --name dev_productdbpostgres postgres:9.6
-docker container run -d --rm -p 127.0.0.1:6379:6379 -v productdb_dev_redis:/data --name dev_productdbredis redis:4.0
+docker container run -d --rm -p 127.0.0.1:5432:5432 -v productdb_dev_postgres:/var/lib/postgresql/data -e POSTGRES_DB=productdb --name dev_productdbpostgres postgres:9.6-alpine
+docker container run -d --rm -p 127.0.0.1:6379:6379 -v productdb_dev_redis:/data --name dev_productdbredis redis:4.0-alpine
 ```
 
 The Product Database uses python 3.5 and to run the development server, a virtual environment should be created.
@@ -72,6 +72,8 @@ docker-compose -p productdbtesting -f docker-compose_test.yaml build --pull
 docker-compose -p productdbtesting -f docker-compose_test.yaml up -d database redis
 docker-compose -p productdbtesting -f docker-compose_test.yaml up build_deps
 docker-compose -p productdbtesting -f docker-compose_test.yaml up -d web worker beat camera nginx
+
+docker-compose -p productdbtesting -f docker-compose_test.yaml down -v
 ```
 
 A valid geckodrvier must be installed and available at `/usr/local/bin/geckodriver`. This path can be overwritten with the parameter `FIREFOX_DRIVER_EXEC_PATH`.

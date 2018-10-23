@@ -1,4 +1,4 @@
-FROM postgres:9.6
+FROM postgres:9.6-alpine
 
 ADD ./deploy/docker/postgres/backup.sh /usr/local/bin/backup
 ADD ./deploy/docker/postgres/restore.sh /usr/local/bin/restore

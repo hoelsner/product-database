@@ -54,6 +54,7 @@ if os.getenv("PDB_DEBUG", False) and os.getenv("PDB_DEBUG_NO_CACHE", False):
 else:
     redis_server = os.environ.get("PDB_REDIS_HOST", "127.0.0.1")
     redis_port = os.environ.get("PDB_REDIS_PORT", "6379")
+    redis_pass = os.environ.get("PDB_REDIS_PASSWORD", None)
     CACHES = {
         "default": {
             "BACKEND": "redis_cache.RedisCache",
@@ -67,6 +68,8 @@ else:
             }
         },
     }
+    if redis_pass:
+        CACHES["default"]["OPTIONS"]["PASSWORD"] = redis_pass
 
     if os.getenv("PDB_DISABLE_CACHEOPS", False):
         logger.warning("DJANGO CONFIG: use redis caching and disable cacheops...")
@@ -78,6 +81,9 @@ else:
             "port": redis_port,
             "socket_timeout": 10,
         }
+        if redis_pass:
+            CACHEOPS_REDIS["password"] = redis_pass
+
         CACHEOPS_DEFAULTS = {
             "timeout": 4 * 60 * 60
         }

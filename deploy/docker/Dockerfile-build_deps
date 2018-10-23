@@ -1,5 +1,7 @@
-FROM ubuntu:16.04
+FROM ubuntu:18.04
 
+ENV LC_ALL C.UTF-8
+ENV LANG C.UTF-8
 ENV PYTHONIOENCODING utf-8
 ENV DJANGO_SECRET_KEY PlsChgMe
 ENV DJANGO_LOG_LEVEL info
@@ -18,6 +20,8 @@ ENV HTTPS_SELF_SIGNED_CERT_FQDN "productdb"
 RUN echo \
     && apt-get update  \
     && apt-get install -y \
+        curl \
+        build-essential \
         python3.5 \
         python3-pip \
         python3-dev \
@@ -27,9 +31,11 @@ RUN echo \
         libldap2-dev \
         libssl-dev \
         git \
-        npm \
-        nodejs-legacy \
-    && rm -rf /var/lib/apt/lists/*
+    && curl -sL https://deb.nodesource.com/setup_8.x | bash - \
+    && apt-get update  \
+    && apt-get install -y nodejs \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
 
 ADD . /var/www/productdb/source
 RUN echo \

@@ -4,6 +4,8 @@
 # Setup all external dependencies (Javascript and CSS)
 #
 ##################################################################################
+set -e
+
 sleep 5
 cd /var/www/productdb/source
 
