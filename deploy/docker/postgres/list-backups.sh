@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-ls -l /backups
+ls -lh /backups
