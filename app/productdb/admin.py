@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 from reversion_compare.admin import CompareVersionAdmin
 from app.productdb.forms import ProductMigrationOptionForm
 from app.productdb.models import Product, Vendor, ProductGroup, ProductList, ProductMigrationOption, \
-    ProductMigrationSource, ProductCheck, ProductCheckEntry
+    ProductMigrationSource, ProductCheck, ProductCheckEntry, ProductIdNormalizationRule
 from app.productdb.models import UserProfile
 from django.contrib.auth.models import Permission
 
@@ -48,11 +48,50 @@ class ProductAdmin(CompareVersionAdmin, admin.ModelAdmin):
         "lc_state_sync",
     )
 
+    list_filter = [
+        "vendor",
+        "lc_state_sync",
+        "product_group"
+    ]
+
     search_fields = (
         "product_id",
         "description",
         "tags",
         "vendor__name",
+    )
+
+    fieldsets = (
+        ("Base data", {
+            "fields": (
+                "vendor",
+                "product_id",
+                "description",
+                "list_price",
+                "currency",
+                "internal_product_id",
+                "product_group",
+                "tags",
+                "lc_state_sync",
+                "update_timestamp",
+                "list_price_timestamp"
+            )
+        }),
+        ("Lifecycle Data", {
+            "fields": (
+                "eox_update_time_stamp",
+                "eol_ext_announcement_date",
+                "end_of_sale_date",
+                "end_of_new_service_attachment_date",
+                "end_of_sw_maintenance_date",
+                "end_of_routine_failure_analysis",
+                "end_of_service_contract_renewal",
+                "end_of_sec_vuln_supp_date",
+                "end_of_support_date",
+                "eol_reference_number",
+                "eol_reference_url"
+            )
+        })
     )
 
     readonly_fields = (
@@ -232,6 +271,38 @@ class ProductCheckEntryAdmin(CompareVersionAdmin, admin.ModelAdmin):
         "in_database",
         "migration_product_id",
         "part_of_product_list"
+    ]
+
+    history_latest_first = True
+    ignore_duplicate_revisions = True
+
+
+@admin.register(ProductIdNormalizationRule)
+class ProductIdNormalizationRuleAdmin(CompareVersionAdmin, admin.ModelAdmin):
+    list_display = [
+        "product_id",
+        "regex_match",
+        "priority",
+        "vendor",
+        "comment"
+    ]
+
+    list_filter = [
+        "vendor",
+    ]
+    search_fields = [
+        "product_id",
+        "regex_match",
+        "vendor__name",
+        "comment"
+    ]
+    ordering = [
+        "vendor",
+        "priority",
+        "product_id"
+    ]
+    actions = [
+        "update_entry"
     ]
 
     history_latest_first = True

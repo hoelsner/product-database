@@ -5,7 +5,7 @@ from django.core.validators import MinValueValidator
 
 from app.config.models import NotificationMessage
 from app.productdb.models import Product, Vendor, CURRENCY_CHOICES, ProductGroup, ProductList, ProductMigrationSource, \
-    ProductMigrationOption
+    ProductMigrationOption, ProductIdNormalizationRule
 
 
 class VendorSerializer(HyperlinkedModelSerializer):
@@ -251,4 +251,18 @@ class NotificationMessageSerializer(HyperlinkedModelSerializer):
                 "view_name": "productdb:notification-detail"
             }
         }
+        depth = 0
+
+
+class ProductIdNormalizationRuleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductIdNormalizationRule
+        fields = (
+            "id",
+            "vendor",
+            "product_id",
+            "regex_match",
+            "comment",
+            "priority"
+        )
         depth = 0

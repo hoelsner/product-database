@@ -12,8 +12,7 @@ from django.core.files import File
 from django.db.models import QuerySet
 from mixer.backend.django import mixer
 from app.productdb.models import Vendor, ProductList, JobFile, Product, UserProfile, ProductGroup, ProductMigrationSource, \
-    ProductMigrationOption, ProductCheck, ProductCheckEntry, ProductCheckInputChunks
-from django.utils.timezone import datetime
+    ProductMigrationOption, ProductCheck, ProductCheckEntry, ProductCheckInputChunks, ProductIdNormalizationRule
 
 pytestmark = pytest.mark.django_db
 
@@ -444,7 +443,7 @@ class TestProductList:
                 update_user=User.objects.get(username="api")
             )
 
-        assert exinfo.match("name': \['Product list with this Product List Name already exists.'")
+        assert exinfo.match("name': \['Product List with this Product List Name already exists.'")
 
     @pytest.mark.usefixtures("import_default_vendors")
     def test_product_list_created_with_a_product(self):
@@ -586,7 +585,7 @@ class TestProductMigrationSource:
         with pytest.raises(ValidationError) as exinfo:
             ProductMigrationSource.objects.create(name=test_name)
 
-        assert exinfo.match("\'name\': \[\'Product migration source with this Name already exists.\'\]")
+        assert exinfo.match("\'name\': \[\'Product Migration Source with this Name already exists.\'\]")
 
 
 @pytest.mark.usefixtures("import_default_vendors")
@@ -1067,7 +1066,7 @@ class TestProductMigrationOption:
         with pytest.raises(ValidationError) as exinfo:
             ProductMigrationOption.objects.create(migration_source=promiggrp, product=p)
 
-        assert exinfo.match("Product migration option with this Product and Migration source already exists.")
+        assert exinfo.match("Product Migration Option with this Product and Migration source already exists.")
 
     def test_product_migration_group_set(self):
         test_product_id = "My Product ID"
@@ -1361,3 +1360,38 @@ class TestProductMigrationOption:
         assert pmo3.is_replacement_in_db() is False
         assert pmo3.get_product_replacement_id() is None
         assert pmo3.replacement_db_product is None
+
+
+@pytest.mark.usefixtures("import_default_vendors")
+class TestProductIdNormalization:
+    def test_model(self):
+        v1 = Vendor.objects.get(id=1)
+        pnr = ProductIdNormalizationRule.objects.create(
+            vendor=v1,
+            product_id="PWR-C1-715WAC=",
+            regex_match=r"^PWR\-C1\-715WAC$"
+        )
+
+        assert pnr.matches("PWR-C1-715WAC") is True
+        assert pnr.matches("PWR-C1-715WA") is False
+        assert pnr.matches("") is False
+        assert pnr.get_normalized_product_id("PWR-C1-715WAC") == "PWR-C1-715WAC="
+
+        pnr2 = ProductIdNormalizationRule.objects.create(
+            vendor=v1,
+            product_id="PWR-C1-%sWAC=",
+            regex_match=r"^PWR\-C1\-(\d+)WAC$"
+        )
+
+        assert pnr2.matches("PWR-C1-715WAC") is True
+        assert pnr2.matches("PWR-C1-715WA") is False
+        assert pnr2.matches("") is False
+        assert pnr2.get_normalized_product_id("PWR-C1-715WAC") == "PWR-C1-715WAC="
+
+        with pytest.raises(ValidationError):
+            ProductIdNormalizationRule.objects.create(
+                vendor=v1,
+                product_id="PWR-C1-715WAC=",
+                regex_match=r"^PWR\-C1\-715WAC$",
+                comment="duplicated entry"
+            )

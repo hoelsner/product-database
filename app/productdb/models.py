@@ -1,4 +1,5 @@
 import hashlib
+import re
 from collections import Counter
 from datetime import timedelta
 from django.contrib.auth.models import User
@@ -117,8 +118,8 @@ class ProductGroup(models.Model):
         return self.name
 
     class Meta:
-        verbose_name = "product group"
-        verbose_name_plural = "product groups"
+        verbose_name = "Product Group"
+        verbose_name_plural = "Product Groups"
         unique_together = ("name", "vendor")
 
 
@@ -146,7 +147,7 @@ class Product(models.Model):
         default="",
         blank=True,
         null=True,
-        help_text="description"
+        help_text="description of the product"
     )
 
     list_price = models.FloatField(
@@ -170,7 +171,7 @@ class Product(models.Model):
         blank=True,
         null=True,
         verbose_name="Tags",
-        help_text="unformatted tag field"
+        help_text="unstructured tag field"
     )
 
     vendor = models.ForeignKey(
@@ -186,8 +187,8 @@ class Product(models.Model):
         null=True,
         blank=True,
         verbose_name="EoX lifecycle data timestamp",
-        help_text="Indicates that the product has lifecycle data and when they were last updated. If no "
-                  "EoL announcement date is set, the product is considered as not EoL/EoS."
+        help_text="Indicates that the product has lifecycle data and when they were updated. If no "
+                  "EoL announcement date is set but an update timestamp, the product is considered as not EoL/EoS."
     )
 
     eol_ext_announcement_date = models.DateField(
@@ -456,8 +457,8 @@ class Product(models.Model):
         return list(self.productmigrationoption_set.all().values_list("migration_source__name", flat=True))
 
     class Meta:
-        verbose_name = "product"
-        verbose_name_plural = "products"
+        verbose_name = "Product"
+        verbose_name_plural = "Products"
         ordering = ('product_id',)
 
 
@@ -492,8 +493,8 @@ class ProductMigrationSource(models.Model):
         return self.name
 
     class Meta:
-        verbose_name = "product migration source"
-        verbose_name_plural = "product migration sources"
+        verbose_name = "Product Migration Source"
+        verbose_name_plural = "Product Migration Sources"
         ordering = ["-preference", "name"]  # sort descending, that the most preferred source is always on op
 
 
@@ -575,8 +576,8 @@ class ProductMigrationOption(models.Model):
         # only a single migration option is allowed per migration source
         unique_together = ["product", "migration_source"]
         ordering = ["-migration_source__preference"]  # first element is from the source that is most preferred
-        verbose_name = "product migration option"
-        verbose_name_plural = "product migration options"
+        verbose_name = "Product Migration Option"
+        verbose_name_plural = "Product Migration Options"
 
 
 class ProductList(models.Model):
@@ -657,8 +658,8 @@ class ProductList(models.Model):
         return self.name
 
     class Meta:
-        verbose_name = "product list"
-        verbose_name_plural = "product lists"
+        verbose_name = "Product List"
+        verbose_name_plural = "Product Lists"
         ordering = ('name',)
 
 
@@ -838,6 +839,10 @@ class ProductCheck(models.Model):
     def __repr__(self):
         return "<Class 'ProductCheck' %d> %s" % (self.id, self.name)
 
+    class Meta:
+        verbose_name = "Product Check"
+        verbose_name_plural = "Product Checks"
+
 
 class ProductCheckEntry(models.Model):
     product_check = models.ForeignKey(
@@ -921,6 +926,104 @@ class ProductCheckEntry(models.Model):
 
     def __repr__(self):
         return "<Class 'ProductCheckEntry' %d> %s (ProductCheck '%d')" % (self.id, self.input_product_id, self.product_check_id)
+
+    class Meta:
+        verbose_name = "Product Check Entry"
+        verbose_name_plural = "Product Check Entries"
+
+
+class ProductIdNormalizationRule(models.Model):
+    """
+    Normalization rule for a Product ID
+    """
+    vendor = models.ForeignKey(
+        Vendor,
+        verbose_name="Vendor",
+        help_text="Vendor where the rule should apply"
+    )
+
+    product_id = models.CharField(
+        verbose_name="Product ID",
+        help_text="Normalized Product ID that should be used",
+        max_length=255,
+        null=True,
+        blank=True
+    )
+
+    regex_match = models.CharField(
+        verbose_name="RegEx to Match",
+        help_text="Condition for a given input to match the Product ID",
+        max_length=255,
+        null=True,
+        blank=True
+    )
+
+    comment = models.CharField(
+        verbose_name="Comment",
+        help_text="Rule comment",
+        max_length=4096,
+        null=True,
+        blank=True
+    )
+
+    priority = models.IntegerField(
+        verbose_name="Priority",
+        help_text="priority of the rule",
+        default=500
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._pattern = None
+
+    def matches(self, raw_product_id):
+        """
+        returns True if the given Product ID matches the pattern from the instance
+        :param raw_product_id: raw Product ID
+        :return:
+        """
+        if self._pattern is None:
+            self._pattern = re.compile(self.regex_match)
+
+        if self._pattern.match(raw_product_id):
+            return True
+
+        else:
+            return False
+
+    def get_normalized_product_id(self, raw_product_id):
+        """
+        get the normalization result of a given raw_product_id
+        :raises AttributeError: if the raw_product_id doesn't match this entry
+        :param raw_product_id:
+        :return:
+        """
+        if not self.matches(raw_product_id):
+            raise AttributeError("input product ID does not match normalization")
+
+        if self._pattern.match(raw_product_id):
+            groups = self._pattern.match(raw_product_id).groups()
+            if len(groups) != 0:
+                return self.product_id % groups
+
+        return self.product_id
+
+    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
+        self.full_clean()
+        super().save(force_insert, force_update, using, update_fields)
+
+    class Meta:
+        verbose_name = "Product ID Normalization Rule"
+        verbose_name_plural = "Product ID Normalization Rules"
+        ordering = [
+            "priority",
+            "product_id"
+        ]
+        unique_together = (
+            "vendor",
+            "product_id",
+            "regex_match"
+        )
 
 
 @receiver(post_save, sender=User)

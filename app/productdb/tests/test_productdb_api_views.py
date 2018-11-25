@@ -18,7 +18,7 @@ from rest_framework.test import APIClient
 
 from app.config.models import NotificationMessage
 from app.productdb.models import Vendor, ProductGroup, Product, ProductList, ProductMigrationOption, \
-    ProductMigrationSource
+    ProductMigrationSource, ProductIdNormalizationRule
 
 pytestmark = pytest.mark.django_db
 
@@ -48,6 +48,8 @@ REST_PRODUCTMIGRATIONOPTION_LIST = reverse("productdb:productmigrationoptions-li
 REST_PRODUCTMIGRATIONOPTION_DETAIL = REST_PRODUCTMIGRATIONOPTION_LIST + "%d/"
 REST_NOTIFICATIONMESSAGES_LIST = reverse("productdb:notificationmessages-list")
 REST_NOTIFICATIONMESSAGES_DETAIL = REST_NOTIFICATIONMESSAGES_LIST + "%d/"
+REST_PRODUCTNORMALIZATIONRULE_LIST = reverse("productdb:productidnormalizationrules-list")
+REST_PRODUCTNORMALIZATIONRULE_DETAIL = REST_PRODUCTNORMALIZATIONRULE_LIST + "%d/"
 
 COMMON_API_ENDPOINT_BEHAVIOR = [
     REST_VENDOR_LIST,
@@ -1818,7 +1820,7 @@ class TestProductAPIEndpoint:
         }
         for e in range(0, 5):
             Product.objects.create(product_id="test product %d" % e, description=str(e))
-            
+
         for e in range(1, 3):
             p = Product.objects.create(
                 product_id="product 2%d" % e,
@@ -2341,6 +2343,151 @@ class TestProductListAPIEndpoint:
 
 @pytest.mark.usefixtures("import_default_users")
 @pytest.mark.usefixtures("import_default_vendors")
+class TestProductIdNormalizationRuleAPIEndpoint:
+    """Test Product ID Normalization Rule API Endpoint"""
+    def test_token_authentication(self, live_server):
+        token, _ = Token.objects.get_or_create(user=User.objects.get(username=AUTH_USER["username"]))
+
+        response = requests.get(live_server + REST_PRODUCTNORMALIZATIONRULE_LIST, headers={
+            "Authorization": "Token %s" % token.key
+        })
+
+        assert response.status_code == status.HTTP_200_OK, response.text
+
+        response = requests.get(live_server + REST_PRODUCTNORMALIZATIONRULE_LIST, headers={
+            "Authorization": "Token invalid_token"
+        })
+
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    def test_read_access_with_authenticated_user(self):
+        expected_result = {
+            "data": [
+                {
+                    "id": 1,
+                    "vendor": None,
+                    "product_id": None,
+                    "regex_match": None,
+                    "comment": None,
+                    "priority": None
+                }
+            ],
+            "pagination": {
+                "page": 1,
+                "page_records": 1,
+                "url": {
+                    "next": None,
+                    "previous": None
+                },
+                "last_page": 1,
+                "total_records": 1
+            }
+        }
+        pinr = mixer.blend("productdb.ProductIdNormalizationRule")
+        expected_result["data"][0]["id"] = pinr.id
+        expected_result["data"][0]["vendor"] = pinr.vendor_id
+        expected_result["data"][0]["product_id"] = pinr.product_id
+        expected_result["data"][0]["regex_match"] = pinr.regex_match
+        expected_result["data"][0]["comment"] = pinr.comment
+        expected_result["data"][0]["priority"] = pinr.priority
+
+        client = APIClient()
+        client.login(**AUTH_USER)
+
+        response = client.get(REST_PRODUCTNORMALIZATIONRULE_LIST)
+        assert response.status_code == status.HTTP_200_OK
+
+        jdata = response.json()
+        assert "pagination" in jdata, "pagination information not provided"
+        assert "data" in jdata, "data branch not found in result"
+        assert jdata["pagination"]["total_records"] == 1, "unexpected result from API endpoint"
+        assert jdata == expected_result, "unexpected result from API endpoint"
+
+        client = APIClient()
+        client.login(**AUTH_USER)
+
+        response = client.get(REST_PRODUCTNORMALIZATIONRULE_DETAIL % pinr.id)
+
+        assert response.status_code == status.HTTP_200_OK
+        jdata = response.json()
+        assert jdata == expected_result["data"][0], "unexpected result from API endpoint"
+
+    def test_apply_function(self):
+        v1 = Vendor.objects.get(id=1)
+        pnr = ProductIdNormalizationRule.objects.create(
+            vendor=v1,
+            product_id="PWR-C1-715WAC=",
+            regex_match=r"^PWR\-C1\-715WAC$"
+        )
+        pnr2 = ProductIdNormalizationRule.objects.create(
+            vendor=v1,
+            product_id="SOMETHING",
+            regex_match=r"^SOMETHIN$"
+        )
+
+        api_url = REST_PRODUCTNORMALIZATIONRULE_LIST + "apply/"
+
+        client = APIClient()
+        client.login(**AUTH_USER)
+
+        response = client.get(api_url)
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "error" in response.json().keys()
+
+        response = client.get(api_url + "?input_string=Foo")
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "error" in response.json().keys()
+
+        response = client.get(api_url + "?input_string=Test&vendor_name=None")
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "error" in response.json().keys()
+
+        response = client.get(api_url + "?input_string=Test&vendor_name=Cisco")
+
+        assert response.status_code == status.HTTP_200_OK
+        expected_result = {
+            "matched_rule_id": None,
+            "vendor_id": 1,
+            "product_id": "Test",
+            "product_in_database": None
+        }
+        assert Vendor.objects.get(id=expected_result["vendor_id"]).name == "Cisco Systems"
+
+        response = client.get(api_url + "?input_string=PWR-C1-715WAC&vendor_name=Cisco")
+
+        assert response.status_code == status.HTTP_200_OK
+        expected_result = {
+            "matched_rule_id": pnr.id,
+            "vendor_id": 1,
+            "product_id": "PWR-C1-715WAC=",
+            "product_in_database": None
+        }
+        assert Vendor.objects.get(id=expected_result["vendor_id"]).name == "Cisco Systems"
+
+        p = Product.objects.create(
+            product_id="PWR-C1-715WAC=",
+            vendor=Vendor.objects.get(id=1)
+        )
+        pnr.save()
+        pnr.refresh_from_db()
+
+        response = client.get(api_url + "?input_string=PWR-C1-715WAC&vendor_name=Cisco")
+
+        assert response.status_code == status.HTTP_200_OK
+        expected_result = {
+            "matched_rule_id": pnr.id,
+            "vendor_id": 1,
+            "product_id": "PWR-C1-715WAC=",
+            "product_in_database": p.id
+        }
+        assert Vendor.objects.get(id=expected_result["vendor_id"]).name == "Cisco Systems"
+
+
+@pytest.mark.usefixtures("import_default_users")
+@pytest.mark.usefixtures("import_default_vendors")
 class TestNotificationMessageAPIEndpoint:
     """Django REST Framework API endpoint tests for the NotificationMessage model"""
     today_string = DateFormat(datetime.now()).format(get_format(settings.SHORT_DATE_FORMAT))
@@ -2400,7 +2547,6 @@ class TestNotificationMessageAPIEndpoint:
         assert "pagination" in jdata, "pagination information not provided"
         assert "data" in jdata, "data branch not found in result"
         assert jdata["pagination"]["total_records"] == 1, "unexpected result from API endpoint"
-        print(jdata)
         assert jdata == expected_result, "unexpected result from API endpoint"
 
     def test_add_access_with_permission(self):

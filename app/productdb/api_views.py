@@ -1,13 +1,14 @@
 import django_filters
-from rest_framework import permissions
+from rest_framework import permissions, status
 from rest_framework import filters
 from rest_framework.response import Response
 
 from app.config.models import NotificationMessage
 from app.productdb.serializers import ProductSerializer, VendorSerializer, ProductGroupSerializer, ProductListSerializer, \
-    ProductMigrationSourceSerializer, ProductMigrationOptionSerializer, NotificationMessageSerializer
+    ProductMigrationSourceSerializer, ProductMigrationOptionSerializer, NotificationMessageSerializer, \
+    ProductIdNormalizationRuleSerializer
 from app.productdb.models import Product, Vendor, ProductGroup, ProductList, ProductMigrationSource, \
-    ProductMigrationOption
+    ProductMigrationOption, ProductIdNormalizationRule
 from rest_framework import viewsets
 from rest_framework.decorators import list_route
 
@@ -108,11 +109,6 @@ class ProductGroupViewSet(viewsets.ModelViewSet):
     def count(self, request):
         """
         returns the amount of elements within the database
-        ---
-        omit_serializer: true
-        parameters_strategy:
-            form: replace
-            query: merge
         """
         result = {
             "count": ProductGroup.objects.count()
@@ -173,13 +169,86 @@ class ProductViewSet(viewsets.ModelViewSet):
     def count(self, request):
         """
         returns the amount of elements within the database
-        ---
-        omit_serializer: true
-        parameters_strategy:
-            form: replace
-            query: merge
         """
         result = {
             "count": Product.objects.count()
         }
         return Response(result)
+
+
+class ProductIdNormalizationRuleFilter(filters.FilterSet):
+    vendor_name = django_filters.CharFilter(name="vendor__name", lookup_expr="startswith")
+
+    class Meta:
+        model = ProductIdNormalizationRule
+        fields = [
+            "id",
+            "vendor",
+            "vendor_name"
+        ]
+
+
+class ProductIdNormalizationRuleViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    API endpoint to match strings against a given input to map/normalize Product IDs
+    """
+    queryset = ProductIdNormalizationRule.objects.all()
+    serializer_class = ProductIdNormalizationRuleSerializer
+    filter_backends = (
+        filters.DjangoFilterBackend,
+    )
+    filter_class = ProductIdNormalizationRuleFilter
+    permission_classes = (permissions.DjangoModelPermissions,)
+
+    @list_route(methods=["get"])
+    def apply(self, request):
+        """
+        try to normalize the input_string based on the configured rules for the given vendor_name, requires
+        an `input_string` and a `vendor_name` or `vendor` id as `GET` parameter.
+        """
+        input_string = request.GET.get("input_string", None)
+        vendor_name = request.GET.get("vendor_name", None)
+
+        if not input_string or not vendor_name:
+            return Response({
+                "error": "input_string and vendor_name parameter required"
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # lookup vendor
+        vendor_qs = Vendor.objects.filter(name__startswith=vendor_name)
+        vendor_count = vendor_qs.count()
+        if vendor_count == 0:
+            return Response({
+                "error": "vendor_name returns no result"
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        elif vendor_count > 1:
+            return Response({
+                "error": "vendor_name not unique, multiple entries found"
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        vendor = vendor_qs.first()
+        product_id = input_string
+        product_in_database = None
+        matched_rule = None
+
+        # apply rules on input string
+        rules = ProductIdNormalizationRule.objects.filter(vendor=vendor).order_by("priority").order_by("product_id")
+        for rule in rules:
+            if rule.matches(input_string):
+                product_id = rule.product_id
+
+                # lookup in local database
+                pqs = Product.objects.filter(product_id=product_id, vendor=vendor)
+                if pqs.count() != 0:
+                    product_in_database = pqs.first().id
+
+                matched_rule = rule.id
+                break
+
+        return Response({
+            "vendor_id": vendor.id,
+            "product_id": product_id,
+            "product_in_database": product_in_database,
+            "matched_rule_id": matched_rule
+        }, status=status.HTTP_200_OK)

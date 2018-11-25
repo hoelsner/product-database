@@ -18,6 +18,7 @@ router.register(r'productlists', api_views.ProductListViewSet, base_name="produc
 router.register(r'productmigrationsources', api_views.ProductMigrationSourceViewSet, base_name="productmigrationsources")
 router.register(r'productmigrationoptions', api_views.ProductMigrationOptionViewSet, base_name="productmigrationoptions")
 router.register(r'notificationmessages', api_views.NotificationMessageViewSet, base_name="notificationmessages")
+router.register(r'productidnormalizationrules', api_views.ProductIdNormalizationRuleViewSet, base_name="productidnormalizationrules")
 
 schema_view = get_swagger_view(title="Product Database REST API")
 
