@@ -5,7 +5,6 @@ import os
 import pandas as pd
 import pytest
 import datetime
-from reversion.models import Version
 from django.contrib.auth.models import User
 from mixer.backend.django import mixer
 from app.productdb.excel_import import ProductsExcelImporter, InvalidImportFormatException, InvalidExcelFileFormat, \
@@ -29,6 +28,8 @@ PRODUCTS_TEST_DATA_COLUMNS = [
     "end of service contract renewal date",
     "last date of support",
     "end of security/vulnerability support date",
+    "internal product id",
+    "tags"
 ]
 PRODUCT_MIGRATION_TEST_DATA_COLUMNS = [
     "product id",
@@ -54,6 +55,8 @@ DEFAULT_PRODUCT_TEST_DATA = pd.DataFrame(
             datetime.datetime(2016, 1, 7),
             datetime.datetime(2016, 1, 8),
             datetime.datetime(2016, 1, 9),
+            "12345",
+            "chassis"
         ],
         [
             "Product B",
@@ -61,6 +64,8 @@ DEFAULT_PRODUCT_TEST_DATA = pd.DataFrame(
             "6000.00",
             "USD",
             "Cisco Systems",
+            "",
+            "",
             "",
             "",
             "",
@@ -158,6 +163,8 @@ class TestProductsExcelImporter:
         assert p.end_of_service_contract_renewal == datetime.date(2016, 1, 7)
         assert p.end_of_support_date == datetime.date(2016, 1, 8)
         assert p.end_of_sec_vuln_supp_date == datetime.date(2016, 1, 9)
+        assert p.internal_product_id == "12345"
+        assert p.tags == "chassis"
 
         p = Product.objects.get(product_id="Product B")
         assert p.description == "description of Product B"
@@ -173,6 +180,8 @@ class TestProductsExcelImporter:
         assert p.end_of_service_contract_renewal is None
         assert p.end_of_support_date is None
         assert p.end_of_sec_vuln_supp_date is None
+        assert p.internal_product_id == ""
+        assert p.tags == ""
 
     @pytest.mark.usefixtures("apply_base_import_products_excel_file_mock")
     def test_import_with_list_price_of_zero(self):
@@ -195,6 +204,8 @@ class TestProductsExcelImporter:
                     datetime.datetime(2016, 1, 7),
                     datetime.datetime(2016, 1, 8),
                     datetime.datetime(2016, 1, 9),
+                    "",
+                    ""
                 ],
                 [
                     "Product B",
@@ -211,6 +222,8 @@ class TestProductsExcelImporter:
                     datetime.datetime(2016, 1, 7),
                     datetime.datetime(2016, 1, 8),
                     datetime.datetime(2016, 1, 9),
+                    "",
+                    ""
                 ],
                 [
                     "Product A2",
@@ -227,6 +240,8 @@ class TestProductsExcelImporter:
                     datetime.datetime(2016, 1, 7),
                     datetime.datetime(2016, 1, 8),
                     datetime.datetime(2016, 1, 9),
+                    "",
+                    ""
                 ],
                 [
                     "Product B2",
@@ -243,6 +258,8 @@ class TestProductsExcelImporter:
                     datetime.datetime(2016, 1, 7),
                     datetime.datetime(2016, 1, 8),
                     datetime.datetime(2016, 1, 9),
+                    "",
+                    ""
                 ],
                 [
                     "Product C",
@@ -259,6 +276,8 @@ class TestProductsExcelImporter:
                     datetime.datetime(2016, 1, 7),
                     datetime.datetime(2016, 1, 8),
                     datetime.datetime(2016, 1, 9),
+                    "",
+                    ""
                 ]
             ], columns=PRODUCTS_TEST_DATA_COLUMNS
         )
@@ -312,6 +331,8 @@ class TestProductsExcelImporter:
                     datetime.datetime(2016, 1, 7),
                     datetime.datetime(2016, 1, 8),
                     datetime.datetime(2016, 1, 9),
+                    "",
+                    ""
                 ]
             ], columns=PRODUCTS_TEST_DATA_COLUMNS
         )
@@ -366,26 +387,6 @@ class TestProductsExcelImporter:
         pa = Product.objects.get(product_id="Product A")
         assert pa.internal_product_id is not None
         assert pa.internal_product_id == test_value
-
-    @pytest.mark.usefixtures("apply_base_import_products_excel_file_mock")
-    def test_valid_import_with_revision_user(self):
-        global CURRENT_PRODUCT_TEST_DATA
-        CURRENT_PRODUCT_TEST_DATA = DEFAULT_PRODUCT_TEST_DATA
-
-        user = User.objects.get(username="api")
-        product_file = ProductsExcelImporter(
-            "virtual_file.xlsx",
-            user_for_revision=user
-        )
-        product_file.verify_file()
-        product_file.import_to_database()
-        assert Product.objects.count() == 2
-
-        # verify reversion comment
-        versions = Version.objects.all()
-        assert len(versions) == 2, "Should be two reversion"
-        assert "manual product import" == versions.first().revision.comment
-        assert user == versions.first().revision.user
 
     def test_invalid_file(self):
         valid_test_file = os.path.join(os.getcwd(), "tests", "data", "file_not_found.xlsx")
@@ -630,6 +631,9 @@ class TestMigratedImportProductsExcelFile:
             }
         ]
         product_file = self.prepare_import_products_excel_file("excel_import_products_test.xlsx")
+
+        for p in Product.objects.all():
+            print(p.product_id)
 
         assert product_file.valid_imported_products == 25
         assert product_file.invalid_products == 0

@@ -3,7 +3,6 @@ import logging
 import pandas as pd
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from reversion import revisions as reversion
 from xlrd import XLRDError
 from app.productdb.models import Product, CURRENCY_CHOICES, ProductGroup, ProductMigrationSource, ProductMigrationOption
 from app.productdb.models import Vendor
@@ -143,7 +142,8 @@ class ProductsExcelImporter(BaseExcelImporter):
         "description": str,
         "list price": str,
         "currency": str,
-        "vendor": str
+        "vendor": str,
+        "tags": str
     }
     drop_na_columns = ["product id"]
     valid_imported_products = 0
@@ -191,8 +191,8 @@ class ProductsExcelImporter(BaseExcelImporter):
                     skip = True
 
                 except Exception as ex:  # catch any exception
-                    logger.warn("unexpected exception occurred during the lookup "
-                                "of product %s (%s)" % (row["product id"], ex))
+                    logger.warning("unexpected exception occurred during the lookup "
+                                   "of product %s (%s)" % (row["product id"], ex))
 
             else:
                 p, created = Product.objects.get_or_create(product_id=row["product id"])
@@ -285,29 +285,20 @@ class ProductsExcelImporter(BaseExcelImporter):
                         if p.vendor.name != row[row_key]:
                             try:
                                 v = Vendor.objects.get(name=row[row_key])
+                                changed = True
+                                p.vendor = v
 
                             except Vendor.DoesNotExist:
                                 raise Exception("Vendor <strong>%s</strong> doesn't exist" % row[row_key])
 
-                            changed = True
-                            p.vendor = v
-
-                    # set vendor to unassigned (ID 0) if no Vendor is provided and the product was created
+                    # create product group is not existing and product group (optional)
                     row_key = "product group"
                     if row_key in row:  # optional key
                         if not pd.isnull(row[row_key]):
-                            set_value = False
-                            if not p.product_group:
-                                set_value = True
-
-                            elif p.product_group.name != row[row_key]:
-                                set_value = True
-
-                            if set_value:
-                                pg, _ = ProductGroup.objects.get_or_create(name=row[row_key], vendor=p.vendor)
-
-                                changed = True
+                            if (not p.product_group) or (p.product_group.name != row[row_key]):
+                                pg, _ = ProductGroup.objects.get_or_create(name=row[row_key].strip(), vendor=p.vendor)
                                 p.product_group = pg
+                                changed = True
 
                     # set Eol note URL and friendly name (both optional)
                     row_key = "eol note url"
@@ -329,6 +320,14 @@ class ProductsExcelImporter(BaseExcelImporter):
                         if not pd.isnull(row[row_key]):
                             if p.internal_product_id != row[row_key]:
                                 p.internal_product_id = row[row_key]
+                                changed = True
+
+                    # set tags field (optional)
+                    row_key = "tags"
+                    if row_key in row:  # optional key
+                        if not pd.isnull(row[row_key]):
+                            if p.tags != row[row_key]:
+                                p.tags = row[row_key]
                                 changed = True
 
                 except Exception as ex:
@@ -363,19 +362,10 @@ class ProductsExcelImporter(BaseExcelImporter):
                 # save result to database if any
                 try:
                     if changed:
-                        # update element and add revision note
-                        with transaction.atomic(), reversion.create_revision():
-                            p.save()
-                            if self.user_for_revision:
-                                try:
-                                    reversion.set_user(self.user_for_revision)
-
-                                except:
-                                    logger.warn("Cannot find username <strong>%s</strong> in database" % self.user_for_revision)
-
-                            reversion.set_comment("manual product import")
-
+                        # update element
+                        p.save()
                         self.valid_imported_products += 1
+
                         # add import result message
                         if created:
                             self.import_result_messages.append("product <code>%s</code> created" % p.product_id)
@@ -449,8 +439,8 @@ class ProductMigrationsExcelImporter(BaseExcelImporter):
 
             # check that product is part of the database
             try:
-                # update element and add revision note
-                with transaction.atomic(), reversion.create_revision():
+                with transaction.atomic():
+                    # update element
                     product = Product.objects.get(product_id=row["product id"])
                     migration_source, created = ProductMigrationSource.objects.get_or_create(
                         name=row["migration source"]
@@ -484,17 +474,12 @@ class ProductMigrationsExcelImporter(BaseExcelImporter):
 
                     pmo.save()
 
-                    if self.user_for_revision:
-                        reversion.set_user(self.user_for_revision)
-
-                    reversion.set_comment("manual product migration import")
-
-                if created:
-                    self.import_result_messages.append("create Product Migration path \"%s\" for Product "
-                                                       "\"%s\"" % (row["migration source"], row["product id"]))
-                else:
-                    self.import_result_messages.append("update Product Migration path \"%s\" for Product "
-                                                       "\"%s\"" % (row["migration source"], row["product id"]))
+                    if created:
+                        self.import_result_messages.append("create Product Migration path \"%s\" for Product "
+                                                           "\"%s\"" % (row["migration source"], row["product id"]))
+                    else:
+                        self.import_result_messages.append("update Product Migration path \"%s\" for Product "
+                                                           "\"%s\"" % (row["migration source"], row["product id"]))
 
             except ValidationError as ex:
                 self.import_result_messages.append("cannot save Product Migration for %s: %s" % (row["product id"],
