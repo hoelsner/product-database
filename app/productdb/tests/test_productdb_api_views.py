@@ -3,6 +3,7 @@ Test suite for the productdb.api_views module
 """
 import pytest
 from urllib.parse import quote
+import pytz
 
 import requests
 from django.utils.dateformat import DateFormat
@@ -2424,6 +2425,11 @@ class TestProductIdNormalizationRuleAPIEndpoint:
             product_id="SOMETHING",
             regex_match=r"^SOMETHIN$"
         )
+        pnr3 = ProductIdNormalizationRule.objects.create(
+            vendor=v1,
+            product_id="PWR-%sWAC=",
+            regex_match=r"^PWR\-(\d+)WAC$"
+        )
 
         api_url = REST_PRODUCTNORMALIZATIONRULE_LIST + "apply/"
 
@@ -2454,6 +2460,7 @@ class TestProductIdNormalizationRuleAPIEndpoint:
             "product_id": "Test",
             "product_in_database": None
         }
+        assert response.json() == expected_result
         assert Vendor.objects.get(id=expected_result["vendor_id"]).name == "Cisco Systems"
 
         response = client.get(api_url + "?input_string=PWR-C1-715WAC&vendor_name=Cisco")
@@ -2465,6 +2472,7 @@ class TestProductIdNormalizationRuleAPIEndpoint:
             "product_id": "PWR-C1-715WAC=",
             "product_in_database": None
         }
+        assert response.json() == expected_result
         assert Vendor.objects.get(id=expected_result["vendor_id"]).name == "Cisco Systems"
 
         p = Product.objects.create(
@@ -2483,7 +2491,21 @@ class TestProductIdNormalizationRuleAPIEndpoint:
             "product_id": "PWR-C1-715WAC=",
             "product_in_database": p.id
         }
+        assert response.json() == expected_result
         assert Vendor.objects.get(id=expected_result["vendor_id"]).name == "Cisco Systems"
+
+        # test that the replacement of dynamic values is working
+        response = client.get(api_url + "?input_string=PWR-123WAC&vendor_name=Cisco")
+
+        assert response.status_code == status.HTTP_200_OK
+
+        expected_result = {
+            "matched_rule_id": pnr3.id,
+            "vendor_id": 1,
+            "product_id": "PWR-123WAC=",
+            "product_in_database": None
+        }
+        assert response.json() == expected_result
 
 
 @pytest.mark.usefixtures("import_default_users")
@@ -2535,7 +2557,7 @@ class TestNotificationMessageAPIEndpoint:
         expected_result["data"][0]["title"] = nm.title
         expected_result["data"][0]["summary_message"] = nm.summary_message
         expected_result["data"][0]["detailed_message"] = nm.detailed_message
-        expected_result["data"][0]["created"] = nm.created.isoformat().replace("+00:00", "Z")
+        expected_result["data"][0]["created"] = nm.created.astimezone(pytz.timezone(settings.TIME_ZONE)).isoformat()
 
         client = APIClient()
         client.login(**AUTH_USER)
@@ -2581,7 +2603,7 @@ class TestNotificationMessageAPIEndpoint:
         # adjust ID values from Database
         nm_obj = NotificationMessage.objects.get(title=expected_result["title"])
         expected_result["id"] = nm_obj.id
-        expected_result["created"] = nm_obj.created.isoformat().replace("+00:00", "Z")
+        expected_result["created"] = nm_obj.created.astimezone(pytz.timezone(settings.TIME_ZONE)).isoformat()
         assert response.json() == expected_result, "Should provide the new notification message"
 
     def test_delete_access_with_permission(self):

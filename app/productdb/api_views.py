@@ -1,7 +1,8 @@
-import django_filters
 from rest_framework import permissions, status
 from rest_framework import filters
 from rest_framework.response import Response
+import django_filters
+from django_filters.rest_framework import DjangoFilterBackend
 
 from app.config.models import NotificationMessage
 from app.productdb.serializers import ProductSerializer, VendorSerializer, ProductGroupSerializer, ProductListSerializer, \
@@ -10,7 +11,7 @@ from app.productdb.serializers import ProductSerializer, VendorSerializer, Produ
 from app.productdb.models import Product, Vendor, ProductGroup, ProductList, ProductMigrationSource, \
     ProductMigrationOption, ProductIdNormalizationRule
 from rest_framework import viewsets
-from rest_framework.decorators import list_route
+from rest_framework.decorators import action
 
 
 class NotificationMessageViewSet(viewsets.ModelViewSet):
@@ -31,7 +32,7 @@ class VendorViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = VendorSerializer
     lookup_field = 'id'
     filter_backends = (
-        filters.DjangoFilterBackend,
+        DjangoFilterBackend,
         filters.SearchFilter,
     )
     filter_fields = ('id', 'name')
@@ -47,7 +48,7 @@ class ProductMigrationSourceViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = ProductMigrationSourceSerializer
     lookup_field = 'id'
     filter_backends = (
-        filters.DjangoFilterBackend,
+        DjangoFilterBackend,
         filters.SearchFilter,
     )
     filter_fields = ('id', 'name')
@@ -55,10 +56,10 @@ class ProductMigrationSourceViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = (permissions.DjangoModelPermissions,)
 
 
-class ProductMigrationOptionFilter(filters.FilterSet):
-    product = django_filters.CharFilter(name="product__product_id", lookup_expr="startswith")
-    migration_source = django_filters.CharFilter(name="migration_source__name", lookup_expr="startswith")
-    replacement_product_id = django_filters.CharFilter(name="replacement_product_id", lookup_expr="startswith")
+class ProductMigrationOptionFilter(django_filters.FilterSet):
+    product = django_filters.CharFilter(field_name="product__product_id", lookup_expr="startswith")
+    migration_source = django_filters.CharFilter(field_name="migration_source__name", lookup_expr="startswith")
+    replacement_product_id = django_filters.CharFilter(field_name="replacement_product_id", lookup_expr="startswith")
 
     class Meta:
         model = ProductMigrationOption
@@ -73,7 +74,7 @@ class ProductMigrationOptionViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = ProductMigrationOptionSerializer
     lookup_field = 'id'
     filter_backends = (
-        filters.DjangoFilterBackend,
+        DjangoFilterBackend,
         filters.SearchFilter,
     )
     filter_class = ProductMigrationOptionFilter
@@ -81,9 +82,9 @@ class ProductMigrationOptionViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = (permissions.DjangoModelPermissions,)
 
 
-class ProductGroupFilter(filters.FilterSet):
-    vendor = django_filters.CharFilter(name="vendor__name", lookup_expr="startswith")
-    name = django_filters.CharFilter(name="name", lookup_expr="exact")
+class ProductGroupFilter(django_filters.FilterSet):
+    vendor = django_filters.CharFilter(field_name="vendor__name", lookup_expr="startswith")
+    name = django_filters.CharFilter(field_name="name", lookup_expr="exact")
 
     class Meta:
         model = ProductGroup
@@ -98,14 +99,14 @@ class ProductGroupViewSet(viewsets.ModelViewSet):
     serializer_class = ProductGroupSerializer
     lookup_field = 'id'
     filter_backends = (
-        filters.DjangoFilterBackend,
+        DjangoFilterBackend,
         filters.SearchFilter,
     )
     filter_class = ProductGroupFilter
     search_fields = ('$name',)
     permission_classes = (permissions.DjangoModelPermissions,)
 
-    @list_route()
+    @action(detail=False)
     def count(self, request):
         """
         returns the amount of elements within the database
@@ -116,9 +117,9 @@ class ProductGroupViewSet(viewsets.ModelViewSet):
         return Response(result)
 
 
-class ProductListFilter(filters.FilterSet):
-    name = django_filters.CharFilter(name="name", lookup_expr="icontains")
-    description = django_filters.CharFilter(name="description", lookup_expr="icontains")
+class ProductListFilter(django_filters.FilterSet):
+    name = django_filters.CharFilter(field_name="name", lookup_expr="icontains")
+    description = django_filters.CharFilter(field_name="description", lookup_expr="icontains")
 
     class Meta:
         model = ProductList
@@ -133,17 +134,17 @@ class ProductListViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = ProductListSerializer
     lookup_field = "id"
     filter_backends = (
-        filters.DjangoFilterBackend,
+        DjangoFilterBackend,
         filters.SearchFilter,
     )
     filter_class = ProductListFilter
     permission_classes = (permissions.DjangoModelPermissions,)
 
 
-class ProductFilter(filters.FilterSet):
-    vendor = django_filters.CharFilter(name="vendor__name", lookup_expr="startswith")
-    product_id = django_filters.CharFilter(name="product_id", lookup_expr="iexact")
-    product_group = django_filters.CharFilter(name="product_group__name", lookup_expr="exact")
+class ProductFilter(django_filters.FilterSet):
+    vendor = django_filters.CharFilter(field_name="vendor__name", lookup_expr="startswith")
+    product_id = django_filters.CharFilter(field_name="product_id", lookup_expr="iexact")
+    product_group = django_filters.CharFilter(field_name="product_group__name", lookup_expr="exact")
 
     class Meta:
         model = Product
@@ -158,14 +159,14 @@ class ProductViewSet(viewsets.ModelViewSet):
     serializer_class = ProductSerializer
     lookup_field = 'id'
     filter_backends = (
-        filters.DjangoFilterBackend,
+        DjangoFilterBackend,
         filters.SearchFilter,
     )
     filter_class = ProductFilter
     search_fields = ('$product_id', '$description', '$tags')
     permission_classes = (permissions.DjangoModelPermissions,)
 
-    @list_route()
+    @action(detail=False)
     def count(self, request):
         """
         returns the amount of elements within the database
@@ -176,8 +177,8 @@ class ProductViewSet(viewsets.ModelViewSet):
         return Response(result)
 
 
-class ProductIdNormalizationRuleFilter(filters.FilterSet):
-    vendor_name = django_filters.CharFilter(name="vendor__name", lookup_expr="startswith")
+class ProductIdNormalizationRuleFilter(django_filters.FilterSet):
+    vendor_name = django_filters.CharFilter(field_name="vendor__name", lookup_expr="startswith")
 
     class Meta:
         model = ProductIdNormalizationRule
@@ -195,12 +196,12 @@ class ProductIdNormalizationRuleViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = ProductIdNormalizationRule.objects.all()
     serializer_class = ProductIdNormalizationRuleSerializer
     filter_backends = (
-        filters.DjangoFilterBackend,
+        DjangoFilterBackend,
     )
     filter_class = ProductIdNormalizationRuleFilter
     permission_classes = (permissions.DjangoModelPermissions,)
 
-    @list_route(methods=["get"])
+    @action(detail=False, methods=["get"])
     def apply(self, request):
         """
         try to normalize the input_string based on the configured rules for the given vendor_name, requires
@@ -236,7 +237,7 @@ class ProductIdNormalizationRuleViewSet(viewsets.ReadOnlyModelViewSet):
         rules = ProductIdNormalizationRule.objects.filter(vendor=vendor).order_by("priority").order_by("product_id")
         for rule in rules:
             if rule.matches(input_string):
-                product_id = rule.product_id
+                product_id = rule.get_normalized_product_id(product_id)
 
                 # lookup in local database
                 pqs = Product.objects.filter(product_id=product_id, vendor=vendor)
