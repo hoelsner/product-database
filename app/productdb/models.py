@@ -877,10 +877,10 @@ class ProductCheckEntry(models.Model):
         blank=True
     )
 
-    part_of_product_list = models.CharField(
+    part_of_product_list = models.TextField(
         verbose_name="product list hash values",
         help_text="hash values of product lists that contain the Product (at time of the check)",
-        max_length=512,
+        max_length=8192,
         null=False,
         blank=True,
         default=""

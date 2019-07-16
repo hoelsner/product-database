@@ -45,24 +45,6 @@ services:
       - default
       - internal
 
-  camera:
-    container_name: ${COMPOSE_PROJECT_NAME:-productdb}_camera
-    restart: always
-    image: productdb/django:latest
-    build:
-      context: .
-      dockerfile: deploy/docker/Dockerfile-django
-    command: start_celery_camera
-    env_file: env.${INSTANCE_CONFIG:-demo}
-    networks:
-      - internal
-    volumes:
-      - data:/var/www/productdb/data
-    depends_on:
-      - build_deps
-      - database
-      - redis
-
   beat:
     container_name: ${COMPOSE_PROJECT_NAME:-productdb}_beat
     restart: always

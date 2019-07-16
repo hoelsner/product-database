@@ -1,7 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import User
-from reversion_compare.admin import CompareVersionAdmin
 from app.productdb.forms import ProductMigrationOptionForm
 from app.productdb.models import Product, Vendor, ProductGroup, ProductList, ProductMigrationOption, \
     ProductMigrationSource, ProductCheck, ProductCheckEntry, ProductIdNormalizationRule
@@ -35,7 +34,7 @@ class UserAdmin(BaseUserAdmin):
 
 
 @admin.register(Product)
-class ProductAdmin(CompareVersionAdmin, admin.ModelAdmin):
+class ProductAdmin(admin.ModelAdmin):
     list_display = (
         "product_id",
         "description",
@@ -123,7 +122,7 @@ class ProductAdmin(CompareVersionAdmin, admin.ModelAdmin):
 
 
 @admin.register(ProductGroup)
-class ProductGroupAdmin(CompareVersionAdmin, admin.ModelAdmin):
+class ProductGroupAdmin(admin.ModelAdmin):
     list_display = (
         "name",
         "vendor"
@@ -139,7 +138,7 @@ class ProductGroupAdmin(CompareVersionAdmin, admin.ModelAdmin):
 
 
 @admin.register(Vendor)
-class VendorAdmin(CompareVersionAdmin, admin.ModelAdmin):
+class VendorAdmin(admin.ModelAdmin):
     fields = (
         "name",
     )
@@ -149,7 +148,7 @@ class VendorAdmin(CompareVersionAdmin, admin.ModelAdmin):
 
 
 @admin.register(ProductMigrationSource)
-class ProductMigrationSourceAdmin(CompareVersionAdmin, admin.ModelAdmin):
+class ProductMigrationSourceAdmin(admin.ModelAdmin):
     list_display = (
         "name",
         "description",
@@ -161,7 +160,7 @@ class ProductMigrationSourceAdmin(CompareVersionAdmin, admin.ModelAdmin):
 
 
 @admin.register(ProductMigrationOption)
-class ProductMigrationOptionAdmin(CompareVersionAdmin, admin.ModelAdmin):
+class ProductMigrationOptionAdmin(admin.ModelAdmin):
     form = ProductMigrationOptionForm
     list_display = (
         "product",
@@ -194,12 +193,13 @@ class ProductMigrationOptionAdmin(CompareVersionAdmin, admin.ModelAdmin):
 
 
 @admin.register(ProductList)
-class ProductListAdmin(CompareVersionAdmin, admin.ModelAdmin):
+class ProductListAdmin(admin.ModelAdmin):
     list_display = [
         "name",
         "description",
         "update_user",
-        "update_date"
+        "update_date",
+        "hash"
     ]
     fields = [
         "name",
@@ -207,7 +207,8 @@ class ProductListAdmin(CompareVersionAdmin, admin.ModelAdmin):
         "string_product_list",
         "version_note",
         "update_user",
-        "update_date"
+        "update_date",
+        "hash"
     ]
 
     readonly_fields = [
@@ -219,7 +220,7 @@ class ProductListAdmin(CompareVersionAdmin, admin.ModelAdmin):
 
 
 @admin.register(ProductCheck)
-class ProductCheckAdmin(CompareVersionAdmin, admin.ModelAdmin):
+class ProductCheckAdmin(admin.ModelAdmin):
     list_display = [
         "name",
         "migration_source",
@@ -248,7 +249,7 @@ class ProductCheckAdmin(CompareVersionAdmin, admin.ModelAdmin):
 
 
 @admin.register(ProductCheckEntry)
-class ProductCheckEntryAdmin(CompareVersionAdmin, admin.ModelAdmin):
+class ProductCheckEntryAdmin(admin.ModelAdmin):
     list_display = [
         "product_check",
         "input_product_id",
@@ -264,6 +265,7 @@ class ProductCheckEntryAdmin(CompareVersionAdmin, admin.ModelAdmin):
         "in_database",
         "amount",
         "migration_product_id",
+        "part_of_product_list"
     ]
 
     readonly_fields = [
@@ -278,7 +280,7 @@ class ProductCheckEntryAdmin(CompareVersionAdmin, admin.ModelAdmin):
 
 
 @admin.register(ProductIdNormalizationRule)
-class ProductIdNormalizationRuleAdmin(CompareVersionAdmin, admin.ModelAdmin):
+class ProductIdNormalizationRuleAdmin(admin.ModelAdmin):
     list_display = [
         "product_id",
         "regex_match",

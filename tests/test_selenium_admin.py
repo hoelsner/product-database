@@ -512,8 +512,8 @@ class TestSyncLocalDatabaseWithCiscoEoxApi(BaseSeleniumTest):
 
         assert "The synchronization with the Cisco EoX API was successful." in browser.find_element_by_tag_name("body").text
         expected_content = "The following queries were executed:\n" \
-                           "WS-C2960-24* (affects 29 products, success)\n" \
-                           "WS-C3750-24* (affects 12 products, success)"
+                           "WS-C2960-24* (affects 30 products, success)\n" \
+                           "WS-C3750-24* (affects 16 products, success)"
         assert expected_content in browser.find_element_by_tag_name("body").text
 
         # end session

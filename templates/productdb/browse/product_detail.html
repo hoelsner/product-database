@@ -74,7 +74,7 @@
         <div class="col-md-12">
             {% if product.current_lifecycle_states %}
                 <h2>Lifecycle data</h2>
-                <div class="col-md-6">
+                <div class="col-md-12">
                     {% if product.current_lifecycle_states|length > 1 %}
                         <div class="alert alert-warning" role="alert">
                             <strong>Current lifecycle state: </strong>
@@ -86,8 +86,8 @@
                         </div>
                     {% elif product.current_lifecycle_states|length == 1 %}
                         {% if "No EoL announcement" in product.current_lifecycle_states.0 %}
-                            <div class="alert alert-info" role="alert">
-                                No End-of-Life announcement saved in the database.
+                            <div class="alert alert-success" role="alert">
+                                No End-of-Life announcement found in the database (last review on {{ product.eox_update_time_stamp|date:"SHORT_DATE_FORMAT" }}).
                             </div>
 
                         {% else %}
@@ -109,7 +109,6 @@
                                     <strong>Current lifecycle state: </strong>
                                     {{ product.current_lifecycle_states.0 }}
                                 </div>
-
                             {% endif %}
                         {% endif %}
                     {% endif %}
@@ -157,7 +156,7 @@
                     {% endif %}
                 </div>
                 {% if product.has_migration_options %}
-                    <div class="col-md-6">
+                    <div class="col-md-12">
                         <ul class="list-group">
                             <li class="list-group-item list-group-item-success">
                                 <h4 class="list-group-item-heading">preferred migration option</h4>
@@ -210,7 +209,7 @@
                     </div>
                 {% endif %}
             {% else %}
-                {% bootstrap_alert "No lifecycle data are stored in the database." alert_type="info" dismissable=False %}
+                {% bootstrap_alert "No lifecycle information added to the database." alert_type="info" dismissable=False %}
             {% endif %}
         </div>
     </div>

@@ -71,9 +71,9 @@ export COMPOSE_PROJECT_NAME=productdbtesting
 docker-compose -p productdbtesting -f docker-compose_test.yaml build --pull
 docker-compose -p productdbtesting -f docker-compose_test.yaml up -d database redis
 docker-compose -p productdbtesting -f docker-compose_test.yaml up build_deps
-docker-compose -p productdbtesting -f docker-compose_test.yaml up -d web worker beat camera nginx
+docker-compose -p productdbtesting -f docker-compose_test.yaml up -d web worker beat nginx
 
 docker-compose -p productdbtesting -f docker-compose_test.yaml down -v
 ```
 
-A valid geckodrvier must be installed and available at `/usr/local/bin/geckodriver`. This path can be overwritten with the parameter `FIREFOX_DRIVER_EXEC_PATH`.
+A valid geckodriver must be installed and available at `/usr/local/bin/geckodriver`. This path can be overwritten with the parameter `FIREFOX_DRIVER_EXEC_PATH`.

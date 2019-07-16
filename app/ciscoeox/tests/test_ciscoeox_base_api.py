@@ -287,7 +287,7 @@ class TestCiscoHelloApi:
 
         json_result = cisco_hello_api.hello_api_call()
 
-        assert json_result == {'helloResponse': {'response': 'Hello World!'}}
+        assert json_result == {}
 
     def test_offline_hello_api_call(self, monkeypatch):
         class MockSession:
@@ -660,9 +660,9 @@ class TestCiscoEoxApi:
 
         _ = cisco_eox_api.query_year(self.TEST_YEAR, 1)
 
-        assert cisco_eox_api.amount_of_pages() == 13
+        assert cisco_eox_api.amount_of_pages() == 12
         assert cisco_eox_api.get_current_page() == 1
-        assert cisco_eox_api.amount_of_total_records() >= 12000
+        assert cisco_eox_api.amount_of_total_records() >= 11000
         assert cisco_eox_api.get_page_record_count() == 1000
         assert cisco_eox_api.has_api_error() is False
 

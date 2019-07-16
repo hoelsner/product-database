@@ -20,9 +20,9 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework_swagger",
     "rest_framework.authtoken",
+    "django_celery_beat",
+    "django_celery_results",
     "bootstrap3",
-    "reversion",
-    "reversion_compare",
     "app.productdb",
     "app.config",
     "app.ciscoeox",
@@ -37,8 +37,7 @@ MIDDLEWARE_CLASSES = [
     "django.contrib.auth.middleware.SessionAuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "django.middleware.security.SecurityMiddleware",
-    "reversion.middleware.RevisionMiddleware",
+    "django.middleware.security.SecurityMiddleware"
 ]
 
 if os.getenv("PDB_DEBUG", False) and os.getenv("PDB_DEBUG_NO_CACHE", False):

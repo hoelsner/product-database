@@ -3,8 +3,6 @@ import logging
 
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.validators import URLValidator
-from reversion import revisions as reversion
-from django.db import transaction
 from django.utils.datetime_safe import datetime
 from app.ciscoeox.exception import ConnectionFailedException, CiscoApiCallFailed
 from app.ciscoeox.base_api import CiscoEoxApi
@@ -124,9 +122,7 @@ def update_local_db_based_on_record(eox_record, create_missing=False):
                 if "ProductBulletinNumber" in eox_record.keys():
                     product.eol_reference_number = eox_record.get('ProductBulletinNumber', "EoL bulletin")
 
-        with transaction.atomic(), reversion.create_revision():
-            product.save()
-            reversion.set_comment("Updated by the Cisco EoX API crawler")
+        product.save()
 
     except Exception as ex:
         if created:

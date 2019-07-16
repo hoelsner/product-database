@@ -6,10 +6,9 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import password_change
 from django.core.urlresolvers import reverse
-from django.http import HttpResponseForbidden
+from django.http import HttpResponseForbidden, JsonResponse, HttpResponse
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect, render, render_to_response
-from djcelery.views import JsonResponse, HttpResponse
 
 from app.config.settings import AppSettings
 from app.productdb.utils import login_required_if_login_only_mode

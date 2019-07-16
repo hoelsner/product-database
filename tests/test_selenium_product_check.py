@@ -93,10 +93,7 @@ class TestBulkEolCheckFunction(BaseSeleniumTest):
         browser.find_element_by_id("submit").click()
 
         # verify result within the product summary table
-        expected_product_summary_row = "WS-C2960-24LC-S 4 End of Sale,\n" \
-                                       "End of New Service Attachment Date,\n" \
-                                       "End of SW Maintenance Releases Date,\n" \
-                                       "End of Routine Failure Analysis Date No"
+        expected_product_summary_row = "WS-C2960-24LC-S 4 End of Support No"
         expected_not_found_query = "MOH 2 Not found in Database --- --- ---"
 
         # test that the Vendor Bulletin is not visible by default
