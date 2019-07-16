@@ -42,7 +42,6 @@ WORKDIR /var/www/productdb/source
 EXPOSE 8000
 
 ADD ./deploy/docker/django/start_gunicorn.sh /usr/local/bin/start_gunicorn
-ADD ./deploy/docker/django/start_celery_camera.sh /usr/local/bin/start_celery_camera
 ADD ./deploy/docker/django/start_celery_worker.sh /usr/local/bin/start_celery_worker
 ADD ./deploy/docker/django/start_celery_beat.sh /usr/local/bin/start_celery_beat
 ADD ./deploy/docker/django/initialimport.sh /usr/local/bin/initialimport
