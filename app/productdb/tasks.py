@@ -1,5 +1,7 @@
 import logging
 from django.contrib.auth.models import User
+from django.db import transaction
+
 from app.config.models import NotificationMessage
 from app.productdb.excel_import import ProductsExcelImporter, InvalidImportFormatException, InvalidExcelFileFormat, \
     ProductMigrationsExcelImporter
@@ -170,7 +172,10 @@ def import_price_list(self, job_file_id, create_notification_on_server=True, upd
         import_products_excel.verify_file()
         update_task_state("File valid, start updating the database...")
 
-        import_products_excel.import_to_database(status_callback=update_task_state, update_only=update_only)
+        # if something goes wrong, rollback all changes
+        with transaction.atomic():
+            import_products_excel.import_to_database(status_callback=update_task_state, update_only=update_only)
+
         update_task_state("Database import finished, processing results...")
 
         summary_msg = "User <strong>%s</strong> imported a Product list, %s Products " \

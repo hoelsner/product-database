@@ -272,12 +272,18 @@ class TestProduct:
 
     def test_product_id_unique_constraint(self):
         test_name = "my product id"
-        mixer.blend("productdb.Product", product_id=test_name)
+        v1 = Vendor.objects.create(name="test vendor")
+        v2 = Vendor.objects.create(name="another test vendor")
+        mixer.blend("productdb.Product", product_id=test_name, vendor=v1)
+        mixer.blend("productdb.Product", product_id=test_name, vendor=v2)
 
+        assert Product.objects.count() == 2
+
+        # test unique constraint
         with pytest.raises(ValidationError) as exinfo:
-            Product.objects.create(product_id=test_name)
+            Product.objects.create(product_id=test_name, vendor=v1)
 
-        assert exinfo.match("product_id': \['Product with this Product id already exists.'"), \
+        assert exinfo.match("__all__': \['Product with this Product id and Vendor already exists.'"), \
             "product ID must be unique in the database"
 
     def test_product_vendor_change(self):

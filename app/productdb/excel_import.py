@@ -182,9 +182,20 @@ class ProductsExcelImporter(BaseExcelImporter):
             skip = False                # skip the current entry (used in update_only mode)
             msg = "import successful"   # message to describe the result of the product import
 
+            # get vendor name and look for object
+            vendor_name = row["vendor"]
+            v = Vendor.objects.get(id=0)
+            if not pd.isnull(row["vendor"]):
+                qs_v = Vendor.objects.filter(name=str(vendor_name).strip())
+                if qs_v.count() == 0:
+                    raise Exception("unknown vendor '%s'" % row["vendor"])
+
+                else:
+                    v = qs_v.first()
+
             if update_only:
                 try:
-                    p = Product.objects.get(product_id=row["product id"])
+                    p = Product.objects.get(product_id=row["product id"], vendor=v)
 
                 except Product.DoesNotExist:
                     # element doesn't exist
@@ -193,9 +204,11 @@ class ProductsExcelImporter(BaseExcelImporter):
                 except Exception as ex:  # catch any exception
                     logger.warning("unexpected exception occurred during the lookup "
                                    "of product %s (%s)" % (row["product id"], ex))
+                    # skip faulty entry
+                    skip = True
 
             else:
-                p, created = Product.objects.get_or_create(product_id=row["product id"])
+                p, created = Product.objects.get_or_create(product_id=row["product id"], vendor=v)
 
             changed = created
 
@@ -273,23 +286,6 @@ class ProductsExcelImporter(BaseExcelImporter):
                         if p.currency != new_currency:
                             p.currency = new_currency
                             changed = True
-
-                    # set vendor to unassigned (ID 0) if no Vendor is provided and the product was created
-                    row_key = "vendor"
-                    if pd.isnull(row[row_key]) and created:
-                        v = Vendor.objects.get(id=0)
-                        changed = True
-                        p.vendor = v
-
-                    elif not pd.isnull(row[row_key]):
-                        if p.vendor.name != row[row_key]:
-                            try:
-                                v = Vendor.objects.get(name=row[row_key])
-                                changed = True
-                                p.vendor = v
-
-                            except Vendor.DoesNotExist:
-                                raise Exception("Vendor <strong>%s</strong> doesn't exist" % row[row_key])
 
                     # create product group is not existing and product group (optional)
                     row_key = "product group"

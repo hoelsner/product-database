@@ -311,15 +311,87 @@ class TestProductsExcelImporter:
         assert pc.list_price is None, "No list price provided, therefore it should be None"
 
     @pytest.mark.usefixtures("apply_base_import_products_excel_file_mock")
-    def test_import_with_list_price_without_leading_zero(self):
-        """Should ensure that a list price of .xy is saved as 0.xy value, not None/Null value"""
+    def test_import_with_list_price_of_zero(self):
+        """Should ensure that a list price of 0 is saved as 0 value, not None/Null value"""
         global CURRENT_PRODUCT_TEST_DATA
         CURRENT_PRODUCT_TEST_DATA = pd.DataFrame(
             [
                 [
                     "Product A",
                     "description of Product A",
-                    ".53",
+                    "0",
+                    "USD",
+                    "Cisco Systems",
+                    datetime.datetime(2016, 1, 1),
+                    datetime.datetime(2016, 1, 2),
+                    datetime.datetime(2016, 1, 3),
+                    datetime.datetime(2016, 1, 4),
+                    datetime.datetime(2016, 1, 5),
+                    datetime.datetime(2016, 1, 6),
+                    datetime.datetime(2016, 1, 7),
+                    datetime.datetime(2016, 1, 8),
+                    datetime.datetime(2016, 1, 9),
+                    "",
+                    ""
+                ],
+                [
+                    "Product B",
+                    "description of Product B",
+                    "0.00",
+                    "USD",
+                    "Cisco Systems",
+                    datetime.datetime(2016, 1, 1),
+                    datetime.datetime(2016, 1, 2),
+                    datetime.datetime(2016, 1, 3),
+                    datetime.datetime(2016, 1, 4),
+                    datetime.datetime(2016, 1, 5),
+                    datetime.datetime(2016, 1, 6),
+                    datetime.datetime(2016, 1, 7),
+                    datetime.datetime(2016, 1, 8),
+                    datetime.datetime(2016, 1, 9),
+                    "",
+                    ""
+                ],
+                [
+                    "Product A2",
+                    "description of Product A",
+                    0,
+                    "USD",
+                    "Cisco Systems",
+                    datetime.datetime(2016, 1, 1),
+                    datetime.datetime(2016, 1, 2),
+                    datetime.datetime(2016, 1, 3),
+                    datetime.datetime(2016, 1, 4),
+                    datetime.datetime(2016, 1, 5),
+                    datetime.datetime(2016, 1, 6),
+                    datetime.datetime(2016, 1, 7),
+                    datetime.datetime(2016, 1, 8),
+                    datetime.datetime(2016, 1, 9),
+                    "",
+                    ""
+                ],
+                [
+                    "Product B2",
+                    "description of Product B",
+                    0.00,
+                    "USD",
+                    "Cisco Systems",
+                    datetime.datetime(2016, 1, 1),
+                    datetime.datetime(2016, 1, 2),
+                    datetime.datetime(2016, 1, 3),
+                    datetime.datetime(2016, 1, 4),
+                    datetime.datetime(2016, 1, 5),
+                    datetime.datetime(2016, 1, 6),
+                    datetime.datetime(2016, 1, 7),
+                    datetime.datetime(2016, 1, 8),
+                    datetime.datetime(2016, 1, 9),
+                    "",
+                    ""
+                ],
+                [
+                    "Product C",
+                    "description of Product C",
+                    "",
                     "USD",
                     "Cisco Systems",
                     datetime.datetime(2016, 1, 1),
@@ -343,12 +415,118 @@ class TestProductsExcelImporter:
         )
         product_file.verify_file()
         product_file.import_to_database()
-        assert Product.objects.count() == 1
+        assert Product.objects.count() == 5
 
         # verify imported data
         pa = Product.objects.get(product_id="Product A")
         assert pa.list_price is not None
-        assert pa.list_price == 0.53
+        assert pa.list_price == 0.00
+
+        pa2 = Product.objects.get(product_id="Product A2")
+        assert pa2.list_price is not None
+        assert pa2.list_price == 0.00
+
+        pb = Product.objects.get(product_id="Product B")
+        assert pb.list_price is not None
+        assert pb.list_price == 0.00
+
+        pb2 = Product.objects.get(product_id="Product B2")
+        assert pb2.list_price is not None
+        assert pb2.list_price == 0.00
+
+        pc = Product.objects.get(product_id="Product C")
+        assert pc.list_price is None, "No list price provided, therefore it should be None"
+
+    @pytest.mark.usefixtures("apply_base_import_products_excel_file_mock")
+    def test_import_with_different_vendors(self):
+        """ensure that Product constraints are valid"""
+        global CURRENT_PRODUCT_TEST_DATA
+        CURRENT_PRODUCT_TEST_DATA = pd.DataFrame(
+            [
+                [
+                    "Product A",
+                    "description of Product A",
+                    ".53",
+                    "USD",
+                    "Cisco Systems",
+                    datetime.datetime(2016, 1, 1),
+                    datetime.datetime(2016, 1, 2),
+                    datetime.datetime(2016, 1, 3),
+                    datetime.datetime(2016, 1, 4),
+                    datetime.datetime(2016, 1, 5),
+                    datetime.datetime(2016, 1, 6),
+                    datetime.datetime(2016, 1, 7),
+                    datetime.datetime(2016, 1, 8),
+                    datetime.datetime(2016, 1, 9),
+                    "",
+                    ""
+                ],
+                [
+                    "Product A",
+                    "description of Product A",
+                    ".53",
+                    "USD",
+                    "Juniper Networks",
+                    datetime.datetime(2016, 1, 1),
+                    datetime.datetime(2016, 1, 2),
+                    datetime.datetime(2016, 1, 3),
+                    datetime.datetime(2016, 1, 4),
+                    datetime.datetime(2016, 1, 5),
+                    datetime.datetime(2016, 1, 6),
+                    datetime.datetime(2016, 1, 7),
+                    datetime.datetime(2016, 1, 8),
+                    datetime.datetime(2016, 1, 9),
+                    "",
+                    ""
+                ]
+            ], columns=PRODUCTS_TEST_DATA_COLUMNS
+        )
+        user = User.objects.get(username="api")
+        product_file = ProductsExcelImporter(
+            "virtual_file.xlsx",
+            user_for_revision=user
+        )
+        product_file.verify_file()
+        product_file.import_to_database()
+        assert Product.objects.count() == 2
+
+    @pytest.mark.usefixtures("apply_base_import_products_excel_file_mock")
+    def test_import_with_unknown_vendor(self):
+        """test with vendor that doesn't exist"""
+        global CURRENT_PRODUCT_TEST_DATA
+        CURRENT_PRODUCT_TEST_DATA = pd.DataFrame(
+            [
+                [
+                    "Product A",
+                    "description of Product A",
+                    ".53",
+                    "USD",
+                    "FooBar Unknown",
+                    datetime.datetime(2016, 1, 1),
+                    datetime.datetime(2016, 1, 2),
+                    datetime.datetime(2016, 1, 3),
+                    datetime.datetime(2016, 1, 4),
+                    datetime.datetime(2016, 1, 5),
+                    datetime.datetime(2016, 1, 6),
+                    datetime.datetime(2016, 1, 7),
+                    datetime.datetime(2016, 1, 8),
+                    datetime.datetime(2016, 1, 9),
+                    "",
+                    ""
+                ]
+            ], columns=PRODUCTS_TEST_DATA_COLUMNS
+        )
+        user = User.objects.get(username="api")
+        product_file = ProductsExcelImporter(
+            "virtual_file.xlsx",
+            user_for_revision=user
+        )
+        product_file.verify_file()
+
+        with pytest.raises(Exception) as exinfo:
+            product_file.import_to_database()
+
+        assert exinfo.match("unknown vendor ")
 
     @pytest.mark.usefixtures("apply_base_import_products_excel_file_mock")
     def test_import_with_internal_product_id(self):
@@ -631,9 +809,6 @@ class TestMigratedImportProductsExcelFile:
             }
         ]
         product_file = self.prepare_import_products_excel_file("excel_import_products_test.xlsx")
-
-        for p in Product.objects.all():
-            print(p.product_id)
 
         assert product_file.valid_imported_products == 25
         assert product_file.invalid_products == 0
@@ -924,12 +1099,16 @@ class TestMigratedImportProductsExcelFile:
         assert "comment" == lc_product.eol_reference_number
 
     def test_ignore_list_price_by_excel_upload_with_separate_currency_column(self):
+        # create entry with random list price
+        cis_vendor = Vendor.objects.get(name__startswith="Cisco")
         lc_product_id = "WS-C2960S-48FPD-L"
-        lc_product = Product.objects.create(product_id=lc_product_id)
+        lc_product = Product.objects.create(product_id=lc_product_id, vendor=cis_vendor)
         lc_product.list_price = 1.0
         lc_product.currency = "EUR"
+        lc_product.list_price_timestamp = datetime.date(day=1, month=1, year=2016)
         lc_product.save()
 
+        # update previously created entry using the excel import
         self.prepare_import_products_excel_file("excel_import_products_test-without_list_prices.xlsx")
 
         # verify the lifecycle information for the test products
@@ -937,11 +1116,15 @@ class TestMigratedImportProductsExcelFile:
 
         assert 1.0 == lc_product.list_price
         assert "EUR" == lc_product.currency
+        assert datetime.date.today() == lc_product.list_price_timestamp, "verify that timestamp is set to today"
 
     def test_change_product_list_price_by_excel_upload_with_separate_currency_column(self):
+        # create entry with random list price
+        cis_vendor = Vendor.objects.get(name__startswith="Cisco")
         lc_product_id = "WS-C2960S-48FPD-L"
-        lc_product = Product.objects.create(product_id=lc_product_id)
+        lc_product = Product.objects.create(product_id=lc_product_id, vendor=cis_vendor)
         lc_product.list_price = 1.0
+        lc_product.list_price_timestamp = datetime.date(day=1, month=1, year=2016)
         lc_product.save()
 
         self.prepare_import_products_excel_file("excel_import_products_test-with_eol_data.xlsx")
@@ -950,11 +1133,15 @@ class TestMigratedImportProductsExcelFile:
         lc_product = Product.objects.get(product_id=lc_product_id)
 
         assert 8795.0 == lc_product.list_price
+        assert datetime.date.today() == lc_product.list_price_timestamp, "verify that timestamp is set to today"
 
     def test_change_product_list_price_by_excel_upload_without_separate_currency_column(self):
+        # create entry with random list price
+        cis_vendor = Vendor.objects.get(name__startswith="Cisco")
         lc_product_id = "WS-C2960S-48FPD-L"
-        lc_product = Product.objects.create(product_id=lc_product_id)
+        lc_product = Product.objects.create(product_id=lc_product_id, vendor=cis_vendor)
         lc_product.list_price = 1.0
+        lc_product.list_price_timestamp = datetime.date(day=1, month=1, year=2016)
         lc_product.save()
 
         self.prepare_import_products_excel_file("excel_import_products_test-wo_currency.xlsx")
@@ -963,6 +1150,7 @@ class TestMigratedImportProductsExcelFile:
         lc_product = Product.objects.get(product_id=lc_product_id)
 
         assert 8795.0 == lc_product.list_price
+        assert datetime.date.today() == lc_product.list_price_timestamp, "verify that timestamp is set to today"
 
     def test_invalid_product_import_using_excel_file_with_invalid_keys(self):
         product_file = self.prepare_import_products_excel_file(

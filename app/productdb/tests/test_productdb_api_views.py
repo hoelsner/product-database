@@ -1402,6 +1402,8 @@ class TestProductAPIEndpoint:
         assert jdata["data"][0] == response.json()
 
     def test_add_access_with_permission(self):
+        v = Vendor.objects.create(name="test vendor")
+
         test_user = "user"
         test_product_id = "Test Product ID"
         expected_result = {
@@ -1413,7 +1415,7 @@ class TestProductAPIEndpoint:
             "product_group": None,
             "end_of_sale_date": None,
             "description": "",
-            "vendor": 0,
+            "vendor": v.id,
             "tags": "",
             "list_price": None,
             "eol_ext_announcement_date": None,
@@ -1442,15 +1444,17 @@ class TestProductAPIEndpoint:
         client.login(username=test_user, password=test_user)
 
         # create with name
-        response = client.post(REST_PRODUCT_LIST, data={"product_id": test_product_id})
+        response = client.post(REST_PRODUCT_LIST, data={"product_id": test_product_id, "vendor": v.id})
 
         assert response.status_code == status.HTTP_201_CREATED, response.content.decode()
         # adjust ID values from Database
-        expected_result["id"] = Product.objects.get(product_id=test_product_id).id
+        expected_result["id"] = Product.objects.get(product_id=test_product_id, vendor=v).id
         expected_result["url"] = "http://testserver/productdb/api/v1/products/%d/" % expected_result["id"]
         assert response.json() == expected_result, "Should provide the new product"
 
     def test_create_product_with_lc_state_sync_field(self):
+        v = Vendor.objects.create(name="test vendor")
+
         test_user = "user"
         test_product_id = "Test Product ID"
         expected_result = {
@@ -1462,7 +1466,7 @@ class TestProductAPIEndpoint:
             "product_group": None,
             "end_of_sale_date": None,
             "description": "",
-            "vendor": 0,
+            "vendor": v.id,
             "tags": "",
             "list_price": None,
             "eol_ext_announcement_date": None,
@@ -1491,12 +1495,18 @@ class TestProductAPIEndpoint:
         client.login(username=test_user, password=test_user)
 
         # create with name
-        response = client.post(REST_PRODUCT_LIST, data={"product_id": test_product_id, "lc_state_sync": True})
+        response = client.post(REST_PRODUCT_LIST, data={
+            "product_id": test_product_id,
+            "vendor": v.id,
+            "lc_state_sync": True
+        })
 
         assert response.status_code == status.HTTP_201_CREATED
         # adjust ID values from Database
         expected_result["id"] = Product.objects.get(product_id=test_product_id).id
         expected_result["url"] = "http://testserver/productdb/api/v1/products/%d/" % expected_result["id"]
+        from pprint import pprint
+        pprint(response.json())
         assert response.json() == expected_result, "Should provide the new product"
 
     def test_change_lc_state_sync(self):

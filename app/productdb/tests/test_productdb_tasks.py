@@ -177,7 +177,7 @@ class TestImportPriceListTask:
         assert Product.objects.count() == 0, "One Product was created"
 
         # create the product
-        Product.objects.create(product_id="Product A")
+        Product.objects.create(product_id="Product A", vendor=Vendor.objects.get(name__startswith="Cisco"))
 
         jf = JobFile.objects.create(file=SimpleUploadedFile("myfile.xlsx", b"xyz"))
         result = tasks.import_price_list(

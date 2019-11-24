@@ -138,7 +138,7 @@ class Product(models.Model):
     LESS_PREFERRED_PREFERENCE_VALUE = 25
 
     product_id = models.CharField(
-        unique=True,
+        unique=False,
         max_length=512,
         help_text="Unique Product ID/Number"
     )
@@ -459,7 +459,8 @@ class Product(models.Model):
     class Meta:
         verbose_name = "Product"
         verbose_name_plural = "Products"
-        ordering = ('product_id',)
+        unique_together = ("product_id", "vendor",)
+        ordering = ("product_id",)
 
 
 class ProductMigrationSource(models.Model):
