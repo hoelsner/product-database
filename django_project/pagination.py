@@ -1,30 +1,35 @@
+from rest_framework.exceptions import ValidationError
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 import math
 
 
 class CustomPagination(PageNumberPagination):
-    page_size_query_param = 'page_size'
+    page_size_query_param = "page_size"
 
     def get_paginated_response(self, data):
-        used_page_size = int(self.request.GET.get('page_size', self.page_size))
+        used_page_size = int(self.request.GET.get("page_size", self.page_size))
+        if used_page_size > 1000:
+            raise ValidationError("page size to big")
+
         if self.page.paginator.count / used_page_size <= 1:
             last_page_index = 1
+
         else:
             last_page_index = math.ceil(self.page.paginator.count / used_page_size)
 
         result = {
-            'pagination': {
-                'total_records': self.page.paginator.count,
-                'page_records': len(data),
-                'page': int(self.request.GET.get('page', 1)),
-                'last_page': last_page_index,
-                'url': {
-                    'next': self.get_next_link(),
-                    'previous': self.get_previous_link(),
+            "pagination": {
+                "total_records": self.page.paginator.count,
+                "page_records": len(data),
+                "page": int(self.request.GET.get("page", 1)),
+                "last_page": last_page_index,
+                "url": {
+                    "next": self.get_next_link(),
+                    "previous": self.get_previous_link(),
                 }
             },
-            'data': data
+            "data": data
         }
 
         return Response(result)

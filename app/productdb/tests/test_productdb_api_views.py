@@ -152,6 +152,29 @@ class TestCommonAPIEndpoint:
         assert jdata["pagination"]["page_records"] == 40, "should contain 40 elements"
         assert jdata["pagination"]["total_records"] == 50, "total records should be all products"
 
+        # test upper page limit
+        response = client.get(REST_PRODUCT_LIST + "?page_size=1000")
+        assert response.status_code == status.HTTP_200_OK
+
+        response = client.get(REST_PRODUCT_LIST + "?page_size=1001")
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_http_basic_authentication(self):
+        for e in range(1, 50):
+            mixer.blend("productdb.Product")
+
+        client = APIClient()
+        response = client.post(REST_PRODUCT_LIST)
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+        # add HTTP basic authentication to request
+        credentials = base64.b64encode(f'{AUTH_USER["username"]}:{AUTH_USER["password"]}'.encode('utf-8'))
+        client.credentials(HTTP_AUTHORIZATION='Basic {}'.format(credentials.decode('utf-8')))
+
+        # test base authentication
+        response = client.get(REST_PRODUCT_LIST)
+        assert response.status_code == status.HTTP_200_OK
+
     def test_token_authentication(self):
         for e in range(1, 50):
             mixer.blend("productdb.Product")
