@@ -1,6 +1,6 @@
 # Development Notes
 
-This web service is based on python 3.5 and Django 1.11. A detailed list with all dependencies is available in the `requirements.txt` file.
+This web service is based on python 3.6 and Django 1.11. A detailed list with all dependencies is available in the `requirements.txt` file.
 
 ## Setup a local development environment
 
@@ -12,11 +12,9 @@ docker container run -d --rm -p 127.0.0.1:5432:5432 -v productdb_dev_postgres:/v
 docker container run -d --rm -p 127.0.0.1:6379:6379 -v productdb_dev_redis:/data --name dev_productdbredis redis:4.0-alpine
 ```
 
-The Product Database uses python 3.5 and to run the development server, a virtual environment should be created.
- The python dependencies are saved in the `requirements.txt` and `requirements_dev.txt` files.
+A virtualenv should be created (python 3.6) and the dependencies from `requirements.txt` and `requirements_dev.txt` must be installed. 
 
-A separate json file at the root of the project is required to run the online unit-tests against the Cisco EoX API. The client credentials can be created at https://apiconsole.cisco.com.
- The JSON file `.cisco_api_credentials` must contain the following entries and is only locally saved (part of the gitignore):
+A separate json file at the root of the project is required to run the online unit-tests against the Cisco EoX API. The client credentials can be created at https://apiconsole.cisco.com. The JSON file `.cisco_api_credentials` must contain the following entries and is only locally saved (part of the .gitignore):
 
 ```json
 {
@@ -53,7 +51,7 @@ The following commands will start all unit-tests (a flag to enable test mode is 
 
 ```
 export PDB_TESTING=1
-py.test
+pytest
 ```
 
 The following custom parameters are used to run tests with external dependencies:

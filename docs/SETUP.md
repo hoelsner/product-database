@@ -7,7 +7,6 @@ You can download the Docker Community Edition for free on the [Docker Homepage](
 
 ```bash
 git clone https://github.com/hoelsner/product-database.git
-docker build -f deploy/docker/Dockerfile-basebox -t productdb/basebox:latest .
 docker-compose -p productdb build
 docker-compose -p productdb up -d database redis
 docker-compose -p productdb up build_deps

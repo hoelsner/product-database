@@ -1,5 +1,6 @@
 {% extends '_base/page-with_nav.html' %}
 {% load bootstrap3 %}
+{% load staticfiles %}
 
 {% block title %}
     About the Product Database
@@ -13,7 +14,11 @@
                 <h1>About the Product Database</h1>
             </div>
             <p>
-                You can find additional information about the Product Database on the
+                This web service provides a database and API for product information, focusing on the lifecycle data (EoL checks) for network products. The following images shows an overview about the web service and the usage-options.
+            </p>
+            <img src="{% static "images/overview.png" %}" width="100%"/>
+            <p>
+                You'll find additional information about the Product Database and the entire source code are available at the
                 <a href="https://github.com/hoelsner/product-database" style="white-space: nowrap" target="_blank">
                     GitHub project page
                 </a>.
