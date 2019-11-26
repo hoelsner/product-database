@@ -107,6 +107,14 @@ def update_local_db_based_on_record(eox_record, create_missing=False):
                         ).date()
                     )
 
+                else:
+                    # required if date is removed after an earlier sync
+                    setattr(
+                        product,
+                        value_map[key],
+                        None
+                    )
+
         # save string values from Cisco EoX API record
         if "LinkToProductBulletinURL" in eox_record.keys():
             value = clean_api_url_response(eox_record.get('LinkToProductBulletinURL', ""))

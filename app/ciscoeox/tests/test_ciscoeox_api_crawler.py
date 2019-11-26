@@ -308,8 +308,7 @@ class TestUpdateLocalDbBasedOnRecord:
         p = Product.objects.get(product_id="WS-C2960-24T-S")
         assert p.eox_update_time_stamp == datetime.date(2016, 10, 3), \
             "should be updated to the value provided by the API"
-        assert p.end_of_routine_failure_analysis == datetime.date(2016, 10, 6), \
-            "Should be the same value as before"
+        assert p.end_of_routine_failure_analysis is None
         assert p.end_of_service_contract_renewal == datetime.date(2016, 10, 30), \
             "Should be the same value as before"
 

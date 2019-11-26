@@ -33,6 +33,7 @@ PRODUCTS_TEST_DATA_COLUMNS = [
 ]
 PRODUCT_MIGRATION_TEST_DATA_COLUMNS = [
     "product id",
+    "vendor",
     "migration source",
     "replacement product id",
     "comment",
@@ -82,6 +83,7 @@ CURRENT_PRODUCT_MIGRATION_TEST_DATA = pd.DataFrame(
     [
         [
             "Product A",
+            "Cisco Systems",
             "New Migration Source",
             "Replacement Product ID",
             "comment of the migration",
@@ -89,6 +91,7 @@ CURRENT_PRODUCT_MIGRATION_TEST_DATA = pd.DataFrame(
         ],
         [
             "Product A",
+            "Cisco Systems",
             "Existing Migration Source",
             "Replacement Product ID",
             "comment of the migration",
@@ -618,6 +621,7 @@ class TestProductMigrationExcelImporter:
             [
                 [
                     "Product A",
+                    "Cisco Systems",
                     "",
                     "Replacement Product ID",
                     "comment of the migration",
@@ -649,6 +653,7 @@ class TestProductMigrationExcelImporter:
             [
                 [
                     None,
+                    "Cisco Systems",
                     "Existing Migration Source",
                     "Replacement Product ID",
                     "comment of the migration",
@@ -681,6 +686,7 @@ class TestProductMigrationExcelImporter:
             [
                 [
                     "Product A",
+                    "Cisco Systems",
                     "Existing Migration Source",
                     "Replacement Product ID",
                     "comment of the migration",
@@ -714,6 +720,7 @@ class TestProductMigrationExcelImporter:
             [
                 [
                     "Product that is not in the Database",
+                    "Cisco Systems",
                     "Existing Migration Source",
                     "Replacement Product ID",
                     "comment of the migration",
@@ -743,8 +750,6 @@ class TestProductMigrationExcelImporter:
 @pytest.mark.usefixtures("import_default_users")
 @pytest.mark.usefixtures("import_default_vendors")
 class TestMigratedImportProductsExcelFile:
-    """test cases before pytest"""
-
     @staticmethod
     def prepare_import_products_excel_file(filename, verify_file=True, start_import=True):
         valid_test_file = os.path.join(os.getcwd(), "tests", "data", filename)

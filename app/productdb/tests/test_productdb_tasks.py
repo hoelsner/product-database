@@ -53,10 +53,11 @@ class BaseProductMigrationsExcelImporterMock(ProductMigrationsExcelImporter):
     def _create_data_frame(self):
         # add a predefined DataFrame for the file import
         self.__wb_data_frame__ = pd.DataFrame([
-            ["Product A", "Migration Source", "Replacement that is not in the database", "comment", ""],
-            ["Product A", "Other Migration Source", "Replacement that is not in the database", "comment", ""]
+            ["Product A", "Cisco Systems", "Migration Source", "Replacement that is not in the database", "comment", ""],
+            ["Product A", "Cisco Systems", "Other Migration Source", "Replacement that is not in the database", "comment", ""]
         ], columns=[
             "product id",
+            "vendor",
             "migration source",
             "replacement product id",
             "comment",

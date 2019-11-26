@@ -106,8 +106,8 @@ class BaseExcelImporter:
         msg = ""
         try:
             if row_key in row:
+                currval = getattr(product, target_key)
                 if not pd.isnull(row[row_key]):
-                    currval = getattr(product, target_key)
                     if (type(row[row_key]) is pd.tslib.Timestamp) or (type(row[row_key]) is datetime.datetime):
                         newval = row[row_key].date()
 
@@ -116,6 +116,12 @@ class BaseExcelImporter:
 
                     if currval != newval:
                         setattr(product, target_key, row[row_key].date())
+                        changed = True
+
+                else:
+                    # if row is present, but no date value is set, update the value to null
+                    if currval is not None:
+                        setattr(product, target_key, None)
                         changed = True
 
         except Exception as ex:  # catch any exception
@@ -214,8 +220,8 @@ class ProductsExcelImporter(BaseExcelImporter):
 
             if not skip:
                 # apply changes (only if a value is set, otherwise ignore it)
-                row_key = "description"
                 try:
+                    row_key = "description"
                     # set the description value
                     if not pd.isnull(row[row_key]):
                         if p.description != row[row_key]:
@@ -225,7 +231,6 @@ class ProductsExcelImporter(BaseExcelImporter):
                     # determine the list price and currency from the excel file
                     row_key = "list price"
                     new_currency = "USD"    # default in model
-
                     if not pd.isnull(row[row_key]):
                         if type(row[row_key]) == float:
                             new_price = row[row_key]
@@ -296,6 +301,12 @@ class ProductsExcelImporter(BaseExcelImporter):
                                 p.product_group = pg
                                 changed = True
 
+                        else:
+                            # reset value if column is present but no value is set
+                            if p.product_group is not None:
+                                p.product_group = None
+                                changed = True
+
                     # set Eol note URL and friendly name (both optional)
                     row_key = "eol note url"
                     if row_key in row:  # optional key
@@ -304,18 +315,36 @@ class ProductsExcelImporter(BaseExcelImporter):
                                 p.eol_reference_url = row[row_key]
                                 changed = True
 
+                        else:
+                            # reset value if column is present but no value is set
+                            if p.eol_reference_url is not None or p.eol_reference_url != "":
+                                p.eol_reference_url = None
+                                changed = True
+
                     row_key = "eol note url (friendly name)"
                     if row_key in row:  # optional key
                         if not pd.isnull(row[row_key]):
                             if p.eol_reference_number != row[row_key]:
                                 p.eol_reference_number = row[row_key]
 
+                        else:
+                            # reset value if column is present but no value is set
+                            if p.eol_reference_number is not None or p.eol_reference_number != "":
+                                p.eol_reference_number = None
+                                changed = True
+
                     # set internal product ID (optional)
                     row_key = "internal product id"
-                    if row_key in row:  # optional key
+                    if row_key in row:
                         if not pd.isnull(row[row_key]):
                             if p.internal_product_id != row[row_key]:
                                 p.internal_product_id = row[row_key]
+                                changed = True
+
+                        else:
+                            # reset value if column is present but no value is set
+                            if p.internal_product_id is not None or p.internal_product_id != "":
+                                p.internal_product_id = ""
                                 changed = True
 
                     # set tags field (optional)
@@ -326,11 +355,17 @@ class ProductsExcelImporter(BaseExcelImporter):
                                 p.tags = row[row_key]
                                 changed = True
 
+                        else:
+                            # reset value if column is present but no value is set
+                            if p.tags is not None or p.tags != "":
+                                p.tags = ""
+                                changed = True
+
                 except Exception as ex:
                     faulty_entry = True
                     msg = "cannot set %s for <code>%s</code> (%s)" % (row_key, row["product id"], ex)
 
-                # import datetime columns from file (all optional)
+                # import datetime columns from file (all optional, overwrite if None)
                 data_map = {
                     # product attribute - data frame column name (lowered during the import)
                     "eox_update_time_stamp": "eox update timestamp",
@@ -396,13 +431,14 @@ class ProductMigrationsExcelImporter(BaseExcelImporter):
     Excel Importer class for Product Migrations
     """
     sheetname = "product_migrations"
-    required_keys = {"product id", "migration source"}
+    required_keys = {"product id", "vendor", "migration source"}
     drop_na_columns = [
         "product id",
         "migration source"
     ]
     import_converter = {
         "product id": str,
+        "vendor": str,
         "migration source": str,
         "replacement product id": str,
         "comment": str,
@@ -436,8 +472,18 @@ class ProductMigrationsExcelImporter(BaseExcelImporter):
             # check that product is part of the database
             try:
                 with transaction.atomic():
+                    vendor_name = row["vendor"]
+                    v = Vendor.objects.get(id=0)
+                    if not pd.isnull(row["vendor"]):
+                        qs_v = Vendor.objects.filter(name=str(vendor_name).strip())
+                        if qs_v.count() == 0:
+                            raise Exception("unknown vendor '%s'" % row["vendor"])
+
+                        else:
+                            v = qs_v.first()
+
                     # update element
-                    product = Product.objects.get(product_id=row["product id"])
+                    product = Product.objects.get(product_id=row["product id"], vendor=v)
                     migration_source, created = ProductMigrationSource.objects.get_or_create(
                         name=row["migration source"]
                     )
