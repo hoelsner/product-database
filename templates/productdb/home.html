@@ -23,19 +23,21 @@
                     {% endif %}
                 </div>
                 <div class="col-md-10 col-lg-8 col-md-offset-1 col-lg-offset-2">
-                    <form method="get" action="{% url "productdb:all_products" %}" class="form-inline" style="text-align: center; margin-top: 25px; margin-bottom: 25px; white-space: nowrap;">
-                        <span class="hidden-xs">
+                    <span class="hidden-xs">
+                        <form method="get" action="{% url "productdb:all_products" %}" class="form-inline" style="text-align: center; margin-top: 25px; margin-bottom: 25px; white-space: nowrap;">
                             <div class="input-group" style="width: 88%;">
                                 <input name="search" id="search_text_field" class="form-control" placeholder="search database...">
                             </div>
                             <button class="btn btn-default" id="submit_search" type="submit"><i class="fa fa-search" aria-hidden="true"></i></button>
-                        </span>
-                        <span class="visible-xs">
+                        </form>
+                    </span>
+                    <span class="visible-xs">
+                        <form method="get" action="{% url "productdb:all_products" %}" class="form-inline" style="text-align: center; margin-top: 25px; margin-bottom: 25px; white-space: nowrap;">
                             <div class="input-group" style="width: 100%;">
                                 <input name="search" id="search_text_field" class="form-control" placeholder="search database...">
                             </div>
-                        </span>
-                    </form>
+                        </form>
+                    </span>
                 </div>
                 <div class="col-md-12" style="margin-bottom: 15px">
                     <div class="text-center">
