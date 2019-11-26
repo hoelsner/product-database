@@ -3,12 +3,18 @@ Product Database URL configuration (namespace "productdb")
 """
 from django.conf.urls import include, url
 from django.views.generic.base import RedirectView
+from drf_yasg.utils import swagger_auto_schema
+from rest_framework.authtoken.serializers import AuthTokenSerializer
+
 from app.productdb import api_views
 from app.productdb import views
-from rest_framework import routers
+from rest_framework import routers, status
 from rest_framework.authtoken import views as authtoken_views
+from rest_framework import permissions
+from drf_yasg.views import get_schema_view
+from drf_yasg import openapi
+
 import app.productdb.datatables as datatables
-from rest_framework_swagger.views import get_swagger_view
 
 router = routers.DefaultRouter()
 router.register(r'vendors', api_views.VendorViewSet, base_name="vendors")
@@ -20,14 +26,64 @@ router.register(r'productmigrationoptions', api_views.ProductMigrationOptionView
 router.register(r'notificationmessages', api_views.NotificationMessageViewSet, base_name="notificationmessages")
 router.register(r'productidnormalizationrules', api_views.ProductIdNormalizationRuleViewSet, base_name="productidnormalizationrules")
 
-schema_view = get_swagger_view(title="Product Database REST API")
+schema_view = get_schema_view(
+   openapi.Info(
+      title="Product Database API",
+      default_version="v1",
+      description="REST API specification for the product database",
+      license=openapi.License(name="MIT License"),
+   ),
+   public=True,
+   permission_classes=(permissions.AllowAny,),
+)
+
+decorated_login_view = \
+    swagger_auto_schema(
+        method="post",
+        tags=["Token authentication"],
+        operation_id="login_token",
+        operation_description="obtain a token for login",
+        request_body=AuthTokenSerializer,
+        responses={
+            status.HTTP_200_OK: openapi.Response(
+                "successful login",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        "token": openapi.Schema(
+                            type=openapi.TYPE_STRING,
+                            description="authentication token"
+                        )
+                    }
+                )
+            ),
+            status.HTTP_400_BAD_REQUEST: openapi.Response(
+                "login failed"
+            )
+        }
+    )(authtoken_views.obtain_auth_token)
+
+decorated_logout_view = \
+    swagger_auto_schema(
+        method="post",
+        tags=["Token authentication"],
+        operation_description="logout session and/or invalidate token for user",
+        operation_id="logout_token",
+        responses={
+            status.HTTP_200_OK: openapi.Response(
+                "logout successful"
+            )
+        }
+    )(api_views.TokenLogoutApiView.as_view())
 
 # namespace: productdb
 urlpatterns = [
     # API related URLs
-    url(r'^api-docs/', schema_view, name="apidocs"),
+    url(r'^api-docs(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0), name="api-schema-json"),
+    url(r'^api-docs/$', schema_view.with_ui('swagger', cache_timeout=0), name="apidocs"),
     url(r'^api/v1/', include(router.urls)),
-    url(r'^api/token-auth/', authtoken_views.obtain_auth_token, name="api-token-auth"),
+    url(r'^api/token-auth/', decorated_login_view, name="api-token-auth"),
+    url(r'^api/token-logout/', decorated_logout_view, name="api-token-logout"),
     url(r'^api/$', RedirectView.as_view(url="v1/", permanent=False), name="api_redirect"),
 
     # Datatables endpoints

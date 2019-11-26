@@ -140,7 +140,7 @@ class Product(models.Model):
     product_id = models.CharField(
         unique=False,
         max_length=512,
-        help_text="Unique Product ID/Number"
+        help_text="Product ID/Number"
     )
 
     description = models.TextField(

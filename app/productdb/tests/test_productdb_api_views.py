@@ -1,6 +1,7 @@
 """
 Test suite for the productdb.api_views module
 """
+import base64
 import pytest
 from urllib.parse import quote
 import pytz
@@ -33,6 +34,7 @@ SUPER_USER = {
     "password": "pdb_admin"
 }
 REST_TOKEN_AUTH = reverse("productdb:api-token-auth")
+REST_TOKEN_LOGOUT = reverse("productdb:api-token-logout")
 REST_VENDOR_LIST = reverse("productdb:vendors-list")
 REST_VENDOR_DETAIL = REST_VENDOR_LIST + "%d/"
 REST_PRODUCT_GROUP_LIST = reverse("productdb:productgroups-list")
@@ -180,13 +182,36 @@ class TestCommonAPIEndpoint:
             mixer.blend("productdb.Product")
 
         client = APIClient()
-        client.login(**AUTH_USER)
 
         # get a token by posting the username and password to the API endpoint
         response = client.post(REST_TOKEN_AUTH, data=dict(**AUTH_USER))
         assert response.status_code == status.HTTP_200_OK
 
-        assert "token" in response.json()
+        data = response.json()
+        assert "token" in data.keys()
+        previous_token = data["token"]
+        client.credentials(HTTP_AUTHORIZATION="Token %s" % previous_token)
+
+        # test that token is still working
+        response = client.get(REST_PRODUCT_LIST)
+        assert response.status_code == status.HTTP_200_OK
+
+        # explicitly logout from API
+        response = client.post(REST_TOKEN_LOGOUT)
+        assert response.status_code == status.HTTP_200_OK
+
+        # test that token isn't working
+        response = client.get(REST_PRODUCT_LIST)
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+        # fetch a new (and hopefully different token)
+        client.login(**AUTH_USER)
+
+        response = client.post(REST_TOKEN_AUTH, data=dict(**AUTH_USER))
+        assert response.status_code == status.HTTP_200_OK
+
+        data = response.json()
+        assert data["token"] != previous_token
 
 
 @pytest.mark.usefixtures("import_default_users")
@@ -2010,7 +2035,133 @@ class TestProductAPIEndpoint:
         assert "data" in jdata, "data branch not provided"
         assert jdata["pagination"]["total_records"] == 0, "Should return no element"
 
+    def test_filter_vendor__name_field(self):
+        expected_result = {
+            "pagination": {
+                "page": 1,
+                "page_records": 1,
+                "url": {
+                    "next": None,
+                    "previous": None
+                },
+                "last_page": 1,
+                "total_records": 1
+            },
+            "data": [
+                {
+                    "id": 0,
+                    "list_price": None,
+                    "description": "",
+                    "eol_reference_url": None,
+                    "eol_ext_announcement_date": None,
+                    "url": "http://testserver/productdb/api/v1/products/%d/",
+                    "end_of_sec_vuln_supp_date": None,
+                    "end_of_service_contract_renewal": None,
+                    "end_of_support_date": None,
+                    "eol_reference_number": None,
+                    "end_of_sw_maintenance_date": None,
+                    "tags": "",
+                    "vendor": 0,
+                    "product_id": "product 22",
+                    "end_of_routine_failure_analysis": None,
+                    "end_of_sale_date": None,
+                    "eox_update_time_stamp": None,
+                    "product_group": None,
+                    "end_of_new_service_attachment_date": None,
+                    "currency": "USD",
+                    "lc_state_sync": False,
+                    "internal_product_id": None,
+                    "update_timestamp": self.today_string,
+                    "list_price_timestamp": None
+                }
+            ]
+        }
+        mixer.blend("productdb.Product", vendor=Vendor.objects.get(id=2))
+        p = mixer.blend("productdb.Product", vendor=Vendor.objects.get(id=1))
+        expected_result["data"][0]["id"] = p.id
+        expected_result["data"][0]["vendor"] = p.vendor.id
+        expected_result["data"][0]["product_id"] = p.product_id
+        expected_result["data"][0]["url"] = expected_result["data"][0]["url"] % expected_result["data"][0]["id"]
+        assert Product.objects.count() == 2
+
+        client = APIClient()
+        client.login(**AUTH_USER)
+
+        # use vendor field (startswith)
+        response = client.get(REST_PRODUCT_LIST + "?vendor__name=" + quote("Cisco"))
+        assert response.status_code == status.HTTP_200_OK
+
+        jdata = response.json()
+        assert "pagination" in jdata, "pagination information not provided"
+        assert "data" in jdata, "data branch not provided"
+        assert jdata["pagination"]["total_records"] == 1, "Expect a single entry in the result"
+        assert jdata == expected_result, "unexpected result from API endpoint"
+
+    def test_filter_vendor__id_field(self):
+        expected_result = {
+            "pagination": {
+                "page": 1,
+                "page_records": 1,
+                "url": {
+                    "next": None,
+                    "previous": None
+                },
+                "last_page": 1,
+                "total_records": 1
+            },
+            "data": [
+                {
+                    "id": 0,
+                    "list_price": None,
+                    "description": "",
+                    "eol_reference_url": None,
+                    "eol_ext_announcement_date": None,
+                    "url": "http://testserver/productdb/api/v1/products/%d/",
+                    "end_of_sec_vuln_supp_date": None,
+                    "end_of_service_contract_renewal": None,
+                    "end_of_support_date": None,
+                    "eol_reference_number": None,
+                    "end_of_sw_maintenance_date": None,
+                    "tags": "",
+                    "vendor": 0,
+                    "product_id": "product 22",
+                    "end_of_routine_failure_analysis": None,
+                    "end_of_sale_date": None,
+                    "eox_update_time_stamp": None,
+                    "product_group": None,
+                    "end_of_new_service_attachment_date": None,
+                    "currency": "USD",
+                    "lc_state_sync": False,
+                    "internal_product_id": None,
+                    "update_timestamp": self.today_string,
+                    "list_price_timestamp": None
+                }
+            ]
+        }
+        mixer.blend("productdb.Product", vendor=Vendor.objects.get(id=2))
+        p = mixer.blend("productdb.Product", vendor=Vendor.objects.get(id=1))
+        expected_result["data"][0]["id"] = p.id
+        expected_result["data"][0]["vendor"] = p.vendor.id
+        expected_result["data"][0]["product_id"] = p.product_id
+        expected_result["data"][0]["url"] = expected_result["data"][0]["url"] % expected_result["data"][0]["id"]
+        assert Product.objects.count() == 2
+
+        client = APIClient()
+        client.login(**AUTH_USER)
+
+        # use vendor field (startswith)
+        v = Vendor.objects.get(name__startswith="Cisco")
+        response = client.get(REST_PRODUCT_LIST + "?vendor__id=%s" % v.id)
+        assert response.status_code == status.HTTP_200_OK
+
+        jdata = response.json()
+        assert "pagination" in jdata, "pagination information not provided"
+        assert "data" in jdata, "data branch not provided"
+        assert jdata["pagination"]["total_records"] == 1, "Expect a single entry in the result"
+        assert jdata == expected_result, "unexpected result from API endpoint"
+
     def test_filter_vendor_field(self):
+        """DEPRECATED, filter will be removed in later versions"""
         expected_result = {
             "pagination": {
                 "page": 1,
@@ -2073,6 +2224,7 @@ class TestProductAPIEndpoint:
         assert jdata == expected_result, "unexpected result from API endpoint"
 
     def test_filter_product_group_field(self):
+        """DEPRECATED, filter will be removed in later versions"""
         expected_result = {
             "pagination": {
                 "page": 1,
@@ -2150,6 +2302,155 @@ class TestProductAPIEndpoint:
         assert "pagination" in jdata, "pagination information not provided"
         assert "data" in jdata, "data branch not provided"
         assert jdata["pagination"]["total_records"] == 0, "Should return no element"
+
+    def test_filter_product_group__name_field(self):
+        expected_result = {
+            "pagination": {
+                "page": 1,
+                "page_records": 1,
+                "url": {
+                    "next": None,
+                    "previous": None
+                },
+                "last_page": 1,
+                "total_records": 1
+            },
+            "data": [
+                {
+                    "id": 0,
+                    "list_price": None,
+                    "description": "",
+                    "eol_reference_url": None,
+                    "eol_ext_announcement_date": None,
+                    "url": "http://testserver/productdb/api/v1/products/%d/",
+                    "end_of_sec_vuln_supp_date": None,
+                    "end_of_service_contract_renewal": None,
+                    "end_of_support_date": None,
+                    "eol_reference_number": None,
+                    "end_of_sw_maintenance_date": None,
+                    "tags": "",
+                    "vendor": 0,
+                    "product_id": "product 22",
+                    "end_of_routine_failure_analysis": None,
+                    "end_of_sale_date": None,
+                    "eox_update_time_stamp": None,
+                    "product_group": None,
+                    "end_of_new_service_attachment_date": None,
+                    "currency": "USD",
+                    "lc_state_sync": False,
+                    "internal_product_id": None,
+                    "update_timestamp": self.today_string,
+                    "list_price_timestamp": None
+                }
+            ]
+        }
+        v1 = Vendor.objects.get(id=1)
+        v2 = Vendor.objects.get(id=2)
+        mixer.blend(
+            "productdb.Product",
+            vendor=v2,
+            product_group=mixer.blend("productdb.ProductGroup", vendor=v2)
+        )
+        pg = mixer.blend("productdb.ProductGroup", vendor=v1)
+        p = mixer.blend("productdb.Product", vendor=v1, product_group=pg)
+        expected_result["data"][0]["id"] = p.id
+        expected_result["data"][0]["vendor"] = p.vendor.id
+        expected_result["data"][0]["product_id"] = p.product_id
+        expected_result["data"][0]["product_group"] = pg.id
+        expected_result["data"][0]["url"] = expected_result["data"][0]["url"] % expected_result["data"][0]["id"]
+        assert Product.objects.count() == 2
+
+        client = APIClient()
+        client.login(**AUTH_USER)
+
+        # use product_group field (exact match)
+        response = client.get(REST_PRODUCT_LIST + "?product_group__name=" + quote(pg.name))
+        assert response.status_code == status.HTTP_200_OK
+
+        jdata = response.json()
+        assert "pagination" in jdata, "pagination information not provided"
+        assert "data" in jdata, "data branch not provided"
+        assert jdata["pagination"]["total_records"] == 1, "Expect a single entry in the result"
+        assert jdata == expected_result, "unexpected result from API endpoint"
+
+        # use incomplete product_group field
+        response = client.get(REST_PRODUCT_LIST + "?product_group__name=" + quote(pg.name[:5]))
+        assert response.status_code == status.HTTP_200_OK
+
+        jdata = response.json()
+        assert "pagination" in jdata, "pagination information not provided"
+        assert "data" in jdata, "data branch not provided"
+        assert jdata["pagination"]["total_records"] == 0, "Should return no element"
+
+    def test_filter_product_group__id_field(self):
+        expected_result = {
+            "pagination": {
+                "page": 1,
+                "page_records": 1,
+                "url": {
+                    "next": None,
+                    "previous": None
+                },
+                "last_page": 1,
+                "total_records": 1
+            },
+            "data": [
+                {
+                    "id": 0,
+                    "list_price": None,
+                    "description": "",
+                    "eol_reference_url": None,
+                    "eol_ext_announcement_date": None,
+                    "url": "http://testserver/productdb/api/v1/products/%d/",
+                    "end_of_sec_vuln_supp_date": None,
+                    "end_of_service_contract_renewal": None,
+                    "end_of_support_date": None,
+                    "eol_reference_number": None,
+                    "end_of_sw_maintenance_date": None,
+                    "tags": "",
+                    "vendor": 0,
+                    "product_id": "product 22",
+                    "end_of_routine_failure_analysis": None,
+                    "end_of_sale_date": None,
+                    "eox_update_time_stamp": None,
+                    "product_group": None,
+                    "end_of_new_service_attachment_date": None,
+                    "currency": "USD",
+                    "lc_state_sync": False,
+                    "internal_product_id": None,
+                    "update_timestamp": self.today_string,
+                    "list_price_timestamp": None
+                }
+            ]
+        }
+        v1 = Vendor.objects.get(id=1)
+        v2 = Vendor.objects.get(id=2)
+        mixer.blend(
+            "productdb.Product",
+            vendor=v2,
+            product_group=mixer.blend("productdb.ProductGroup", vendor=v2)
+        )
+        pg = mixer.blend("productdb.ProductGroup", vendor=v1)
+        p = mixer.blend("productdb.Product", vendor=v1, product_group=pg)
+        expected_result["data"][0]["id"] = p.id
+        expected_result["data"][0]["vendor"] = p.vendor.id
+        expected_result["data"][0]["product_id"] = p.product_id
+        expected_result["data"][0]["product_group"] = pg.id
+        expected_result["data"][0]["url"] = expected_result["data"][0]["url"] % expected_result["data"][0]["id"]
+        assert Product.objects.count() == 2
+
+        client = APIClient()
+        client.login(**AUTH_USER)
+
+        # use product_group field (exact match)
+        response = client.get(REST_PRODUCT_LIST + "?product_group__id=%d" % pg.id)
+        assert response.status_code == status.HTTP_200_OK
+
+        jdata = response.json()
+        assert "pagination" in jdata, "pagination information not provided"
+        assert "data" in jdata, "data branch not provided"
+        assert jdata["pagination"]["total_records"] == 1, "Expect a single entry in the result"
+        assert jdata == expected_result, "unexpected result from API endpoint"
 
 
 @pytest.mark.usefixtures("import_default_users")

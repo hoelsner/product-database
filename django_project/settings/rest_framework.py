@@ -24,3 +24,18 @@ REST_FRAMEWORK = {
     "PAGE_SIZE": 25,
 }
 USE_X_FORWARDED_HOST = True
+SWAGGER_SETTINGS = {
+    "SECURITY_DEFINITIONS": {
+        "basic": {
+            "type": "basic"
+        },
+        "api_key": {
+            "type": "apiKey",
+            "name": "Token",
+            "in": "header"
+        },
+    },
+    "REFETCH_SCHEMA_ON_LOGOUT": True,
+    "REFETCH_SCHEMA_WITH_AUTH": True,
+    "VALIDATOR_URL": ""
+}
