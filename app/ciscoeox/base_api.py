@@ -149,6 +149,10 @@ class BaseCiscoApiConsole:
                     logger.error("unexpected response from API endpoint (malformed JSON content)")
                     raise CiscoApiCallFailed("unexpected content from API endpoint")
 
+                if "error" in self.current_access_token:
+                    logger.error("%s, was returned from the cisco API" % self.current_access_token["error"])
+                    raise CiscoApiCallFailed("error occurred when contacting the cisco API")
+
                 cache.delete(self.AUTH_TOKEN_CACHE_KEY)
                 self.current_access_token = jdata
 
