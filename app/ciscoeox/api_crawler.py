@@ -55,13 +55,21 @@ def update_local_db_based_on_record(eox_record, create_missing=False):
     :return: returns an error message or None if successful
     """
     pid = eox_record['EOLProductID']
+    # only used with Cisco Products
+    v = Vendor.objects.get(name="Cisco Systems")
 
     if create_missing:
-        product, created = Product.objects.get_or_create(product_id=pid)
+        product, created = Product.objects.get_or_create(
+            product_id=pid,
+            vendor=v
+        )
 
     else:
         try:
-            product = Product.objects.get(product_id=pid)
+            product = Product.objects.get(
+                product_id=pid,
+                vendor=v
+            )
             created = False
 
         except ObjectDoesNotExist:
@@ -72,7 +80,7 @@ def update_local_db_based_on_record(eox_record, create_missing=False):
         product.product_id = pid
         product.description = eox_record['ProductIDDescription']
         # it is a Cisco API and the vendors are predefined in the database
-        product.vendor = Vendor.objects.get(name="Cisco Systems")
+        product.vendor = v
         logger.debug("%15s: Product created" % pid)
 
     # update the lifecycle information

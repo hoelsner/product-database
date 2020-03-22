@@ -8,7 +8,7 @@ Prior starting a local Django development server, a redis and postgres server mu
  The following commands will start these services as docker containers with the expected parameters.
 
 ```
-docker container run -d --rm -p 127.0.0.1:5432:5432 -v productdb_dev_postgres:/var/lib/postgresql/data -e POSTGRES_DB=productdb --name dev_productdbpostgres postgres:9.6-alpine
+docker container run -d --rm -p 127.0.0.1:5432:5432 -v productdb_dev_postgres:/var/lib/postgresql/data -e POSTGRES_DB=productdb -e POSTGRES_PASSWORD=postgres --name dev_productdbpostgres postgres:9.6-alpine
 docker container run -d --rm -p 127.0.0.1:6379:6379 -v productdb_dev_redis:/data --name dev_productdbredis redis:4.0-alpine
 ```
 

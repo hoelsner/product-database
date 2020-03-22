@@ -206,8 +206,65 @@ def initial_sync_with_cisco_eox_api(self, years_list):
 
 @app.task(
     serializer="json",
+    name="ciscoeox.update_cisco_eox_records",
+)
+def update_cisco_eox_records(records):
+    """
+    update given database records from the Cisco EoX v5 API
+    :param records:
+    :return:
+    """
+    app_config = AppSettings()
+
+    blacklist_raw_string = app_config.get_product_blacklist_regex()
+    create_missing = app_config.is_auto_create_new_products()
+
+    # build blacklist from configuration
+    blacklist = []
+    for e in [e.split(";") for e in blacklist_raw_string.splitlines()]:
+        blacklist += e
+    blacklist = [e for e in blacklist if e != ""]
+
+    counter = 0
+    messages = {}
+
+    for record in records:
+        blacklisted = False
+        for regex in blacklist:
+            try:
+                if re.search(regex, record["EOLProductID"], re.I):
+                    blacklisted = True
+                    break
+
+            except:
+                logger.warning("invalid regular expression in blacklist: %s" % regex)
+
+        if not blacklisted:
+            try:
+                message = cisco_eox_api_crawler.update_local_db_based_on_record(record, create_missing)
+                if message:
+                    messages[record["EOLProductID"]] = message
+
+            except ValidationError as ex:
+                logger.error("invalid data received from Cisco API, cannot save data object for "
+                             "'%s' (%s)" % (record, str(ex)), exc_info=True)
+        else:
+            messages[record["EOLProductID"]] = " Product record ignored"
+
+        counter += 1
+
+    return {
+        "count": counter,
+        "messages": messages
+    }
+
+
+@app.task(
+    serializer="json",
     name="ciscoeox.synchronize_with_cisco_eox_api",
-    bind=True
+    bind=True,
+    soft_time_limit=82800,
+    time_limit=86400
 )
 def execute_task_to_synchronize_cisco_eox_states(self, ignore_periodic_sync_flag=False):
     """
@@ -217,13 +274,17 @@ def execute_task_to_synchronize_cisco_eox_states(self, ignore_periodic_sync_flag
                                                                       blacklist and not in the database
       * cisco_eox_api_auto_sync_auto_create_elements is set to false - will only update entries, which are already
                                                                        included in the database
-
     :return:
     """
     app_config = AppSettings()
     run_task = app_config.is_periodic_sync_enabled()
 
-    if run_task or ignore_periodic_sync_flag:
+    if not (run_task or ignore_periodic_sync_flag):
+        result = {
+            "status_message": "task not enabled"
+        }
+
+    else:
         logger.info("start sync with Cisco EoX API...")
         self.update_state(state=TaskState.PROCESSING, meta={
             "status_message": "sync with Cisco EoX API..."
@@ -231,8 +292,6 @@ def execute_task_to_synchronize_cisco_eox_states(self, ignore_periodic_sync_flag
 
         # read configuration for the Cisco EoX API synchronization
         queries = app_config.get_cisco_eox_api_queries_as_list()
-        blacklist_raw_string = app_config.get_product_blacklist_regex()
-        create_missing = app_config.is_auto_create_new_products()
 
         if len(queries) == 0:
             result = {
@@ -256,13 +315,28 @@ def execute_task_to_synchronize_cisco_eox_states(self, ignore_periodic_sync_flag
                 False
             )
 
-            if test_result:
+            if not test_result:
+                msg = "Cannot contact Cisco EoX API, please verify your internet connection and access " \
+                      "credentials."
+                if not ignore_periodic_sync_flag:
+                    NotificationMessage.objects.create(
+                        title=NOTIFICATION_MESSAGE_TITLE, type=NotificationMessage.MESSAGE_ERROR,
+                        summary_message="The synchronization with the Cisco EoX API was not successful.",
+                        detailed_message=msg
+                    )
+
+                result = {
+                    "error_message": msg
+                }
+
+            else:
                 # execute all queries from the configuration
                 query_eox_records = {}
                 failed_queries = []
                 failed_query_msgs = {}
                 successful_queries = []
                 counter = 1
+
                 for query in queries:
                     self.update_state(state=TaskState.PROCESSING, meta={
                         "status_message": "send query <code>%s</code> to the Cisco EoX API (<strong>%d of "
@@ -291,54 +365,17 @@ def execute_task_to_synchronize_cisco_eox_states(self, ignore_periodic_sync_flag
 
                     counter += 1
 
-                # build blacklist from configuration
-                blacklist = []
-                for e in [e.split(";") for e in blacklist_raw_string.splitlines()]:
-                    blacklist += e
-                blacklist = [e for e in blacklist if e != ""]
-
-                # update data in database
-                self.update_state(state=TaskState.PROCESSING, meta={
-                    "status_message": "update database..."
-                })
-                messages = {}
                 for key in query_eox_records:
                     amount_of_records = len(query_eox_records[key])
                     self.update_state(state=TaskState.PROCESSING, meta={
                         "status_message": "update database (query <code>%s</code>, processed <b>0</b> of "
                                           "<b>%d</b> results)..." % (key, amount_of_records)
                     })
-                    counter = 0
-                    for record in query_eox_records[key]:
-                        if counter % 100 == 0:
-                            self.update_state(state=TaskState.PROCESSING, meta={
-                                "status_message": "update database (query <code>%s</code>, processed <b>%d</b> of "
-                                                  "<b>%d</b> results)..." % (key, counter, amount_of_records)
-                            })
 
-                        blacklisted = False
-                        for regex in blacklist:
-                            try:
-                                if re.search(regex, record["EOLProductID"], re.I):
-                                    blacklisted = True
-                                    break
-
-                            except:
-                                logger.warning("invalid regular expression in blacklist: %s" % regex)
-
-                        if not blacklisted:
-                            try:
-                                message = cisco_eox_api_crawler.update_local_db_based_on_record(record, create_missing)
-                                if message:
-                                    messages[record["EOLProductID"]] = message
-
-                            except ValidationError as ex:
-                                logger.error("invalid data received from Cisco API, cannot save data object for "
-                                             "'%s' (%s)" % (record, str(ex)), exc_info=True)
-                        else:
-                            messages[record["EOLProductID"]] = " Product record ignored"
-
-                        counter += 1
+                    # update database in a separate task
+                    update_cisco_eox_records.apply_async(kwargs={
+                        "records": query_eox_records[key]
+                    })
 
                 # view the queries in the detailed message and all messages (if there are some)
                 detailed_message = "The following queries were executed:<br><ul style=\"text-align: left;\">"
@@ -349,13 +386,6 @@ def execute_task_to_synchronize_cisco_eox_states(self, ignore_periodic_sync_flag
                     detailed_message += "<li><code>%s</code> (<b>affects %d products</b>, " \
                                         "success)</li>" % (sq, len(query_eox_records[sq]))
                 detailed_message += "</ul>"
-
-                if len(messages) > 0:
-                    detailed_message += "<br>The following comment/errors occurred " \
-                                        "during the synchronization:<br><ul style=\"text-align: left;\">"
-                    for e in messages.keys():
-                        detailed_message += "<li><code>%s</code>: %s</li>" % (e, messages[e])
-                    detailed_message += "</ul>"
 
                 # show the executed queries in the summary message
                 if len(failed_queries) == 0 and len(successful_queries) != 0:
@@ -396,25 +426,6 @@ def execute_task_to_synchronize_cisco_eox_states(self, ignore_periodic_sync_flag
                 # if the task was executed eager, set state to SUCCESS (required for testing)
                 if self.request.is_eager:
                     self.update_state(state=TaskState.SUCCESS, meta={"status_message": summary_html})
-
-            else:
-                msg = "Cannot contact Cisco EoX API, please verify your internet connection and access " \
-                      "credentials."
-                if not ignore_periodic_sync_flag:
-                    NotificationMessage.objects.create(
-                        title=NOTIFICATION_MESSAGE_TITLE, type=NotificationMessage.MESSAGE_ERROR,
-                        summary_message="The synchronization with the Cisco EoX API was not successful.",
-                        detailed_message=msg
-                    )
-
-                result = {
-                    "error_message": msg
-                }
-
-    else:
-        result = {
-            "status_message": "task not enabled"
-        }
 
     # remove in progress flag with the cache
     cache.delete("CISCO_EOX_API_SYN_IN_PROGRESS")
