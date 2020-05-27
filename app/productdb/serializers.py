@@ -63,6 +63,13 @@ class ProductListSerializer(HyperlinkedModelSerializer):
         required=False
     )
 
+    vendor = PrimaryKeyRelatedField(
+        many=False,
+        queryset=Vendor.objects.all(),
+        read_only=False,
+        required=False
+    )
+
     string_product_list = ProductListItemField(read_only=True)
 
     def get_update_user_email(self, obj):
@@ -74,6 +81,7 @@ class ProductListSerializer(HyperlinkedModelSerializer):
         fields = (
             "id",
             "name",
+            "vendor",
             "description",
             "string_product_list",
             "update_date",

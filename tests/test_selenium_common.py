@@ -75,6 +75,7 @@ class TestCommonFunctions(BaseSeleniumTest):
         browser.find_element_by_id("id_name").send_keys(test_pl_name)
         browser.find_element_by_id("id_description").send_keys(test_pl_description)
         browser.find_element_by_id("id_string_product_list").send_keys(test_pl_product_list_ids)
+        browser.find_element_by_id("id_vendor").send_keys("C")
         browser.find_element_by_id("submit").click()
         WebDriverWait(browser, 10).until(EC.presence_of_element_located((
             By.XPATH,
@@ -405,6 +406,7 @@ class TestProductLists(BaseSeleniumTest):
         browser.find_element_by_id("id_name").send_keys(test_pl_name)
         browser.find_element_by_id("id_description").send_keys(test_pl_description)
         browser.find_element_by_id("id_string_product_list").send_keys(test_pl_product_list_ids)
+        browser.find_element_by_id("id_vendor").send_keys("C")
 
         browser.find_element_by_id("submit").click()
         self.wait_for_text_to_be_displayed_in_body_tag(browser, "All Product Lists")

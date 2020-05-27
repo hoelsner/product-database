@@ -13,7 +13,7 @@
         <h1>
             <i class="fa fa-list-ul"></i>&nbsp;
             {{ product_list.name }}
-            <small>Product List
+            <small>{{ product_list.vendor.name }} - Product List
                 {% if perms.productdb.change_productlist %}
                     <a href="{% url "productdb:edit-product_list" product_list_id=product_list.id %}" data-toggle="tooltip" title="edit this Product List">
                         <i class="fa fa-pencil" aria-hidden="true"></i>

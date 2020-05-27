@@ -24,6 +24,7 @@
             <thead>
                 <tr id="tour_table_head">
                     <th class="searchable">Name</th>
+                    <th class="searchable">Vendor</th>
                     <th class="searchable" width="50%">Description</th>
                     <th class="searchable">Last Changes</th>
                     <th class="searchable">Maintainer</th>
@@ -33,6 +34,7 @@
                 {% for product_list in product_lists %}
                     <tr data-internalid="{{ product_list.id }}">
                         <td><a href="{% url 'productdb:detail-product_list' product_list_id=product_list.id %}">{{ product_list.name }}</a></td>
+                        <td>{{ product_list.vendor.name|default:"" }}</td>
                         <td>{{ product_list.description|default:""|render_markdown }}</td>
                         <td>{{ product_list.update_date|date:"SHORT_DATE_FORMAT" }}</td>
                         <td>

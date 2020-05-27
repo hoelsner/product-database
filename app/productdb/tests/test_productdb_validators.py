@@ -24,36 +24,36 @@ def test_validate_json():
 
 
 def test_validate_product_list_string():
-    mixer.blend("productdb.Vendor", name="unassigned", id=0)
-    mixer.blend("productdb.Product", product_id="myprod1")
-    mixer.blend("productdb.Product", product_id="myprod2")
-    mixer.blend("productdb.Product", product_id="myprod3")
+    v = mixer.blend("productdb.Vendor", name="unassigned", id=0)
+    mixer.blend("productdb.Product", product_id="myprod1", vendor=v)
+    mixer.blend("productdb.Product", product_id="myprod2", vendor=v)
+    mixer.blend("productdb.Product", product_id="myprod3", vendor=v)
 
     # valid test strings
     test_product_string = "myprod1;myprod2;myprod3"
-    validate_product_list_string(test_product_string)
+    validate_product_list_string(test_product_string, v.id)
 
     test_product_string = "myprod1\nmyprod2;myprod3"
-    validate_product_list_string(test_product_string)
+    validate_product_list_string(test_product_string, v.id)
 
     test_product_string = "myprod1;myprod2\nmyprod3"
-    validate_product_list_string(test_product_string)
+    validate_product_list_string(test_product_string, v.id)
 
     # invalid test strings
     test_product_string = "myprod1;myprod4;myprod3"
-    expected_error_msg = "The following products are not found in the database: myprod4"
+    expected_error_msg = "The following products are not found in the database for the vendor unassigned: myprod4"
     with pytest.raises(ValidationError) as exinfo:
-        validate_product_list_string(test_product_string)
+        validate_product_list_string(test_product_string, v.id)
     assert exinfo.match(expected_error_msg)
 
     test_product_string = "myprod4;myprod2\nmyprod3"
 
     with pytest.raises(ValidationError) as exinfo:
-        validate_product_list_string(test_product_string)
+        validate_product_list_string(test_product_string, v.id)
     assert exinfo.match(expected_error_msg)
 
     test_product_string = "myprod1\nmyprod2;myprod4"
 
     with pytest.raises(ValidationError) as exinfo:
-        validate_product_list_string(test_product_string)
+        validate_product_list_string(test_product_string, v.id)
     assert exinfo.match(expected_error_msg)

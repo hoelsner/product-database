@@ -589,11 +589,20 @@ class ProductList(models.Model):
         verbose_name="Product List Name"
     )
 
+    vendor = models.ForeignKey(
+        Vendor,
+        help_text="vendor for the product list (only products from a single vendor can be used within a product list)",
+        verbose_name="Vendor",
+        # auto-discovery based on the list entries is implemented as part of the save function
+        # required only for data migration
+        null=True,
+        blank=False
+    )
+
     string_product_list = models.TextField(
         max_length=16384,
         help_text="Product IDs separated by word wrap or semicolon",
-        verbose_name="Unstructured Product IDs separated by line break",
-        validators=[validate_product_list_string]
+        verbose_name="Unstructured Product IDs separated by line break"
     )
 
     description = models.TextField(
@@ -638,22 +647,43 @@ class ProductList(models.Model):
     def get_product_list_objects(self):
         q_filter = Q()
         for product_id in self.get_string_product_list_as_list():
-            q_filter.add(Q(product_id=product_id), Q.OR)
+            q_filter.add(Q(product_id=product_id, vendor_id=self.vendor_id), Q.OR)
 
         return Product.objects.filter(q_filter).prefetch_related("vendor", "product_group")
 
+    def full_clean(self, exclude=None, validate_unique=True):
+        # validate product list string together with selected vendor
+        result = super().full_clean(exclude, validate_unique)
+        # validation between fields
+        self.__discover_vendor_based_on_products()
+        if self.vendor is not None:
+            validate_product_list_string(self.string_product_list, self.vendor.id)
+
+        else:
+            raise ValidationError("vendor not set")
+
+        return result
+
     def save(self, **kwargs):
+        self.__discover_vendor_based_on_products()
         self.full_clean()
 
         # normalize value in database, remove duplicates and sort the list
         values = self.get_string_product_list_as_list()
         self.string_product_list = "\n".join(sorted(list(set(values))))
 
-        # calculate hash value
-        s = "%s:%s" % (self.name, self.string_product_list)
+        # calculate hash value for Product check linking on the queries
+        s = "%s:%s:%s" % (self.name, self.string_product_list, self.vendor_id)
         self.hash = hashlib.sha256(s.encode()).hexdigest()
 
         super(ProductList, self).save(**kwargs)
+
+    def __discover_vendor_based_on_products(self):
+        # discovery vendor based on the products (if not set, used primary for data migration)
+        if self.vendor is None:
+            product_id_list = self.get_string_product_list_as_list()
+            if len(product_id_list) > 0:
+                self.vendor = Product.objects.filter(product_id=product_id_list[-1]).first().vendor
 
     def __str__(self):
         return self.name
@@ -894,6 +924,7 @@ class ProductCheckEntry(models.Model):
 
     def get_product_list_names(self):
         """return an list of Product List Names that contains the Product at time of the check"""
+        self.__discover_product_relation_in_database()
         return ProductList.objects.filter(hash__in=self.product_list_hash_values).values_list("name", flat=True)
 
     def discover_product_list_values(self):
@@ -904,23 +935,25 @@ class ProductCheckEntry(models.Model):
 
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
         self.full_clean()
-
-        # create relation to a database entry, if existing
-        query = Product.objects.filter(product_id=self.input_product_id)
-        if query.count() != 0:
-            self.product_in_database = query.first()
-
-            if self.product_check.migration_source:
-                # if the product check defines a migration source, try a lookup on this verison
-                replacement_product_list = self.product_in_database.get_migration_path(self.product_check.migration_source.name)
-                if len(replacement_product_list) != 0:
-                    self.migration_product = replacement_product_list[-1]
-
-            else:
-                # if nothing is specified, get the preferred replacement option
-                self.migration_product = self.product_in_database.get_preferred_replacement_option()
-
+        self.__discover_product_relation_in_database(force_update=True)
         super().save(force_insert, force_update, using, update_fields)
+
+    def __discover_product_relation_in_database(self, force_update=False):
+        """populate the 'product_in_database' relation as a shortcut if possible"""
+        if (self.product_in_database is None) or (force_update is False):
+            query = Product.objects.filter(product_id=self.input_product_id)
+            if query.count() != 0:
+                self.product_in_database = query.first()
+
+                if self.product_check.migration_source:
+                    # if the product check defines a migration source, try a lookup on this verison
+                    replacement_product_list = self.product_in_database.get_migration_path(self.product_check.migration_source.name)
+                    if len(replacement_product_list) != 0:
+                        self.migration_product = replacement_product_list[-1]
+
+                else:
+                    # if nothing is specified, get the preferred replacement option
+                    self.migration_product = self.product_in_database.get_preferred_replacement_option()
 
     def __str__(self):
         return "%s: %s (%d)" % (self.product_check, self.input_product_id, self.amount)

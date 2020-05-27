@@ -190,6 +190,7 @@ class TestStatusView:
             "No backend worker found, asynchronous and scheduled tasks are not executed.",
             "successful connected to the Cisco EoX API"
         ]
+        print(response.content.decode())
         for line in expected_content:
             assert line in response.content.decode()
 

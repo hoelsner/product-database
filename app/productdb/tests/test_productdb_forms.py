@@ -92,6 +92,7 @@ class TestUserProfileForm:
 class TestProductListForm:
     def test_form(self):
         form = ProductListForm(data={})
+        v = Vendor.objects.get(id=1)
         assert form.is_valid() is False
         assert "name" in form.errors
         assert "description" not in form.errors, "Null/Blank values are allowed"
@@ -100,7 +101,8 @@ class TestProductListForm:
         data = {
             "name": "Test Product List",
             "description": "",
-            "string_product_list": ""
+            "string_product_list": "",
+            "vendor": "1"
         }
         form = ProductListForm(data=data)
         assert form.is_valid() is False
@@ -111,20 +113,24 @@ class TestProductListForm:
         data = {
             "name": "Test Product List",
             "description": "",
-            "string_product_list": "Product"
+            "string_product_list": "Product",
+            "vendor": "1"
         }
-        mixer.blend("productdb.Product", product_id="Product")
+        mixer.blend("productdb.Product", product_id="Product", vendor=v)
         form = ProductListForm(data=data)
         assert form.is_valid() is True, form.errors
 
+    @pytest.mark.usefixtures("import_default_vendors")
     def test_input_variations_of_string_product_list(self):
-        mixer.blend("productdb.Product", product_id="Product A")
-        mixer.blend("productdb.Product", product_id="Product B")
-        mixer.blend("productdb.Product", product_id="Product C")
+        v = Vendor.objects.get(name__contains="Cisco")
+        mixer.blend("productdb.Product", product_id="Product A", vendor=v)
+        mixer.blend("productdb.Product", product_id="Product B", vendor=v)
+        mixer.blend("productdb.Product", product_id="Product C", vendor=v)
         data = {
             "name": "Test Product List",
             "description": "",
-            "string_product_list": "Product A"
+            "string_product_list": "Product A",
+            "vendor": "1"
         }
         form = ProductListForm(data=data)
         assert form.is_valid() is True, form.errors
@@ -148,8 +154,8 @@ class TestProductListForm:
         data["string_product_list"] = "Product A\nProduct B;Product D"
         form = ProductListForm(data=data)
         assert form.is_valid() is False, "validation should fail, because Product D doesn't exist"
-        assert "string_product_list" in form.errors
-        assert "Product D" in str(form.errors["string_product_list"]), "Should list products that are not found"
+        expected_error = "The following products are not found in the database for the vendor Cisco Systems: Product D"
+        assert expected_error in str(form.errors["__all__"]), "Should list products that are not found"
 
 
 @pytest.mark.usefixtures("import_default_vendors")

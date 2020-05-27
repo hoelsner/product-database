@@ -93,7 +93,7 @@ class UserProfileForm(forms.ModelForm):
 class ProductListForm(forms.ModelForm):
     class Meta:
         model = ProductList
-        fields = ["name", "description", "string_product_list", "version_note"]
+        fields = ["name", "description", "vendor", "string_product_list", "version_note"]
         widgets = {
             "name": forms.TextInput(attrs={"placeholder": "Name"}),
             "description": forms.Textarea(attrs={"placeholder": "Enter description here"}),

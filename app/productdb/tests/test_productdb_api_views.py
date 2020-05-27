@@ -2467,18 +2467,21 @@ class TestProductListAPIEndpoint:
     TEST_PRODUCT_LIST_NAME = "Test Product List"
 
     def create_test_data(self):
+        v = Vendor.objects.get(id=1)
         for e in self.TEST_PRODUCTS:
-            mixer.blend("productdb.Product", product_id=e)
+            mixer.blend("productdb.Product", product_id=e, vendor=v)
 
     def create_test_product_list(self):
         self.create_test_data()
+        v = Vendor.objects.get(id=1)
         u = User.objects.get(username="pdb_admin")
         pl = mixer.blend(
             "productdb.ProductList",
             name=self.TEST_PRODUCT_LIST_NAME,
             description="<strong>Test Liste</strong>\nJust a test list",
             string_product_list="\n".join(self.TEST_PRODUCTS),
-            update_user=u
+            update_user=u,
+            vendor=v
         )
 
         return pl.id
@@ -2515,6 +2518,7 @@ class TestProductListAPIEndpoint:
                 {
                     "id": 0,
                     "name": "TestList",
+                    "vendor": 1,
                     "description": "<strong>Test Liste</strong>\nJust a test list",
                     "string_product_list": self.TEST_PRODUCTS,
                     "update_date": "",
@@ -2529,7 +2533,8 @@ class TestProductListAPIEndpoint:
             name=expected_result["data"][0]["name"],
             description=expected_result["data"][0]["description"],
             string_product_list="\n".join(expected_result["data"][0]["string_product_list"]),
-            update_user=u
+            update_user=u,
+            vendor=Vendor.objects.get(id=1)
         )
         expected_result["data"][0]["id"] = pl.id
         expected_result["data"][0]["url"] = expected_result["data"][0]["url"] % pl.id
@@ -2617,7 +2622,8 @@ class TestProductListAPIEndpoint:
 
     def test_filter_fields(self):
         pl_id = self.create_test_product_list()
-        mixer.blend("productdb.ProductList", name="Product List", string_product_list="Product A")
+        v = Vendor.objects.get(id=1)
+        mixer.blend("productdb.ProductList", name="Product List", string_product_list="Product A", vendor=v)
         expected_result = {
             "pagination": {
                 "page_records": 1,
@@ -2636,6 +2642,7 @@ class TestProductListAPIEndpoint:
                     "description": "<strong>Test Liste</strong>\nJust a test list",
                     "string_product_list": self.TEST_PRODUCTS,
                     "update_date": "",
+                    "vendor": v.id,
                     "contact_email": "admin@localhost.localhost",
                     "url": "http://testserver/productdb/api/v1/productlists/%d/"
                 }
