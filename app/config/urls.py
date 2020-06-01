@@ -14,3 +14,5 @@ urlpatterns = [
     url(r'^messages/add/$', views.add_notification, name='notification-add'),
     url(r'^messages/(?P<message_id>\d+)/$', views.server_message_detail, name='notification-detail'),
 ]
+
+app_name = "config"

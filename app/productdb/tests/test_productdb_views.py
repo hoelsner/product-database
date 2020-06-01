@@ -1,19 +1,16 @@
 """
 Test suite for the productdb.views module
 """
-import datetime
 import pytest
 from django.contrib.messages.storage.fallback import FallbackStorage
-from django.contrib.auth.models import AnonymousUser, Permission
+from django.contrib.auth.models import AnonymousUser, Permission, User
 from django.core.exceptions import PermissionDenied
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.http import Http404
 from django.test import RequestFactory
-from mixer.backend.django import mixer
 from app.productdb import views
-from app.productdb.models import ProductList, Product, ProductMigrationOption, Vendor, ProductMigrationSource, \
-    ProductCheck
+from app.productdb import models
 
 pytestmark = pytest.mark.django_db
 
@@ -52,7 +49,7 @@ class TestHomeView:
     def test_authenticated_user(self):
         url = reverse(self.URL_NAME)
         request = RequestFactory().get(url)
-        request.user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+        request.user = User.objects.create(username="testuser", is_superuser=False, is_staff=False)
         response = views.home(request)
 
         assert response.status_code == 200, "Should be callable"
@@ -84,7 +81,7 @@ class TestAboutView:
     def test_authenticated_user(self):
         url = reverse(self.URL_NAME)
         request = RequestFactory().get(url)
-        request.user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+        request.user = User.objects.create(username="testuser", is_superuser=False, is_staff=False)
         response = views.about_view(request)
 
         assert response.status_code == 200, "Should be callable"
@@ -116,7 +113,7 @@ class TestBrowseVendorProductsView:
     def test_authenticated_user(self):
         url = reverse(self.URL_NAME)
         request = RequestFactory().get(url)
-        request.user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+        request.user = User.objects.create(username="testuser", is_superuser=False, is_staff=False)
         response = views.browse_vendor_products(request)
 
         assert response.status_code == 200, "Should be callable"
@@ -181,7 +178,7 @@ class TestBrowseAllProductsView:
     def test_authenticated_user(self):
         url = reverse(self.URL_NAME)
         request = RequestFactory().get(url)
-        request.user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+        request.user = User.objects.create(username="testuser", is_superuser=False, is_staff=False)
         response = views.browse_all_products(request)
 
         assert response.status_code == 200, "Should be callable"
@@ -213,7 +210,7 @@ class TestListProductGroupsView:
     def test_authenticated_user(self):
         url = reverse(self.URL_NAME)
         request = RequestFactory().get(url)
-        request.user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+        request.user = User.objects.create(username="testuser", is_superuser=False, is_staff=False)
         response = views.list_product_groups(request)
 
         assert response.status_code == 200, "Should be callable"
@@ -245,7 +242,7 @@ class TestListProductListsView:
     def test_authenticated_user(self):
         url = reverse(self.URL_NAME)
         request = RequestFactory().get(url)
-        request.user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+        request.user = User.objects.create(username="testuser", is_superuser=False, is_staff=False)
         response = views.list_product_lists(request)
 
         assert response.status_code == 200, "Should be callable"
@@ -267,7 +264,7 @@ class TestDetailProductGroupView:
     def test_url_format(self):
         # call detail URL without a parameter must result in a sub-URL which can be extended
         # to a full detail URL (required for Datatable rendering)
-        pg = mixer.blend("productdb.ProductGroup")
+        pg = models.ProductGroup.objects.create(name="Product Group for testing")
         dt_url = reverse(self.URL_NAME)
         full_url = reverse(self.URL_NAME, kwargs={"product_group_id": pg.id})
 
@@ -281,7 +278,7 @@ class TestDetailProductGroupView:
             views.detail_product_group(request, 9999)
 
     def test_anonymous_default(self):
-        pg = mixer.blend("productdb.ProductGroup")
+        pg = models.ProductGroup.objects.create(name="Product Group for testing")
         url = reverse(self.URL_NAME, kwargs={"product_group_id": pg.id})
         request = RequestFactory().get(url)
         request.user = AnonymousUser()
@@ -291,7 +288,7 @@ class TestDetailProductGroupView:
 
     @pytest.mark.usefixtures("enable_login_only_mode")
     def test_anonymous_login_only_mode(self):
-        pg = mixer.blend("productdb.ProductGroup")
+        pg = models.ProductGroup.objects.create(name="Product Group for testing")
         url = reverse(self.URL_NAME, kwargs={"product_group_id": pg.id})
         request = RequestFactory().get(url)
         request.user = AnonymousUser()
@@ -302,10 +299,10 @@ class TestDetailProductGroupView:
             "Should contain a next parameter for redirect"
 
     def test_authenticated_user(self):
-        pg = mixer.blend("productdb.ProductGroup")
+        pg = models.ProductGroup.objects.create(name="Product Group for testing")
         url = reverse(self.URL_NAME, kwargs={"product_group_id": pg.id})
         request = RequestFactory().get(url)
-        request.user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+        request.user = User.objects.create(username="testuser", is_superuser=False, is_staff=False)
         response = views.detail_product_group(request, pg.id)
 
         assert response.status_code == 200, "Should be callable"
@@ -323,12 +320,14 @@ class TestShareProductListView:
 
     @pytest.mark.usefixtures("import_default_vendors")
     def test_anonymous_default(self):
-        v = Vendor.objects.get(id=1)
-        p = mixer.blend("productdb.Product", vendor=v)
-        pl = mixer.blend(
-            "productdb.ProductList",
+        u = User.objects.create(username="pdb_user")
+        v = models.Vendor.objects.get(id=1)
+        p = models.Product.objects.create(product_id="test product", vendor=v)
+        pl = models.ProductList.objects.create(
+            name="PG",
             string_product_list=p.product_id,
-            vendor=v
+            vendor=v,
+            update_user=u
         )
         url = reverse(self.URL_NAME, kwargs={"product_list_id": pl.id})
         request = RequestFactory().get(url)
@@ -340,12 +339,14 @@ class TestShareProductListView:
     @pytest.mark.usefixtures("enable_login_only_mode")
     @pytest.mark.usefixtures("import_default_vendors")
     def test_anonymous_login_only_mode(self):
-        v = Vendor.objects.get(id=1)
-        p = mixer.blend("productdb.Product", vendor=v)
-        pl = mixer.blend(
-            "productdb.ProductList",
+        u = User.objects.create(username="pdb_user")
+        v = models.Vendor.objects.get(id=1)
+        p = models.Product.objects.create(product_id="test product", vendor=v)
+        pl = models.ProductList.objects.create(
+            name="PG",
             string_product_list=p.product_id,
-            vendor=v
+            vendor=v,
+            update_user=u
         )
         url = reverse(self.URL_NAME, kwargs={"product_list_id": pl.id})
         request = RequestFactory().get(url)
@@ -356,16 +357,18 @@ class TestShareProductListView:
 
     @pytest.mark.usefixtures("import_default_vendors")
     def test_authenticated_user(self):
-        v = Vendor.objects.get(id=1)
-        p = mixer.blend("productdb.Product", vendor=v)
-        pl = mixer.blend(
-            "productdb.ProductList",
+        u = User.objects.create(username="pdb_user")
+        v = models.Vendor.objects.get(id=1)
+        p = models.Product.objects.create(product_id="test product", vendor=v)
+        pl = models.ProductList.objects.create(
+            name="PG",
             string_product_list=p.product_id,
-            vendor=v
+            vendor=v,
+            update_user=u
         )
         url = reverse(self.URL_NAME, kwargs={"product_list_id": pl.id})
         request = RequestFactory().get(url)
-        request.user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+        request.user = u
         response = views.share_product_list(request, pl.id)
 
         assert response.status_code == 200, "Should be callable"
@@ -387,12 +390,14 @@ class TestDetailProductListView:
     def test_url_format(self):
         # call detail URL without a parameter must result in a sub-URL which can be extended
         # to a full detail URL (required for Datatable rendering)
-        v = Vendor.objects.get(id=1)
-        p = mixer.blend("productdb.Product", vendor=v)
-        pl = mixer.blend(
-            "productdb.ProductList",
+        u = User.objects.create(username="pdb_user")
+        v = models.Vendor.objects.get(id=1)
+        p = models.Product.objects.create(product_id="test product", vendor=v)
+        pl = models.ProductList.objects.create(
+            name="PG",
             string_product_list=p.product_id,
-            vendor=v
+            vendor=v,
+            update_user=u
         )
         dt_url = reverse(self.URL_NAME)
         full_url = reverse(self.URL_NAME, kwargs={"product_list_id": pl.id})
@@ -407,12 +412,14 @@ class TestDetailProductListView:
             views.detail_product_list(request, 9999)
 
     def test_anonymous_default(self):
-        v = Vendor.objects.get(id=1)
-        p = mixer.blend("productdb.Product", vendor=v)
-        pl = mixer.blend(
-            "productdb.ProductList",
+        u = User.objects.create(username="pdb_user")
+        v = models.Vendor.objects.get(id=1)
+        p = models.Product.objects.create(product_id="test product", vendor=v)
+        pl = models.ProductList.objects.create(
+            name="PG",
             string_product_list=p.product_id,
-            vendor=v
+            vendor=v,
+            update_user=u
         )
         url = reverse(self.URL_NAME, kwargs={"product_list_id": pl.id})
         request = RequestFactory().get(url)
@@ -423,12 +430,14 @@ class TestDetailProductListView:
 
     @pytest.mark.usefixtures("enable_login_only_mode")
     def test_anonymous_login_only_mode(self):
-        v = Vendor.objects.get(id=1)
-        p = mixer.blend("productdb.Product", vendor=v)
-        pl = mixer.blend(
-            "productdb.ProductList",
+        u = User.objects.create(username="pdb_user")
+        v = models.Vendor.objects.get(id=1)
+        p = models.Product.objects.create(product_id="test product", vendor=v)
+        pl = models.ProductList.objects.create(
+            name="PG",
             string_product_list=p.product_id,
-            vendor=v
+            vendor=v,
+            update_user=u
         )
         url = reverse(self.URL_NAME, kwargs={"product_list_id": pl.id})
         request = RequestFactory().get(url)
@@ -440,16 +449,18 @@ class TestDetailProductListView:
             "if the user is not logged in, it is redirected to the sharelink"
 
     def test_authenticated_user(self):
-        v = Vendor.objects.get(id=1)
-        p = mixer.blend("productdb.Product", vendor=v)
-        pl = mixer.blend(
-            "productdb.ProductList",
+        u = User.objects.create(username="pdb_user")
+        v = models.Vendor.objects.get(id=1)
+        p = models.Product.objects.create(product_id="test product", vendor=v)
+        pl = models.ProductList.objects.create(
+            name="PG",
             string_product_list=p.product_id,
-            vendor=v
+            vendor=v,
+            update_user=u
         )
         url = reverse(self.URL_NAME, kwargs={"product_list_id": pl.id})
         request = RequestFactory().get(url)
-        request.user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+        request.user = User.objects.create(username="testuser", is_superuser=False, is_staff=False)
         response = views.detail_product_list(request, pl.id)
 
         assert response.status_code == 200, "Should be callable"
@@ -472,7 +483,7 @@ class TestProductDetailsView:
     def test_url_format(self):
         # call detail URL without a parameter must result in a sub-URL which can be extended
         # to a full detail URL (required for Datatable rendering)
-        p = mixer.blend("productdb.Product")
+        p = models.Product.objects.create(product_id="test product")
         dt_url = reverse("productdb:product-list")
         full_url = reverse(self.URL_NAME, kwargs={"product_id": p.id})
 
@@ -487,7 +498,7 @@ class TestProductDetailsView:
 
     @pytest.mark.usefixtures("import_default_vendors")
     def test_anonymous_default(self):
-        p = mixer.blend("productdb.Product")
+        p = models.Product.objects.create(product_id="test product")
         url = reverse(self.URL_NAME, kwargs={"product_id": p.id})
         request = RequestFactory().get(url)
         request.user = AnonymousUser()
@@ -498,7 +509,7 @@ class TestProductDetailsView:
     @pytest.mark.usefixtures("enable_login_only_mode")
     @pytest.mark.usefixtures("import_default_vendors")
     def test_anonymous_login_only_mode(self):
-        p = mixer.blend("productdb.Product")
+        p = models.Product.objects.create(product_id="test product")
         url = reverse(self.URL_NAME, kwargs={"product_id": p.id})
         request = RequestFactory().get(url)
         request.user = AnonymousUser()
@@ -510,10 +521,10 @@ class TestProductDetailsView:
 
     @pytest.mark.usefixtures("import_default_vendors")
     def test_authenticated_user(self):
-        p = mixer.blend("productdb.Product")
+        p = models.Product.objects.create(product_id="test product")
         url = reverse(self.URL_NAME, kwargs={"product_id": p.id})
         request = RequestFactory().get(url)
-        request.user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+        request.user = User.objects.create(username="testuser", is_superuser=False, is_staff=False)
         response = views.view_product_details(request, p.id)
 
         assert response.status_code == 200, "Should be callable"
@@ -521,30 +532,31 @@ class TestProductDetailsView:
     @pytest.mark.usefixtures("import_default_vendors")
     def test_detail_view_with_migration_options(self):
         # create basic object structure
-        group1 = ProductMigrationSource.objects.create(name="Group One")
-        group2 = ProductMigrationSource.objects.create(name="Group Two", preference=100)
-        root_product = mixer.blend("productdb.Product", product_id="C2960XS", vendor=Vendor.objects.get(id=1))
-        p11 = mixer.blend("productdb.Product", product_id="C2960XL", vendor=Vendor.objects.get(id=1))
-        p12 = mixer.blend("productdb.Product", product_id="C2960XT", vendor=Vendor.objects.get(id=1))
-        p23 = mixer.blend("productdb.Product", product_id="C2960XR", vendor=Vendor.objects.get(id=1))
-        ProductMigrationOption.objects.create(
+        group1 = models.ProductMigrationSource.objects.create(name="Group One")
+        group2 = models.ProductMigrationSource.objects.create(name="Group Two", preference=100)
+        root_product = models.Product.objects.create(product_id="C2960XS", vendor=models.Vendor.objects.get(id=1))
+        p11 = models.Product.objects.create(product_id="C2960XL", vendor=models.Vendor.objects.get(id=1))
+        p12 = models.Product.objects.create(product_id="C2960XT", vendor=models.Vendor.objects.get(id=1))
+        p23 = models.Product.objects.create(product_id="C2960XR", vendor=models.Vendor.objects.get(id=1))
+        models.ProductMigrationOption.objects.create(
             product=root_product, migration_source=group1,
             replacement_product_id=p11.product_id
         )
-        ProductMigrationOption.objects.create(
+        models.ProductMigrationOption.objects.create(
             product=root_product, migration_source=group2,
             replacement_product_id=p12.product_id
         )
         # p12 is replaced by 23 by group 2
-        ProductMigrationOption.objects.create(
+        models.ProductMigrationOption.objects.create(
             product=p12, migration_source=group2,
             replacement_product_id=p23.product_id
         )
 
+        user = User.objects.create(username="testuser", is_superuser=False, is_staff=False)
         for pid in [root_product.id, p11.id, p12.id, p23.id]:
             url = reverse(self.URL_NAME, kwargs={"product_id": pid})
             request = RequestFactory().get(url)
-            request.user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+            request.user = user
             response = views.view_product_details(request, pid)
 
             assert response.status_code == 200, "Should be callable"
@@ -577,7 +589,7 @@ class TestAddProductListView:
 
     def test_authenticated_user(self):
         url = reverse(self.URL_NAME)
-        user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+        user = User.objects.create(username="testuser", is_superuser=False, is_staff=False)
         request = RequestFactory().get(url)
         request.user = user
 
@@ -587,7 +599,7 @@ class TestAddProductListView:
 
         # update user permissions
         perm = Permission.objects.get(codename="add_productlist")
-        user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+        user = User.objects.create(username="validuser", is_superuser=False, is_staff=False)
         user.user_permissions.add(perm)
         user.save()
 
@@ -601,9 +613,9 @@ class TestAddProductListView:
     def test_post(self):
         url = reverse(self.URL_NAME)
         perm = Permission.objects.get(codename="add_productlist")
-        v = Vendor.objects.get(id=1)
-        p = mixer.blend("productdb.Product", vendor=v)
-        user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+        v = models.Vendor.objects.get(id=1)
+        p = models.Product.objects.create(product_id="test product", vendor=v)
+        user = User.objects.create(username="testuser", is_superuser=False, is_staff=False)
         user.user_permissions.add(perm)
         user.save()
 
@@ -619,7 +631,7 @@ class TestAddProductListView:
 
         assert response.status_code == 302
         assert response.url == reverse("productdb:list-product_lists")
-        assert ProductList.objects.count() == 1, "One element should be created in the database"
+        assert models.ProductList.objects.count() == 1, "One element should be created in the database"
 
 
 @pytest.mark.usefixtures("import_default_vendors")
@@ -630,7 +642,7 @@ class TestEditProductListView:
         url = reverse(self.URL_NAME, kwargs={"product_list_id": 9999})
         request = RequestFactory().get(url)
         perm = Permission.objects.get(codename="change_productlist")
-        user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+        user = User.objects.create(username="testuser", is_superuser=False, is_staff=False)
         request.user = user
         user.user_permissions.add(perm)
         user.save()
@@ -639,14 +651,16 @@ class TestEditProductListView:
             views.edit_product_list(request, 9999)
 
     def test_anonymous_default(self):
-        v = Vendor.objects.get(id=1)
-        mixer.blend("productdb.Product", vendor=v)
-        mixer.blend("productdb.Product", vendor=v)
-        mixer.blend("productdb.Product", vendor=v)
-        pl = mixer.blend(
-            "productdb.ProductList",
-            string_product_list=";".join(Product.objects.all().values_list("product_id", flat=True)),
-            vendor=v
+        u = User.objects.create(username="pdb_user")
+        v = models.Vendor.objects.get(id=1)
+        models.Product.objects.create(product_id="test product A", vendor=v)
+        models.Product.objects.create(product_id="test product B", vendor=v)
+        models.Product.objects.create(product_id="test product C", vendor=v)
+        pl = models.ProductList.objects.create(
+            name="PG",
+            string_product_list=";".join(models.Product.objects.all().values_list("product_id", flat=True)),
+            vendor=v,
+            update_user=u
         )
         url = reverse(self.URL_NAME, kwargs={"product_list_id": pl.id})
         request = RequestFactory().get(url)
@@ -659,14 +673,16 @@ class TestEditProductListView:
 
     @pytest.mark.usefixtures("enable_login_only_mode")
     def test_anonymous_login_only_mode(self):
-        v = Vendor.objects.get(id=1)
-        mixer.blend("productdb.Product", vendor=v)
-        mixer.blend("productdb.Product", vendor=v)
-        mixer.blend("productdb.Product", vendor=v)
-        pl = mixer.blend(
-            "productdb.ProductList",
-            string_product_list=";".join(Product.objects.all().values_list("product_id", flat=True)),
-            vendor=v
+        u = User.objects.create(username="pdb_user")
+        v = models.Vendor.objects.get(id=1)
+        models.Product.objects.create(product_id="test product A", vendor=v)
+        models.Product.objects.create(product_id="test product B", vendor=v)
+        models.Product.objects.create(product_id="test product C", vendor=v)
+        pl = models.ProductList.objects.create(
+            name="PG",
+            string_product_list=";".join(models.Product.objects.all().values_list("product_id", flat=True)),
+            vendor=v,
+            update_user=u
         )
         url = reverse(self.URL_NAME, kwargs={"product_list_id": pl.id})
         request = RequestFactory().get(url)
@@ -678,17 +694,18 @@ class TestEditProductListView:
             "Should contain a next parameter for redirect"
 
     def test_authenticated_user(self):
-        v = Vendor.objects.get(id=1)
-        mixer.blend("productdb.Product", vendor=v)
-        mixer.blend("productdb.Product", vendor=v)
-        mixer.blend("productdb.Product", vendor=v)
-        pl = mixer.blend(
-            "productdb.ProductList",
-            string_product_list=";".join(Product.objects.all().values_list("product_id", flat=True)),
-            vendor=v
+        user = User.objects.create(username="testuser", is_superuser=False, is_staff=False)
+        v = models.Vendor.objects.get(id=1)
+        models.Product.objects.create(product_id="test product A", vendor=v)
+        models.Product.objects.create(product_id="test product B", vendor=v)
+        models.Product.objects.create(product_id="test product C", vendor=v)
+        pl = models.ProductList.objects.create(
+            name="PG",
+            string_product_list=";".join(models.Product.objects.all().values_list("product_id", flat=True)),
+            vendor=v,
+            update_user=user
         )
         url = reverse(self.URL_NAME, kwargs={"product_list_id": pl.id})
-        user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
         request = RequestFactory().get(url)
         request.user = user
         patch_contrib_messages(request)
@@ -698,8 +715,8 @@ class TestEditProductListView:
             views.edit_product_list(request, pl.id)
 
         # update user permissions
+        user = User.objects.create(username="anotheruser", is_superuser=False, is_staff=False)
         perm = Permission.objects.get(codename="change_productlist")
-        user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
         user.user_permissions.add(perm)
         user.save()
 
@@ -715,18 +732,20 @@ class TestEditProductListView:
         assert expected_error in response.content.decode()
 
     def test_post(self):
-        v = Vendor.objects.get(id=1)
-        p = mixer.blend("productdb.Product", vendor=v)
-        mixer.blend("productdb.Product", vendor=v)
-        mixer.blend("productdb.Product", vendor=v)
-        pl = mixer.blend(
-            "productdb.ProductList",
-            string_product_list=";".join(Product.objects.all().values_list("product_id", flat=True)),
-            vendor=v
+        user = User.objects.create(username="testuser", is_superuser=False, is_staff=False)
+        v = models.Vendor.objects.get(id=1)
+        p = models.Product.objects.create(product_id="test product A", vendor=v)
+        models.Product.objects.create(product_id="test product B", vendor=v)
+        models.Product.objects.create(product_id="test product C", vendor=v)
+        pl = models.ProductList.objects.create(
+            name="PG",
+            string_product_list=";".join(models.Product.objects.all().values_list("product_id", flat=True)),
+            vendor=v,
+            update_user=user
         )
         url = reverse(self.URL_NAME, kwargs={"product_list_id": pl.id})
         perm = Permission.objects.get(codename="change_productlist")
-        user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+        user = User.objects.create(username="anotheruser", is_superuser=False, is_staff=False)
         user.user_permissions.add(perm)
         user.save()
 
@@ -763,7 +782,7 @@ class TestEditProductListView:
 
         assert response.status_code == 302
         assert response.url == reverse("productdb:list-product_lists")
-        assert ProductList.objects.count() == 1, "One element should be created in the database"
+        assert models.ProductList.objects.count() == 1, "One element should be created in the database"
 
 
 @pytest.mark.usefixtures("import_default_vendors")
@@ -774,7 +793,7 @@ class TestDeleteProductListView:
         url = reverse(self.URL_NAME, kwargs={"product_list_id": 9999})
         request = RequestFactory().get(url)
         perm = Permission.objects.get(codename="delete_productlist")
-        user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+        user = User.objects.create(username="testuser", is_superuser=False, is_staff=False)
         request.user = user
         user.user_permissions.add(perm)
         user.save()
@@ -783,14 +802,16 @@ class TestDeleteProductListView:
             views.delete_product_list(request, 9999)
 
     def test_anonymous_default(self):
-        v = Vendor.objects.get(id=1)
-        mixer.blend("productdb.Product", vendor=v)
-        mixer.blend("productdb.Product", vendor=v)
-        mixer.blend("productdb.Product", vendor=v)
-        pl = mixer.blend(
-            "productdb.ProductList",
-            string_product_list=";".join(Product.objects.all().values_list("product_id", flat=True)),
-            vendor=v
+        user = User.objects.create(username="testuser", is_superuser=False, is_staff=False)
+        v = models.Vendor.objects.get(id=1)
+        models.Product.objects.create(product_id="test product A", vendor=v)
+        models.Product.objects.create(product_id="test product B", vendor=v)
+        models.Product.objects.create(product_id="test product C", vendor=v)
+        pl = models.ProductList.objects.create(
+            name="PG",
+            string_product_list=";".join(models.Product.objects.all().values_list("product_id", flat=True)),
+            vendor=v,
+            update_user=user
         )
         url = reverse(self.URL_NAME, kwargs={"product_list_id": pl.id})
         request = RequestFactory().get(url)
@@ -803,14 +824,16 @@ class TestDeleteProductListView:
 
     @pytest.mark.usefixtures("enable_login_only_mode")
     def test_anonymous_login_only_mode(self):
-        v = Vendor.objects.get(id=1)
-        mixer.blend("productdb.Product", vendor=v)
-        mixer.blend("productdb.Product", vendor=v)
-        mixer.blend("productdb.Product", vendor=v)
-        pl = mixer.blend(
-            "productdb.ProductList",
-            string_product_list=";".join(Product.objects.all().values_list("product_id", flat=True)),
-            vendor=v
+        user = User.objects.create(username="testuser", is_superuser=False, is_staff=False)
+        v = models.Vendor.objects.get(id=1)
+        models.Product.objects.create(product_id="test product A", vendor=v)
+        models.Product.objects.create(product_id="test product B", vendor=v)
+        models.Product.objects.create(product_id="test product C", vendor=v)
+        pl = models.ProductList.objects.create(
+            name="PG",
+            string_product_list=";".join(models.Product.objects.all().values_list("product_id", flat=True)),
+            vendor=v,
+            update_user=user
         )
         url = reverse(self.URL_NAME, kwargs={"product_list_id": pl.id})
         request = RequestFactory().get(url)
@@ -822,17 +845,19 @@ class TestDeleteProductListView:
             "Should contain a next parameter for redirect"
 
     def test_authenticated_user(self):
-        v = Vendor.objects.get(id=1)
-        mixer.blend("productdb.Product", vendor=v)
-        mixer.blend("productdb.Product", vendor=v)
-        mixer.blend("productdb.Product", vendor=v)
-        pl = mixer.blend(
-            "productdb.ProductList",
-            string_product_list=";".join(Product.objects.all().values_list("product_id", flat=True)),
-            vendor=v
+        user = User.objects.create(username="testuser", is_superuser=False, is_staff=False)
+        v = models.Vendor.objects.get(id=1)
+        models.Product.objects.create(product_id="test product A", vendor=v)
+        models.Product.objects.create(product_id="test product B", vendor=v)
+        models.Product.objects.create(product_id="test product C", vendor=v)
+        pl = models.ProductList.objects.create(
+            name="PG",
+            string_product_list=";".join(models.Product.objects.all().values_list("product_id", flat=True)),
+            vendor=v,
+            update_user=user
         )
         url = reverse(self.URL_NAME, kwargs={"product_list_id": pl.id})
-        user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+        user = User.objects.create(username="anotheruser", is_superuser=False, is_staff=False)
         request = RequestFactory().get(url)
         request.user = user
         patch_contrib_messages(request)
@@ -843,7 +868,7 @@ class TestDeleteProductListView:
 
         # update user permissions
         perm = Permission.objects.get(codename="delete_productlist")
-        user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+        user = User.objects.create(username="yetanotheruser", is_superuser=False, is_staff=False)
         user.user_permissions.add(perm)
         user.save()
 
@@ -874,18 +899,20 @@ class TestDeleteProductListView:
         assert expected_message in response.content.decode()
 
     def test_post(self):
-        v = Vendor.objects.get(id=1)
-        mixer.blend("productdb.Product", vendor=v)
-        mixer.blend("productdb.Product", vendor=v)
-        mixer.blend("productdb.Product", vendor=v)
-        pl = mixer.blend(
-            "productdb.ProductList",
-            string_product_list=";".join(Product.objects.all().values_list("product_id", flat=True)),
-            vendor=v
+        user = User.objects.create(username="testuser", is_superuser=False, is_staff=False)
+        v = models.Vendor.objects.get(id=1)
+        models.Product.objects.create(product_id="test product A", vendor=v)
+        models.Product.objects.create(product_id="test product B", vendor=v)
+        models.Product.objects.create(product_id="test product C", vendor=v)
+        pl = models.ProductList.objects.create(
+            name="PG",
+            string_product_list=";".join(models.Product.objects.all().values_list("product_id", flat=True)),
+            vendor=v,
+            update_user=user
         )
         url = reverse(self.URL_NAME, kwargs={"product_list_id": pl.id})
         perm = Permission.objects.get(codename="delete_productlist")
-        user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+        user = User.objects.create(username="anotheruser", is_superuser=False, is_staff=False)
         user.user_permissions.add(perm)
         user.save()
 
@@ -918,7 +945,7 @@ class TestDeleteProductListView:
         assert response.status_code == 302
         assert response.url == reverse("productdb:list-product_lists")
         assert msgs.added_new is True
-        assert ProductList.objects.count() == 0, "One element should be created in the database"
+        assert models.ProductList.objects.count() == 0, "One element should be created in the database"
 
 
 @pytest.mark.usefixtures("import_default_vendors")
@@ -950,13 +977,13 @@ class TestImportProductMigrationsView:
         # the import product dialog requires the change_product permission
         url = reverse(self.URL_NAME)
         request = RequestFactory().get(url)
-        request.user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+        request.user = User.objects.create(username="testuser", is_superuser=False, is_staff=False)
 
         with pytest.raises(PermissionDenied):
             views.import_product_migrations(request)
 
         request = RequestFactory().get(url)
-        user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+        user = User.objects.create(username="anotheruser", is_superuser=False, is_staff=False)
         user.user_permissions.add(Permission.objects.get(codename="change_productmigrationoption"))
         request.user = user
         response = views.import_product_migrations(request)
@@ -966,7 +993,7 @@ class TestImportProductMigrationsView:
     @pytest.mark.usefixtures("disable_import_product_migrations_task")
     def test_post(self):
         url = reverse(self.URL_NAME)
-        user = mixer.blend("auth.User", username="test", is_superuser=False, is_staff=False)
+        user = User.objects.create(username="test", is_superuser=False, is_staff=False)
         user.user_permissions.add(Permission.objects.get(codename="change_productmigrationoption"))
         user.save()
 
@@ -982,7 +1009,7 @@ class TestImportProductMigrationsView:
     @pytest.mark.usefixtures("disable_import_product_migrations_task")
     def test_post_as_superuser(self):
         url = reverse(self.URL_NAME)
-        user = mixer.blend("auth.User", username="test", is_superuser=True, is_staff=False)
+        user = User.objects.create(username="testuser", is_superuser=True, is_staff=False)
         user.user_permissions.add(Permission.objects.get(codename="change_productmigrationoption"))
         user.save()
 
@@ -1023,15 +1050,16 @@ class TestImportProductsView:
 
     def test_authenticated_user(self):
         # the import product dialog requires the change_product permission
+        user = User.objects.create(username="testuser", is_superuser=False, is_staff=False)
         url = reverse(self.URL_NAME)
         request = RequestFactory().get(url)
-        request.user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+        request.user = user
 
         with pytest.raises(PermissionDenied):
             views.import_products(request)
 
         request = RequestFactory().get(url)
-        user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+        user = User.objects.create(username="anotheruser", is_superuser=False, is_staff=False)
         user.user_permissions.add(Permission.objects.get(codename="change_product"))
         request.user = user
         response = views.import_products(request)
@@ -1041,7 +1069,7 @@ class TestImportProductsView:
     @pytest.mark.usefixtures("disable_import_price_list_task")
     def test_post(self):
         url = reverse(self.URL_NAME)
-        user = mixer.blend("auth.User", username="test", is_superuser=False, is_staff=False)
+        user = User.objects.create(username="test", is_superuser=False, is_staff=False)
         user.user_permissions.add(Permission.objects.get(codename="change_product"))
         user.save()
 
@@ -1059,7 +1087,7 @@ class TestImportProductsView:
     @pytest.mark.usefixtures("disable_import_price_list_task")
     def test_post_as_superuser(self):
         url = reverse(self.URL_NAME)
-        user = mixer.blend("auth.User", username="test", is_superuser=True, is_staff=False)
+        user = User.objects.create(username="test", is_superuser=True, is_staff=False)
         user.user_permissions.add(Permission.objects.get(codename="change_product"))
         user.save()
 
@@ -1103,10 +1131,9 @@ class TestEditUserProfileView:
     def test_authenticated_user(self):
         # the import product dialog requires the change_product permission
         url = reverse(self.URL_NAME)
-        user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+        user = User.objects.create(username="testuser", is_superuser=False, is_staff=False)
 
         request = RequestFactory().get(url)
-        request.user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
         request.user = user
         response = views.edit_user_profile(request)
 
@@ -1118,7 +1145,7 @@ class TestEditUserProfileView:
     @pytest.mark.usefixtures("disable_import_price_list_task")
     def test_post(self):
         url = reverse(self.URL_NAME)
-        user = mixer.blend("auth.User", username="test", is_superuser=False, is_staff=False)
+        user = User.objects.create(username="test", is_superuser=False, is_staff=False)
 
         request = RequestFactory().post(url, data={
             "email": "a@b.com",
@@ -1136,7 +1163,7 @@ class TestEditUserProfileView:
     @pytest.mark.usefixtures("disable_import_price_list_task")
     def test_post_with_back_to_link(self):
         url = reverse(self.URL_NAME) + "?back_to=" + reverse("productdb:about")
-        user = mixer.blend("auth.User", username="test", is_superuser=False, is_staff=False)
+        user = User.objects.create(username="test", is_superuser=False, is_staff=False)
 
         request = RequestFactory().post(url, data={
             "email": "a@b.com",
@@ -1180,7 +1207,7 @@ class TestListProductCheckView:
     def test_authenticated_user(self):
         url = reverse(self.URL_NAME)
         request = RequestFactory().get(url)
-        request.user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+        request.user = User.objects.create(username="testuser", is_superuser=False, is_staff=False)
         response = views.list_product_checks(request)
 
         assert response.status_code == 200, "Should be callable"
@@ -1191,7 +1218,7 @@ class TestDetailProductCheckView:
     URL_NAME = "productdb:detail-product_check"
 
     def test_anonymous_default(self):
-        pc = ProductCheck.objects.create(name="Test", input_product_ids="Test")
+        pc = models.ProductCheck.objects.create(name="Test", input_product_ids="Test")
         parameters = {"product_check_id": pc.id}
         url = reverse(self.URL_NAME, kwargs=parameters)
         request = RequestFactory().get(url)
@@ -1203,7 +1230,7 @@ class TestDetailProductCheckView:
     @pytest.mark.usefixtures("enable_login_only_mode")
     @pytest.mark.usefixtures("import_default_vendors")
     def test_anonymous_login_only_mode(self):
-        pc = ProductCheck.objects.create(name="Test", input_product_ids="Test")
+        pc = models.ProductCheck.objects.create(name="Test", input_product_ids="Test")
         parameters = {"product_check_id": pc.id}
         url = reverse(self.URL_NAME, kwargs=parameters)
         request = RequestFactory().get(url)
@@ -1216,11 +1243,11 @@ class TestDetailProductCheckView:
 
     @pytest.mark.usefixtures("import_default_vendors")
     def test_authenticated_user(self):
-        pc = ProductCheck.objects.create(name="Test", input_product_ids="Test")
+        pc = models.ProductCheck.objects.create(name="Test", input_product_ids="Test")
         parameters = {"product_check_id": pc.id}
         url = reverse(self.URL_NAME, kwargs=parameters)
         request = RequestFactory().get(url)
-        request.user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+        request.user = User.objects.create(username="testuser", is_superuser=False, is_staff=False)
         response = views.detail_product_check(request, **parameters)
 
         assert response.status_code == 200, "Should be callable"
@@ -1235,7 +1262,7 @@ class TestDetailProductCheckView:
 
     @pytest.mark.usefixtures("import_default_vendors")
     def test_in_progress_redirect(self):
-        pc = ProductCheck.objects.create(name="Test", input_product_ids="Test")
+        pc = models.ProductCheck.objects.create(name="Test", input_product_ids="Test")
         pc.task_id = "1234"  # if task ID is set, a redirect to the task in progress should occur
         pc.save()
         assert pc.in_progress is True
@@ -1243,7 +1270,7 @@ class TestDetailProductCheckView:
         parameters = {"product_check_id": pc.id}
         url = reverse(self.URL_NAME, kwargs=parameters)
         request = RequestFactory().get(url)
-        request.user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+        request.user = User.objects.create(username="testuser", is_superuser=False, is_staff=False)
         response = views.detail_product_check(request, **parameters)
 
         assert response.status_code == 302
@@ -1276,7 +1303,7 @@ class TestCreateProductCheckView:
 
     def test_authenticated_user(self):
         url = reverse(self.URL_NAME)
-        user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+        user = User.objects.create(username="testuser", is_superuser=False, is_staff=False)
 
         request = RequestFactory().get(url)
         request.user = user
@@ -1288,8 +1315,8 @@ class TestCreateProductCheckView:
     def test_post(self):
         url = reverse(self.URL_NAME)
         perm = Permission.objects.get(codename="add_productcheck")
-        p = mixer.blend("productdb.Product")
-        user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+        p = models.Product.objects.create(product_id="test product")
+        user = User.objects.create(username="testuser", is_superuser=False, is_staff=False)
         user.user_permissions.add(perm)
         user.save()
 
@@ -1303,7 +1330,7 @@ class TestCreateProductCheckView:
 
         assert response.status_code == 302
         assert response.url.startswith("/productdb/task/")
-        assert ProductCheck.objects.count() == 1, "One element should be created in the database"
+        assert models.ProductCheck.objects.count() == 1, "One element should be created in the database"
 
         # test public product check
         data = {
@@ -1317,4 +1344,4 @@ class TestCreateProductCheckView:
 
         assert response.status_code == 302
         assert response.url.startswith("/productdb/task/")
-        assert ProductCheck.objects.count() == 2, "One element should be created in the database"
+        assert models.ProductCheck.objects.count() == 2, "One element should be created in the database"

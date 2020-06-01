@@ -2,17 +2,13 @@
 Test suite for the ciscoeox.views module
 """
 import pytest
-from django.contrib.auth.models import AnonymousUser
+from django.contrib.auth.models import AnonymousUser, User
 from django.core.cache import cache
 from django.core.exceptions import PermissionDenied
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.test import RequestFactory
-from mixer.backend.django import mixer
-from app.ciscoeox import api_crawler
 from app.ciscoeox import tasks
 from app.ciscoeox import views
-from app.ciscoeox.exception import CiscoApiCallFailed, ConnectionFailedException
-from app.config.settings import AppSettings
 from django_project.celery import get_meta_data_for_task
 
 pytestmark = pytest.mark.django_db
@@ -52,7 +48,7 @@ class TestStartCiscoEoxApiSyncNowView:
 
     def test_authenticated_user(self):
         # require super user permissions
-        user = mixer.blend("auth.User", is_superuser=False)
+        user =User.objects.create(username="username",  is_superuser=False)
         url = reverse(self.URL_NAME)
         request = RequestFactory().get(url)
         request.user = user
@@ -62,7 +58,7 @@ class TestStartCiscoEoxApiSyncNowView:
 
     def test_superuser_access(self):
         # require super user permissions
-        user = mixer.blend("auth.User", is_superuser=True)
+        user =User.objects.create(username="username",  is_superuser=True)
         url = reverse(self.URL_NAME)
         request = RequestFactory().get(url)
         request.user = user
@@ -79,7 +75,7 @@ class TestStartCiscoEoxApiSyncNowView:
         a task is already executed, the view should redirect to the process view for the Task ID. Furthermore, a
         meta data object for the task should be created
         """
-        user = mixer.blend("auth.User", is_superuser=True)
+        user =User.objects.create(username="username",  is_superuser=True)
 
         # ensure that the task process ID is not set
         cache.delete(self.TASK_IDENTIFICATION_CACHE_VALUE)

@@ -80,7 +80,7 @@ def login_required_if_login_only_mode(request):
         cache.set("LOGIN_ONLY_MODE_SETTING", login_only_mode, 60 * 60)
 
     if login_only_mode:
-        if not request.user.is_authenticated():
+        if not request.user.is_authenticated:
             return True
 
     return False

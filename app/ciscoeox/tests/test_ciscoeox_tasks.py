@@ -5,11 +5,11 @@ import datetime
 import pytest
 import json
 import requests
-from mixer.backend.django import mixer
 from requests import Response
 from app.ciscoeox import tasks
 from app.ciscoeox.exception import CiscoApiCallFailed, CredentialsNotFoundException
 from app.config import utils
+from app.productdb import models as productdb_models
 from app.config.models import NotificationMessage
 from app.config.settings import AppSettings
 from app.productdb.models import Product, Vendor
@@ -316,15 +316,15 @@ class TestPopulateProductLifecycleStateSyncTask:
     def test_populate_flag_on_cisco_products(self):
         app_config = AppSettings()
         v = Vendor.objects.get(id=1)
-        mixer.blend("productdb.Product", product_id="est", vendor=v, lc_state_sync=False)
-        mixer.blend("productdb.Product", product_id="Test", vendor=v, lc_state_sync=False)
-        mixer.blend("productdb.Product", product_id="TestA", vendor=v, lc_state_sync=False)
-        mixer.blend("productdb.Product", product_id="TestB", vendor=v, lc_state_sync=False)
-        mixer.blend("productdb.Product", product_id="TestC", vendor=v, lc_state_sync=False)
-        mixer.blend("productdb.Product", product_id="ControlItem", vendor=v, lc_state_sync=False)
+        productdb_models.Product.objects.create(product_id="est", vendor=v, lc_state_sync=False)
+        productdb_models.Product.objects.create(product_id="Test", vendor=v, lc_state_sync=False)
+        productdb_models.Product.objects.create(product_id="TestA", vendor=v, lc_state_sync=False)
+        productdb_models.Product.objects.create(product_id="TestB", vendor=v, lc_state_sync=False)
+        productdb_models.Product.objects.create(product_id="TestC", vendor=v, lc_state_sync=False)
+        productdb_models.Product.objects.create(product_id="ControlItem", vendor=v, lc_state_sync=False)
 
         # the following item is part of every query, but is never synced because of the wrong vendor
-        mixer.blend("productdb.Product", product_id="Other ControlItem", lc_state_sync=False)
+        productdb_models.Product.objects.create(product_id="Other ControlItem", lc_state_sync=False)
 
         app_config.set_cisco_eox_api_queries("")
         app_config.set_periodic_sync_enabled(True)

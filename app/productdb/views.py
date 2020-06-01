@@ -3,7 +3,7 @@ from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.decorators import permission_required
 from django.core.cache import cache
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.db.models import Q
 from django.http import Http404
 from django.shortcuts import redirect, render, get_object_or_404
@@ -36,7 +36,7 @@ def home(request):
         return redirect('%s?next=%s' % (settings.LOGIN_URL, request.path))
 
     # if the user is a super user, send a message if no backend worker process is running
-    if request.user.is_authenticated() and request.user.is_superuser:
+    if request.user.is_authenticated and request.user.is_superuser:
         if not is_worker_active():
             messages.add_message(
                 request,
@@ -115,7 +115,7 @@ def browse_vendor_products(request):
             selected_vendor = request.POST['vendor_selection']
 
     else:
-        if request.user.is_authenticated():
+        if request.user.is_authenticated:
             selected_vendor = request.user.profile.preferred_vendor.id
 
     context['vendor_selection'] = selected_vendor
@@ -209,7 +209,7 @@ def detail_product_list(request, product_list_id=None, share_link=False):
             raise Http404("Product List with ID %s not found in database" % product_list_id)
 
     share_link_username = ""
-    if request.user.is_authenticated():
+    if request.user.is_authenticated:
         share_link_username = request.user.first_name
 
     # build share by email link content
@@ -226,7 +226,7 @@ def detail_product_list(request, product_list_id=None, share_link=False):
     context = {
         "product_list": pl,
         "share_link_content": share_link_content,
-        "share_link": False if request.user.is_authenticated() else share_link,
+        "share_link": False if request.user.is_authenticated else share_link,
         "share_link_url": share_link_url,
         "back_to": request.GET.get("back_to") if request.GET.get("back_to") else reverse("productdb:list-product_lists")
     }
@@ -404,7 +404,7 @@ def create_product_check(request):
         if not request.user.id:
             form.fields["public_product_check"].widget.attrs['disabled'] = True
 
-    choose_migration_source = request.user.profile.choose_migration_source if request.user.is_authenticated() else False
+    choose_migration_source = request.user.profile.choose_migration_source if request.user.is_authenticated else False
 
     worker_is_active = is_worker_active()
 

@@ -11,12 +11,12 @@ from django.utils.dateformat import DateFormat
 from django.utils.formats import get_format
 from django.conf import settings
 from django.contrib.auth.models import User, Permission
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.utils.datetime_safe import date, datetime
-from mixer.backend.django import mixer
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient
+from app.productdb import models
 
 from app.config.models import NotificationMessage
 from app.productdb.models import Vendor, ProductGroup, Product, ProductList, ProductMigrationOption, \
@@ -72,9 +72,12 @@ COMMON_API_ENDPOINT_BEHAVIOR = [
 @pytest.fixture
 def common_api_endpoint_objects():
     """DB objects for the common API endpoint tests"""
-    mixer.blend("productdb.ProductGroup")
-    mixer.blend("productdb.ProductMigrationSource")
-    mixer.blend("productdb.ProductMigrationOption")
+    pg = models.ProductGroup.objects.create(name="Test")
+    ms = models.ProductMigrationSource.objects.create(name="Test")
+    models.ProductMigrationOption.objects.create(
+        migration_source=ms,
+        product=models.Product.objects.create(product_id="A")
+    )
 
 
 @pytest.mark.usefixtures("common_api_endpoint_objects")
@@ -113,7 +116,7 @@ class TestCommonAPIEndpoint:
         """smoke test to verify, that the XML renderer works. Only an XML renderer is implemented therefore write
         operations using XML are not possible"""
         for e in range(1, 50):
-            p = mixer.blend("productdb.Product")
+            p = models.Product.objects.create(product_id="Foo %s" % e)
 
         test_queries = [
             REST_VENDOR_LIST,
@@ -133,7 +136,7 @@ class TestCommonAPIEndpoint:
 
     def test_page_size(self):
         for e in range(1, 50):
-            mixer.blend("productdb.Product")
+            models.Product.objects.create(product_id="Foo %s" % e)
 
         client = APIClient()
         client.login(**AUTH_USER)
@@ -163,7 +166,7 @@ class TestCommonAPIEndpoint:
 
     def test_http_basic_authentication(self):
         for e in range(1, 50):
-            mixer.blend("productdb.Product")
+            models.Product.objects.create(product_id="Foo %s" % e)
 
         client = APIClient()
         response = client.post(REST_PRODUCT_LIST)
@@ -179,7 +182,7 @@ class TestCommonAPIEndpoint:
 
     def test_token_authentication(self):
         for e in range(1, 50):
-            mixer.blend("productdb.Product")
+            models.Product.objects.create(product_id="Foo %s" % e)
 
         client = APIClient()
 
@@ -368,7 +371,7 @@ class TestVendorAPIEndpoint:
                 }
             ]
         }
-        mixer.blend("productdb.Vendor", name="CCCCCCCi")
+        models.Vendor.objects.create(name="CCCCCCCi")
 
         client = APIClient()
         client.login(**AUTH_USER)
@@ -487,14 +490,18 @@ class TestProductMigrationOptionAPIEndpoint:
                 }
             ]
         }
-        p1 = mixer.blend("productdb.Product", vendor=Vendor.objects.get(id=1), id=1, product_id="B")
-        p2 = mixer.blend("productdb.Product", vendor=Vendor.objects.get(id=1), id=2, product_id="A")
-        pmg = mixer.blend("productdb.ProductMigrationSource", name="Cisco", id=1)
+        p1 = models.Product.objects.create(vendor=Vendor.objects.get(id=1), id=1, product_id="B")
+        p2 = models.Product.objects.create(vendor=Vendor.objects.get(id=1), id=2, product_id="A")
+        pmg = models.ProductMigrationSource.objects.create(name="Cisco", id=1)
 
-        pmo1 = mixer.blend("productdb.ProductMigrationOption", product=p1, migration_source=pmg,
-                           replacement_product_id=expected_result["data"][0]["replacement_product_id"], comment="")
-        pmo2 = mixer.blend("productdb.ProductMigrationOption", product=p2, migration_source=pmg,
-                           replacement_product_id=expected_result["data"][1]["replacement_product_id"], comment="")
+        pmo1 = models.ProductMigrationOption.objects.create(
+            product=p1, migration_source=pmg,
+            replacement_product_id=expected_result["data"][0]["replacement_product_id"], comment=""
+        )
+        pmo2 = models.ProductMigrationOption.objects.create(
+            product=p2, migration_source=pmg,
+            replacement_product_id=expected_result["data"][1]["replacement_product_id"], comment=""
+        )
         expected_result["data"][0]["id"] = pmo1.id
         expected_result["data"][0]["url"] = expected_result["data"][0]["url"] % pmo1.id
         expected_result["data"][0]["comment"] = pmo1.comment
@@ -547,10 +554,15 @@ class TestProductMigrationOptionAPIEndpoint:
         u.save()
         assert u.has_perm("productdb.change_productmigrationoption")
 
-        mixer.blend("productdb.productmigrationoption")
+        models.ProductMigrationOption.objects.create(
+            product=models.Product.objects.create(product_id="test pid"),
+            migration_source=models.ProductMigrationSource.objects.create(name="test")
+        )
         client = APIClient()
         client.login(username=test_user, password=test_user)
-        response = client.put(REST_PRODUCTMIGRATIONOPTION_DETAIL % 1, data={"comment": "renamed product migration source"})
+        response = client.put(REST_PRODUCTMIGRATIONOPTION_DETAIL % 1, data={
+            "comment": "renamed product migration source"
+        })
 
         assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED, "API endpoint is always read only"
         assert response.json() == {'detail': 'Method "PUT" not allowed.'}
@@ -564,7 +576,10 @@ class TestProductMigrationOptionAPIEndpoint:
         u.save()
         assert u.has_perm("productdb.delete_productmigrationoption")
 
-        mixer.blend("productdb.productmigrationoption")
+        models.ProductMigrationOption.objects.create(
+            product=models.Product.objects.create(product_id="test pid"),
+            migration_source=models.ProductMigrationSource.objects.create(name="test")
+        )
         client = APIClient()
         client.login(username=test_user, password=test_user)
         response = client.delete(REST_PRODUCTMIGRATIONOPTION_DETAIL % 1)
@@ -611,16 +626,16 @@ class TestProductMigrationOptionAPIEndpoint:
                 }
             ]
         }
-        p1 = mixer.blend("productdb.Product", vendor=Vendor.objects.get(id=1), id=1, product_id="A1")
-        p2 = mixer.blend("productdb.Product", vendor=Vendor.objects.get(id=1), id=2, product_id="A2")
-        p3 = mixer.blend("productdb.Product", vendor=Vendor.objects.get(id=1), id=3, product_id="B1")
-        pmg = mixer.blend("productdb.ProductMigrationSource", name="Cisco", id=1)
+        p1 = models.Product.objects.create(vendor=Vendor.objects.get(id=1), id=1, product_id="A1")
+        p2 = models.Product.objects.create(vendor=Vendor.objects.get(id=1), id=2, product_id="A2")
+        p3 = models.Product.objects.create(vendor=Vendor.objects.get(id=1), id=3, product_id="B1")
+        pmg = models.ProductMigrationSource.objects.create(name="Cisco", id=1)
 
-        pmo1 = mixer.blend("productdb.ProductMigrationOption", product=p1, migration_source=pmg,
+        pmo1 = models.ProductMigrationOption.objects.create(product=p1, migration_source=pmg,
                            replacement_product_id=expected_result["data"][0]["replacement_product_id"], comment="")
-        pmo2 = mixer.blend("productdb.ProductMigrationOption", product=p2, migration_source=pmg,
+        pmo2 = models.ProductMigrationOption.objects.create(product=p2, migration_source=pmg,
                            replacement_product_id=expected_result["data"][1]["replacement_product_id"], comment="")
-        mixer.blend("productdb.ProductMigrationOption", product=p3, migration_source=pmg,
+        models.ProductMigrationOption.objects.create(product=p3, migration_source=pmg,
                     replacement_product_id=expected_result["data"][1]["replacement_product_id"], comment="")
         expected_result["data"][0]["id"] = pmo1.id
         expected_result["data"][0]["url"] = expected_result["data"][0]["url"] % pmo1.id
@@ -674,17 +689,17 @@ class TestProductMigrationOptionAPIEndpoint:
                 }
             ]
         }
-        p1 = mixer.blend("productdb.Product", vendor=Vendor.objects.get(id=1), id=1, product_id="A1")
-        p2 = mixer.blend("productdb.Product", vendor=Vendor.objects.get(id=1), id=2, product_id="A2")
-        p3 = mixer.blend("productdb.Product", vendor=Vendor.objects.get(id=1), id=3, product_id="B1")
-        pmg = mixer.blend("productdb.ProductMigrationSource", name="Cisco", id=1)
-        pmg2 = mixer.blend("productdb.ProductMigrationSource", name="Other", id=2)
+        p1 = models.Product.objects.create(vendor=Vendor.objects.get(id=1), id=1, product_id="A1")
+        p2 = models.Product.objects.create(vendor=Vendor.objects.get(id=1), id=2, product_id="A2")
+        p3 = models.Product.objects.create(vendor=Vendor.objects.get(id=1), id=3, product_id="B1")
+        pmg = models.ProductMigrationSource.objects.create(name="Cisco", id=1)
+        pmg2 = models.ProductMigrationSource.objects.create(name="Other", id=2)
 
-        pmo1 = mixer.blend("productdb.ProductMigrationOption", product=p1, migration_source=pmg,
+        pmo1 = models.ProductMigrationOption.objects.create(product=p1, migration_source=pmg,
                            replacement_product_id=expected_result["data"][0]["replacement_product_id"], comment="")
-        pmo2 = mixer.blend("productdb.ProductMigrationOption", product=p2, migration_source=pmg2,
+        pmo2 = models.ProductMigrationOption.objects.create(product=p2, migration_source=pmg2,
                            replacement_product_id=expected_result["data"][1]["replacement_product_id"], comment="")
-        mixer.blend("productdb.ProductMigrationOption", product=p3, migration_source=pmg2,
+        models.ProductMigrationOption.objects.create(product=p3, migration_source=pmg2,
                     replacement_product_id=expected_result["data"][1]["replacement_product_id"], comment="")
         expected_result["data"][0]["id"] = pmo1.id
         expected_result["data"][0]["url"] = expected_result["data"][0]["url"] % pmo1.id
@@ -805,8 +820,11 @@ class TestProductMigrationSourceAPIEndpoint:
             ]
         }
 
-        [mixer.blend("productdb.ProductMigrationSource", **expected_result["data"][i])
-         for i in range(0, len(expected_result["data"]))]
+        [
+            models.ProductMigrationSource.objects.create(**{
+                x: y for x, y in expected_result["data"][i].items() if x != "url"
+            }) for i in range(0, len(expected_result["data"]))
+        ]
 
         client = APIClient()
         client.login(**AUTH_USER)
@@ -852,7 +870,7 @@ class TestProductMigrationSourceAPIEndpoint:
         u.save()
         assert u.has_perm("productdb.change_productmigrationsource")
 
-        mixer.blend("productdb.productmigrationsource")
+        models.ProductMigrationSource.objects.create(name="foo")
         client = APIClient()
         client.login(username=test_user, password=test_user)
         response = client.put(REST_PRODUCTMIGRATIONSOURCE_DETAIL % 1, data={"name": "renamed product migration source"})
@@ -869,7 +887,7 @@ class TestProductMigrationSourceAPIEndpoint:
         u.save()
         assert u.has_perm("productdb.delete_productmigrationsource")
 
-        mixer.blend("productdb.productmigrationsource")
+        models.ProductMigrationSource.objects.create(name="source")
         client = APIClient()
         client.login(username=test_user, password=test_user)
         response = client.delete(REST_PRODUCTMIGRATIONSOURCE_DETAIL % 1)
@@ -904,10 +922,10 @@ class TestProductMigrationSourceAPIEndpoint:
                 }
             ]
         }
-        pmg = mixer.blend("productdb.productmigrationsource", name="Cisco Systems")
+        pmg= models.ProductMigrationSource.objects.create(name="Cisco Systems")
         expected_result["data"][0]["id"] = pmg.id
         expected_result["data"][0]["url"] = expected_result["data"][0]["url"] % pmg.id
-        mixer.blend("productdb.productmigrationsource", name="Other PMG")
+        models.ProductMigrationSource.objects.create(name="Other PMG")
 
         client = APIClient()
         client.login(**AUTH_USER)
@@ -942,10 +960,10 @@ class TestProductMigrationSourceAPIEndpoint:
                 }
             ]
         }
-        pmg = mixer.blend("productdb.productmigrationsource", name="Cisco Systems")
+        pmg= models.ProductMigrationSource.objects.create(name="Cisco Systems")
         expected_result["data"][0]["id"] = pmg.id
         expected_result["data"][0]["url"] = expected_result["data"][0]["url"] % pmg.id
-        mixer.blend("productdb.productmigrationsource", name="Other PMG")
+        models.ProductMigrationSource.objects.create(name="Other PMG")
 
         client = APIClient()
         client.login(**AUTH_USER)
@@ -1031,9 +1049,9 @@ class TestProductGroupAPIEndpoint:
             }
         }
 
-        mixer.blend("productdb.ProductGroup", name="product group 1")
-        mixer.blend("productdb.ProductGroup", name="product group 2")
-        mixer.blend("productdb.ProductGroup", name="product group 3")
+        models.ProductGroup.objects.create(name="product group 1")
+        models.ProductGroup.objects.create(name="product group 2")
+        models.ProductGroup.objects.create(name="product group 3")
 
         client = APIClient()
         client.login(**AUTH_USER)
@@ -1092,7 +1110,7 @@ class TestProductGroupAPIEndpoint:
 
     def test_change_access_with_permission(self):
         test_product_group = "renamed product group"
-        pg = mixer.blend("productdb.ProductGroup", name="product group")
+        pg = models.ProductGroup.objects.create(name="product group")
         expected_result = {
             "url": "http://testserver/productdb/api/v1/productgroups/%d/",
             "vendor": 0,
@@ -1120,7 +1138,7 @@ class TestProductGroupAPIEndpoint:
         assert response.json() == expected_result
 
     def test_delete_access_with_permission(self):
-        pg = mixer.blend("productdb.ProductGroup")
+        pg = models.ProductGroup.objects.create(name="Foo")
         assert ProductGroup.objects.count() == 1
 
         test_user = "user"
@@ -1139,9 +1157,9 @@ class TestProductGroupAPIEndpoint:
         assert ProductGroup.objects.count() == 0
 
     def test_count_endpoint(self):
-        mixer.blend("productdb.ProductGroup", name="product group 1")
-        mixer.blend("productdb.ProductGroup", name="product group 2")
-        mixer.blend("productdb.ProductGroup", name="product group 3")
+        models.ProductGroup.objects.create(name="product group 1")
+        models.ProductGroup.objects.create(name="product group 2")
+        models.ProductGroup.objects.create(name="product group 3")
         assert ProductGroup.objects.count() == 3
 
         client = APIClient()
@@ -1238,7 +1256,7 @@ class TestProductGroupAPIEndpoint:
                 },
             ]
         }
-        pg = mixer.blend("productdb.ProductGroup", vendor=Vendor.objects.get(id=1))
+        pg = models.ProductGroup.objects.create(vendor=Vendor.objects.get(id=1), name="test group")
         expected_result["data"][0]["id"] = pg.id
         expected_result["data"][0]["vendor"] = pg.vendor.id
         expected_result["data"][0]["name"] = pg.name
@@ -1279,7 +1297,7 @@ class TestProductGroupAPIEndpoint:
                 },
             ]
         }
-        pg = mixer.blend("productdb.ProductGroup", vendor=Vendor.objects.get(id=1))
+        pg = models.ProductGroup.objects.create(vendor=Vendor.objects.get(id=1), name="test group")
         expected_result["data"][0]["id"] = pg.id
         expected_result["data"][0]["vendor"] = pg.vendor.id
         expected_result["data"][0]["name"] = pg.name
@@ -1320,7 +1338,7 @@ class TestProductGroupAPIEndpoint:
                 },
             ]
         }
-        pg = mixer.blend("productdb.ProductGroup", vendor=Vendor.objects.get(id=1))
+        pg = models.ProductGroup.objects.create(vendor=Vendor.objects.get(id=1), name="test group")
         expected_result["data"][0]["id"] = pg.id
         expected_result["data"][0]["vendor"] = pg.vendor.id
         expected_result["data"][0]["name"] = pg.name
@@ -1403,7 +1421,10 @@ class TestProductAPIEndpoint:
                 }
             ]
         }
-        p = mixer.blend("productdb.Product", list_price=12.32)
+        p = models.Product.objects.create(product_id="A")
+        # list price timestamp not set with create
+        p.list_price = 12.32
+        p.save()
         expected_result["data"][0]["id"] = p.id
         expected_result["data"][0]["url"] = expected_result["data"][0]["url"] % p.id
         expected_result["data"][0]["product_id"] = p.product_id
@@ -1535,7 +1556,7 @@ class TestProductAPIEndpoint:
         assert response.json() == expected_result, "Should provide the new product"
 
     def test_change_lc_state_sync(self):
-        p = mixer.blend("productdb.Product", product_id="product ID")
+        p= models.Product.objects.create(product_id="product ID")
         expected_result = {
             "currency": "USD",
             "end_of_service_contract_renewal": None,
@@ -1586,7 +1607,7 @@ class TestProductAPIEndpoint:
         assert response.json() == expected_result
 
     def test_change_access_with_permission(self):
-        p = mixer.blend("productdb.Product", product_id="product ID")
+        p= models.Product.objects.create(product_id="product ID")
         test_renamed_product = "renamed product"
         expected_result = {
             "currency": "USD",
@@ -1637,9 +1658,9 @@ class TestProductAPIEndpoint:
     def test_change_product_group(self):
         v1 = Vendor.objects.get(id=1)
         v2 = Vendor.objects.get(id=2)
-        invalid_pg = mixer.blend("productdb.ProductGroup", name="invalid product group", vendor=v2)
-        valid_pg = mixer.blend("productdb.ProductGroup", name="valid product group", vendor=v1)
-        p = mixer.blend("productdb.Product", product_id="product ID", vendor=v1)
+        invalid_pg = models.ProductGroup.objects.create(name="invalid product group", vendor=v2)
+        valid_pg = models.ProductGroup.objects.create(name="valid product group", vendor=v1)
+        p= models.Product.objects.create(product_id="product ID", vendor=v1)
         expected_result = {
             "currency": "USD",
             "end_of_service_contract_renewal": None,
@@ -1691,7 +1712,7 @@ class TestProductAPIEndpoint:
         assert response.json() == expected_result
 
     def test_delete_access_with_permission(self):
-        p = mixer.blend("productdb.Product")
+        p = models.Product.objects.create(product_id="test")
         assert Product.objects.count() == 1
 
         test_user = "user"
@@ -1710,9 +1731,9 @@ class TestProductAPIEndpoint:
         assert Product.objects.count() == 0
 
     def test_count_endpoint(self):
-        mixer.blend("productdb.Product", name="product 1")
-        mixer.blend("productdb.Product", name="product 2")
-        mixer.blend("productdb.Product", name="product 3")
+        models.Product.objects.create(product_id="product 1")
+        models.Product.objects.create(product_id="product 2")
+        models.Product.objects.create(product_id="product 3")
         assert Product.objects.count() == 3
 
         client = APIClient()
@@ -1943,8 +1964,8 @@ class TestProductAPIEndpoint:
                 }
             ]
         }
-        mixer.blend("productdb.Product", vendor=Vendor.objects.get(id=1))
-        p = mixer.blend("productdb.Product", vendor=Vendor.objects.get(id=1))
+        models.Product.objects.create(product_id="test", vendor=Vendor.objects.get(id=1))
+        p = models.Product.objects.create(product_id="A", vendor=Vendor.objects.get(id=1))
         expected_result["data"][0]["id"] = p.id
         expected_result["data"][0]["vendor"] = p.vendor.id
         expected_result["data"][0]["product_id"] = p.product_id
@@ -2005,8 +2026,8 @@ class TestProductAPIEndpoint:
                 }
             ]
         }
-        mixer.blend("productdb.Product", vendor=Vendor.objects.get(id=1))
-        p = mixer.blend("productdb.Product", vendor=Vendor.objects.get(id=1))
+        models.Product.objects.create(vendor=Vendor.objects.get(id=1), product_id="AAAAAAAAAA")
+        p = models.Product.objects.create(vendor=Vendor.objects.get(id=1), product_id="BBBBBBBBBB")
         expected_result["data"][0]["id"] = p.id
         expected_result["data"][0]["vendor"] = p.vendor.id
         expected_result["data"][0]["product_id"] = p.product_id
@@ -2076,8 +2097,8 @@ class TestProductAPIEndpoint:
                 }
             ]
         }
-        mixer.blend("productdb.Product", vendor=Vendor.objects.get(id=2))
-        p = mixer.blend("productdb.Product", vendor=Vendor.objects.get(id=1))
+        models.Product.objects.create(vendor=Vendor.objects.get(id=2), product_id="A")
+        p = models.Product.objects.create(vendor=Vendor.objects.get(id=1), product_id="B")
         expected_result["data"][0]["id"] = p.id
         expected_result["data"][0]["vendor"] = p.vendor.id
         expected_result["data"][0]["product_id"] = p.product_id
@@ -2138,8 +2159,8 @@ class TestProductAPIEndpoint:
                 }
             ]
         }
-        mixer.blend("productdb.Product", vendor=Vendor.objects.get(id=2))
-        p = mixer.blend("productdb.Product", vendor=Vendor.objects.get(id=1))
+        models.Product.objects.create(vendor=Vendor.objects.get(id=2), product_id="A")
+        p = models.Product.objects.create(vendor=Vendor.objects.get(id=1), product_id="B")
         expected_result["data"][0]["id"] = p.id
         expected_result["data"][0]["vendor"] = p.vendor.id
         expected_result["data"][0]["product_id"] = p.product_id
@@ -2202,8 +2223,8 @@ class TestProductAPIEndpoint:
                 }
             ]
         }
-        mixer.blend("productdb.Product", vendor=Vendor.objects.get(id=2))
-        p = mixer.blend("productdb.Product", vendor=Vendor.objects.get(id=1))
+        models.Product.objects.create(vendor=Vendor.objects.get(id=2), product_id="B")
+        p = models.Product.objects.create(vendor=Vendor.objects.get(id=1), product_id="A")
         expected_result["data"][0]["id"] = p.id
         expected_result["data"][0]["vendor"] = p.vendor.id
         expected_result["data"][0]["product_id"] = p.product_id
@@ -2267,13 +2288,13 @@ class TestProductAPIEndpoint:
         }
         v1 = Vendor.objects.get(id=1)
         v2 = Vendor.objects.get(id=2)
-        mixer.blend(
-            "productdb.Product",
+        models.Product.objects.create(
+            product_id="A",
             vendor=v2,
-            product_group=mixer.blend("productdb.ProductGroup", vendor=v2)
+            product_group=models.ProductGroup.objects.create(vendor=v2, name="PG")
         )
-        pg = mixer.blend("productdb.ProductGroup", vendor=v1)
-        p = mixer.blend("productdb.Product", vendor=v1, product_group=pg)
+        pg = models.ProductGroup.objects.create(vendor=v1, name="TestPG")
+        p = models.Product.objects.create(vendor=v1, product_group=pg, product_id="AAAAAAAA")
         expected_result["data"][0]["id"] = p.id
         expected_result["data"][0]["vendor"] = p.vendor.id
         expected_result["data"][0]["product_id"] = p.product_id
@@ -2346,13 +2367,13 @@ class TestProductAPIEndpoint:
         }
         v1 = Vendor.objects.get(id=1)
         v2 = Vendor.objects.get(id=2)
-        mixer.blend(
-            "productdb.Product",
+        models.Product.objects.create(
+            product_id="A",
             vendor=v2,
-            product_group=mixer.blend("productdb.ProductGroup", vendor=v2)
+            product_group=models.ProductGroup.objects.create(vendor=v2, name="PG")
         )
-        pg = mixer.blend("productdb.ProductGroup", vendor=v1)
-        p = mixer.blend("productdb.Product", vendor=v1, product_group=pg)
+        pg = models.ProductGroup.objects.create(vendor=v1, name="TestPG")
+        p = models.Product.objects.create(vendor=v1, product_group=pg, product_id="AAAAAAAAAA")
         expected_result["data"][0]["id"] = p.id
         expected_result["data"][0]["vendor"] = p.vendor.id
         expected_result["data"][0]["product_id"] = p.product_id
@@ -2425,13 +2446,13 @@ class TestProductAPIEndpoint:
         }
         v1 = Vendor.objects.get(id=1)
         v2 = Vendor.objects.get(id=2)
-        mixer.blend(
-            "productdb.Product",
+        models.Product.objects.create(
+            product_id="A",
             vendor=v2,
-            product_group=mixer.blend("productdb.ProductGroup", vendor=v2)
+            product_group=models.ProductGroup.objects.create(vendor=v2, name="PG")
         )
-        pg = mixer.blend("productdb.ProductGroup", vendor=v1)
-        p = mixer.blend("productdb.Product", vendor=v1, product_group=pg)
+        pg = models.ProductGroup.objects.create(vendor=v1, name="TestPG")
+        p = models.Product.objects.create(vendor=v1, product_group=pg, product_id="AAAAAAAAAA")
         expected_result["data"][0]["id"] = p.id
         expected_result["data"][0]["vendor"] = p.vendor.id
         expected_result["data"][0]["product_id"] = p.product_id
@@ -2469,14 +2490,13 @@ class TestProductListAPIEndpoint:
     def create_test_data(self):
         v = Vendor.objects.get(id=1)
         for e in self.TEST_PRODUCTS:
-            mixer.blend("productdb.Product", product_id=e, vendor=v)
+            models.Product.objects.create(product_id=e, vendor=v)
 
     def create_test_product_list(self):
         self.create_test_data()
         v = Vendor.objects.get(id=1)
         u = User.objects.get(username="pdb_admin")
-        pl = mixer.blend(
-            "productdb.ProductList",
+        pl = models.ProductList.objects.create(
             name=self.TEST_PRODUCT_LIST_NAME,
             description="<strong>Test Liste</strong>\nJust a test list",
             string_product_list="\n".join(self.TEST_PRODUCTS),
@@ -2528,8 +2548,7 @@ class TestProductListAPIEndpoint:
             ]
         }
         u = User.objects.get(username="api")
-        pl = mixer.blend(
-            "productdb.ProductList",
+        pl = models.ProductList.objects.create(
             name=expected_result["data"][0]["name"],
             description=expected_result["data"][0]["description"],
             string_product_list="\n".join(expected_result["data"][0]["string_product_list"]),
@@ -2621,9 +2640,10 @@ class TestProductListAPIEndpoint:
         assert ProductList.objects.count() == 1, "no product list was deleted"
 
     def test_filter_fields(self):
+        u = User.objects.create(username="A")
         pl_id = self.create_test_product_list()
         v = Vendor.objects.get(id=1)
-        mixer.blend("productdb.ProductList", name="Product List", string_product_list="Product A", vendor=v)
+        models.ProductList.objects.create(name="Product List", string_product_list="Product A", vendor=v, update_user=u)
         expected_result = {
             "pagination": {
                 "page_records": 1,
@@ -2725,7 +2745,8 @@ class TestProductIdNormalizationRuleAPIEndpoint:
                 "total_records": 1
             }
         }
-        pinr = mixer.blend("productdb.ProductIdNormalizationRule")
+        v = models.Vendor.objects.create(name="vendor")
+        pinr = models.ProductIdNormalizationRule.objects.create(vendor=v, regex_match=".*", product_id="PID")
         expected_result["data"][0]["id"] = pinr.id
         expected_result["data"][0]["vendor"] = pinr.vendor_id
         expected_result["data"][0]["product_id"] = pinr.product_id
@@ -2893,7 +2914,7 @@ class TestNotificationMessageAPIEndpoint:
                 }
             ]
         }
-        nm = mixer.blend("config.NotificationMessage")
+        nm = NotificationMessage.objects.create(title="A", summary_message="B", detailed_message="C")
         expected_result["data"][0]["id"] = nm.id
         expected_result["data"][0]["title"] = nm.title
         expected_result["data"][0]["summary_message"] = nm.summary_message
@@ -2948,7 +2969,7 @@ class TestNotificationMessageAPIEndpoint:
         assert response.json() == expected_result, "Should provide the new notification message"
 
     def test_delete_access_with_permission(self):
-        nm = mixer.blend("config.NotificationMessage")
+        nm = NotificationMessage.objects.create(title="A", summary_message="B", detailed_message="C")
         assert NotificationMessage.objects.count() == 1
 
         test_user = "user"

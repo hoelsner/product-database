@@ -5,7 +5,7 @@ from app.productdb.utils import is_valid_regex
 
 
 def get_try_regex_from_user_profile(request):
-    if request.user.is_authenticated():
+    if request.user.is_authenticated:
         return request.user.profile.regex_search
 
     else:

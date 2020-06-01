@@ -5,7 +5,7 @@ import os
 import pytest
 import time
 import re
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.select import Select

@@ -6,11 +6,10 @@ import json
 import datetime
 import requests
 from copy import deepcopy
-from mixer.backend.django import mixer
 from requests import Response
 from app.ciscoeox import api_crawler
 from app.ciscoeox.exception import CiscoApiCallFailed, ConnectionFailedException
-from app.productdb.models import Vendor, Product, ProductMigrationSource, ProductMigrationOption
+from app.productdb import models as productdb_models
 
 pytestmark = pytest.mark.django_db
 HIT_COUNT = 0
@@ -206,15 +205,15 @@ class TestUpdateLocalDbBasedOnRecord:
         result = api_crawler.update_local_db_based_on_record(valid_eox_record)
 
         assert result is None
-        assert Product.objects.count() == 0, "No product was created, because the created flag was not set"
+        assert productdb_models.Product.objects.count() == 0, "No product was created, because the created flag was not set"
 
     def test_with_valid_new_records_and_create_missing(self):
         result = api_crawler.update_local_db_based_on_record(valid_eox_record, create_missing=True)
 
         assert result is None
-        assert Product.objects.count() == 1, "Product is not created"
+        assert productdb_models.Product.objects.count() == 1, "Product is not created"
 
-        p = Product.objects.get(product_id="WS-C2960-24T-S")
+        p = productdb_models.Product.objects.get(product_id="WS-C2960-24T-S")
 
         assert p.end_of_new_service_attachment_date == datetime.date(2016, 10, 1)
         assert p.end_of_sw_maintenance_date == datetime.date(2016, 10, 2)
@@ -230,8 +229,8 @@ class TestUpdateLocalDbBasedOnRecord:
 
     @pytest.mark.usefixtures("import_default_vendors")
     def test_update_local_db_based_on_record(self):
-        mixer.blend("productdb.ProductGroup", name="Catalyst 2960")
-        assert Product.objects.count() == 0
+        productdb_models.ProductGroup.objects.create(name="Catalyst 2960")
+        assert productdb_models.Product.objects.count() == 0
 
         # test call with invalid data
         with pytest.raises(KeyError):
@@ -241,15 +240,15 @@ class TestUpdateLocalDbBasedOnRecord:
         result = api_crawler.update_local_db_based_on_record(valid_eox_record, create_missing=True)
 
         assert result is None
-        assert Product.objects.count() == 1, "The product should be created"
+        assert productdb_models.Product.objects.count() == 1, "The product should be created"
 
         # test call with valid data that already exist in the database
         result = api_crawler.update_local_db_based_on_record(valid_eox_record, create_missing=True)
 
         assert result is None
-        assert Product.objects.count() == 1, "The product should be created"
+        assert productdb_models.Product.objects.count() == 1, "The product should be created"
 
-        p = Product.objects.get(product_id="WS-C2960-24T-S")
+        p = productdb_models.Product.objects.get(product_id="WS-C2960-24T-S")
         assert p.description == "Some description of the product"
         assert p.end_of_new_service_attachment_date == datetime.date(2016, 10, 1)
         assert p.end_of_sw_maintenance_date == datetime.date(2016, 10, 2)
@@ -264,16 +263,16 @@ class TestUpdateLocalDbBasedOnRecord:
                                       "900aecd804658c9.html"
 
         # test call with valid data (updated)
-        p = Product.objects.get(product_id="WS-C2960-24T-S")
+        p = productdb_models.Product.objects.get(product_id="WS-C2960-24T-S")
         p.eox_update_time_stamp = datetime.datetime(1999, 1, 1)
         p.save()
 
         result = api_crawler.update_local_db_based_on_record(valid_eox_record, create_missing=True)
 
         assert result is None
-        assert Product.objects.count() == 1, "The product was only updated"
+        assert productdb_models.Product.objects.count() == 1, "The product was only updated"
 
-        p = Product.objects.get(product_id="WS-C2960-24T-S")
+        p = productdb_models.Product.objects.get(product_id="WS-C2960-24T-S")
         assert p.eox_update_time_stamp == datetime.date(2016, 10, 3), "update must be processed"
         assert p.end_of_service_contract_renewal == datetime.date(2016, 10, 4), "Should be the value prior the update"
 
@@ -285,13 +284,13 @@ class TestUpdateLocalDbBasedOnRecord:
         result = api_crawler.update_local_db_based_on_record(invalid_record, create_missing=True)
 
         assert result == "Product Data update failed: invalid EoL reference URL"
-        assert Product.objects.count() == 1, "The transaction should rollback to avoid inconsistent entries in the DB"
+        assert productdb_models.Product.objects.count() == 1, "The transaction should rollback to avoid inconsistent entries in the DB"
 
-        p = Product.objects.get(product_id="WS-C2960-24T-S")
+        p = productdb_models.Product.objects.get(product_id="WS-C2960-24T-S")
         assert p.end_of_service_contract_renewal == datetime.date(2016, 10, 4), "Should be the value prior the update"
 
         # test empty/None values in update (should be ignored)
-        p = Product.objects.get(product_id="WS-C2960-24T-S")
+        p = productdb_models.Product.objects.get(product_id="WS-C2960-24T-S")
         p.eox_update_time_stamp = datetime.datetime(1999, 1, 1)  # reset the eox timestamp to trigger the update
         p.save()
 
@@ -305,7 +304,7 @@ class TestUpdateLocalDbBasedOnRecord:
         assert result is None, "the invalid data within the update should be ignored (no message is thrown)"
 
         # verify that the valid values are updated
-        p = Product.objects.get(product_id="WS-C2960-24T-S")
+        p = productdb_models.Product.objects.get(product_id="WS-C2960-24T-S")
         assert p.eox_update_time_stamp == datetime.date(2016, 10, 3), \
             "should be updated to the value provided by the API"
         assert p.end_of_routine_failure_analysis is None
@@ -313,9 +312,9 @@ class TestUpdateLocalDbBasedOnRecord:
             "Should be the same value as before"
 
     def test_migration_options_from_update_local_db_based_on_eox_record(self):
-        mixer.blend("productdb.ProductGroup", name="Catalyst 2960")
-        assert Product.objects.count() == 0
-        assert ProductMigrationSource.objects.filter(name="Cisco EoX Migration option").count() == 0
+        productdb_models.ProductGroup.objects.create(name="Catalyst 2960")
+        assert productdb_models.Product.objects.count() == 0
+        assert productdb_models.ProductMigrationSource.objects.filter(name="Cisco EoX Migration option").count() == 0
 
         # load eox_response with test migration data
         with open("app/ciscoeox/tests/data/cisco_eox_reponse_migration_data.json") as f:
@@ -324,15 +323,15 @@ class TestUpdateLocalDbBasedOnRecord:
         # test with valid migration option
         result = api_crawler.update_local_db_based_on_record(eox_records["EOXRecord"][0], create_missing=True)
         assert result is None
-        assert ProductMigrationSource.objects.filter(name="Cisco EoX Migration option").count() == 1
+        assert productdb_models.ProductMigrationSource.objects.filter(name="Cisco EoX Migration option").count() == 1
 
-        p = Product.objects.get(product_id="WS-C2950T-48-SI-WS", vendor=Vendor.objects.get(id=1))
+        p = productdb_models.Product.objects.get(product_id="WS-C2950T-48-SI-WS", vendor=productdb_models.Vendor.objects.get(id=1))
 
         assert p.has_migration_options() is True
         assert p.get_product_migration_source_names_set() == ["Cisco EoX Migration option"]
 
         pmo = p.get_preferred_replacement_option()
-        assert type(pmo) == ProductMigrationOption
+        assert type(pmo) == productdb_models.ProductMigrationOption
         assert pmo.replacement_product_id == "WS-C2960G-48TC-L"
         assert pmo.comment == ""
         assert pmo.migration_product_info_url == ""
@@ -341,7 +340,7 @@ class TestUpdateLocalDbBasedOnRecord:
         assert pmo.get_valid_replacement_product() is None
 
         # create product in database (state of the PMO should change)
-        rep = mixer.blend("productdb.Product", product_id="WS-C2960G-48TC-L", vendor=Vendor.objects.get(id=1))
+        rep = productdb_models.Product.objects.create(product_id="WS-C2960G-48TC-L", vendor=productdb_models.Vendor.objects.get(id=1))
         pmo.refresh_from_db()
         assert pmo.is_replacement_in_db() is True
         assert pmo.get_valid_replacement_product().product_id == rep.product_id
@@ -349,15 +348,15 @@ class TestUpdateLocalDbBasedOnRecord:
         # test with missing replacement product
         result = api_crawler.update_local_db_based_on_record(eox_records["EOXRecord"][1], create_missing=True)
         assert result is None
-        assert ProductMigrationSource.objects.filter(name="Cisco EoX Migration option").count() == 1
+        assert productdb_models.ProductMigrationSource.objects.filter(name="Cisco EoX Migration option").count() == 1
 
-        p = Product.objects.get(product_id="WS-C2950G-24-EI", vendor=Vendor.objects.get(id=1))
+        p = productdb_models.Product.objects.get(product_id="WS-C2950G-24-EI", vendor=productdb_models.Vendor.objects.get(id=1))
 
         assert p.has_migration_options() is True
         assert p.get_product_migration_source_names_set() == ["Cisco EoX Migration option"]
 
         pmo = p.get_preferred_replacement_option()
-        assert type(pmo) == ProductMigrationOption
+        assert type(pmo) == productdb_models.ProductMigrationOption
         assert pmo.replacement_product_id == ""
         assert pmo.comment == "No Replacement Available"
         assert pmo.migration_product_info_url == "http://www.cisco.com/en/US/products/ps10538/index.html"
@@ -368,15 +367,15 @@ class TestUpdateLocalDbBasedOnRecord:
         # test with custom migration (no direct link to a product)
         result = api_crawler.update_local_db_based_on_record(eox_records["EOXRecord"][2], create_missing=True)
         assert result is None
-        assert ProductMigrationSource.objects.filter(name="Cisco EoX Migration option").count() == 1
+        assert productdb_models.ProductMigrationSource.objects.filter(name="Cisco EoX Migration option").count() == 1
 
-        p = Product.objects.get(product_id="WS-C2950G-48-EI-WS", vendor=Vendor.objects.get(id=1))
+        p = productdb_models.Product.objects.get(product_id="WS-C2950G-48-EI-WS", vendor=productdb_models.Vendor.objects.get(id=1))
 
         assert p.has_migration_options() is True
         assert p.get_product_migration_source_names_set() == ["Cisco EoX Migration option"]
 
         pmo = p.get_preferred_replacement_option()
-        assert type(pmo) == ProductMigrationOption
+        assert type(pmo) == productdb_models.ProductMigrationOption
         assert pmo.replacement_product_id == ""
         assert pmo.comment == "Customers are encouraged to migrate to the Cisco 8540 Wireless Controller. Information " \
                               "about this product can be found at http://www.cisco.com/c/en/us/products/wireless/8540-" \

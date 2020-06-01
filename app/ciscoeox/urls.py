@@ -8,3 +8,5 @@ from app.ciscoeox import views
 urlpatterns = [
     url(r'^sync/eox/$', views.start_cisco_eox_api_sync_now, name='start_cisco_eox_api_sync_now'),
 ]
+
+app_name = "ciscoeox"

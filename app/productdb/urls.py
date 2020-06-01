@@ -147,3 +147,4 @@ urlpatterns = [
     url(r'^$', views.home, name='home'),
 ]
 
+app_name = "productdb"

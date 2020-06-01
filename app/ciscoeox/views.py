@@ -1,6 +1,6 @@
 import logging
 from django.contrib.auth.decorators import login_required, permission_required
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.core.cache import cache
 from django.shortcuts import redirect
 from app.ciscoeox import tasks

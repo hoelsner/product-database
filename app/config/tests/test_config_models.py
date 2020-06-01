@@ -3,7 +3,6 @@ Test suite for the config.models module
 """
 import pytest
 from django.core.exceptions import ValidationError
-from mixer.backend.django import mixer
 from app.config import models
 from app.config.models import ConfigOption
 
@@ -12,7 +11,7 @@ pytestmark = pytest.mark.django_db
 
 class TestNotificationMessageModel:
     def test_notification_message(self):
-        nm = mixer.blend("config.NotificationMessage")
+        nm = models.NotificationMessage.objects.create(summary_message="foo", detailed_message="bar", title="title")
 
         assert nm.type == models.NotificationMessage.MESSAGE_INFO, "Should be the default"
         assert str(nm) == nm.title
@@ -69,12 +68,12 @@ class TestNotificationMessageModel:
 
 class TestTextBlockModel:
     def test_model(self):
-        tb = mixer.blend("config.TextBlock")
+        tb = models.TextBlock.objects.create(name="Test")
         assert tb.name is not None
         assert tb.html_content is None
 
     def test_unique_constraint(self):
-        tb = mixer.blend("config.TextBlock", name="MyName")
+        tb = models.TextBlock.objects.create(name="MyName")
         assert tb.name is not None
         assert tb.html_content is None
 
@@ -86,14 +85,14 @@ class TestTextBlockModel:
         assert exinfo.match("name\': \[\'Ensure this value has at most 512 characters \(it has 513\)\.")
 
         with pytest.raises(ValidationError) as exinfo:
-            mixer.blend("config.TextBlock", name="MyName")
+            models.TextBlock.objects.create(name="MyName")
 
         assert exinfo.match("name\': \[\'Text block with this Name already exists.")
 
 
 class TestConfigOptionModel:
     def test_model(self):
-        co = mixer.blend("config.ConfigOption")
+        co = models.ConfigOption.objects.create(key="test1")
         assert co.key is not None
         assert co.value is None
 

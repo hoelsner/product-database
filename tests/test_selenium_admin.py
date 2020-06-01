@@ -7,7 +7,7 @@ import pytest
 import os
 import time
 import requests
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.test import Client
 from requests.auth import HTTPBasicAuth
 from selenium.webdriver.common.by import By

@@ -26,6 +26,8 @@ from django_project.settings.celery import *
 Configure logging settings
 """
 DJANGO_LOG_LEVEL = os.getenv("DJANGO_LOG_LEVEL", "DEBUG" if PDB_DEBUG else "INFO").upper()
+if os.getenv("PDB_TESTING", False):
+    DJANGO_LOG_LEVEL = "DEBUG"
 
 # if debug mode is enabled in Django, also set the global logging level to Debug
 if PDB_DEBUG:

@@ -3,12 +3,11 @@ Test suite for the productdb.views utils
 """
 import pytest
 from datetime import datetime
-from django.contrib.auth.models import AnonymousUser
-from django.core.urlresolvers import reverse
+from django.contrib.auth.models import AnonymousUser, User
+from django.urls import reverse
 from django.test import RequestFactory
 from django.core.cache import cache
-from mixer.backend.django import mixer
-from app.productdb import utils
+from app.productdb import utils, models
 from app.productdb.utils import login_required_if_login_only_mode
 
 pytestmark = pytest.mark.django_db
@@ -44,7 +43,7 @@ def test_convert_product_to_dict():
         'eol_ext_announcement_date': today,
         'eox_update_time_stamp': today,
     }
-    p = mixer.blend("productdb.Product", **date_fields)
+    p = models.Product.objects.create(product_id="A", description="B", **date_fields)
     expected_result = {
         'description': p.description,
         'end_of_new_service_attachment_date': today_str,
@@ -75,7 +74,7 @@ def test_convert_product_to_dict():
         'eol_ext_announcement_date': today,
         'eox_update_time_stamp': today,
     }
-    p = mixer.blend("productdb.Product", **date_fields)
+    p = models.Product.objects.create(product_id="B", description="B", **date_fields)
     expected_result = {
         'description': p.description,
         'end_of_new_service_attachment_date': today_str,
@@ -129,7 +128,7 @@ def test_is_valid_regex():
 
 @pytest.mark.usefixtures("import_default_vendors")
 def test_login_required_if_login_only_mode(monkeypatch):
-    user = mixer.blend("auth.User")
+    user = User.objects.create(username="testuser")
 
     # enabled Login only mode
     monkeypatch.setattr(utils, "AppSettings", LoginOnlyModelSettingsMock)

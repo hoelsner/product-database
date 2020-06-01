@@ -6,11 +6,9 @@ import pytest
 import redis
 from django.contrib.auth.models import AnonymousUser, User
 from django.contrib.sessions.middleware import SessionMiddleware
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.test import RequestFactory
-from mixer.backend.django import mixer
 from django_project.celery import app, TaskState
-from django_project import context_processors
 from django_project import views
 from django_project.celery import set_meta_data_for_task
 
@@ -28,7 +26,7 @@ class TestCustomPageViews:
     def test_custom_page_not_found(self):
         request = RequestFactory().get("/")
         request.user = AnonymousUser()
-        response = views.custom_page_not_found_view(request)
+        response = views.custom_page_not_found_view(request, None)
 
         assert response.status_code == 404
 
@@ -42,14 +40,14 @@ class TestCustomPageViews:
     def test_custom_bad_request_view(self):
         request = RequestFactory().get("/")
         request.user = AnonymousUser()
-        response = views.custom_bad_request_view(request)
+        response = views.custom_bad_request_view(request, None)
 
         assert response.status_code == 400
 
     def test_custom_permission_denied_view(self):
         request = RequestFactory().get("/")
         request.user = AnonymousUser()
-        response = views.custom_permission_denied_view(request)
+        response = views.custom_permission_denied_view(request, None)
 
         assert response.status_code == 403
 
@@ -70,7 +68,7 @@ class TestPasswordChangeView:
         url = reverse(self.URL_NAME)
         request = RequestFactory().get(url)
         request.user = AnonymousUser()
-        response = views.custom_password_change(request)
+        response = views.ChangePasswordView.as_view()(request)
 
         assert response.status_code == 302, "Should redirect to login page"
         assert response.url == reverse("login") + "?next=" + url, \
@@ -79,8 +77,8 @@ class TestPasswordChangeView:
     def test_authenticated_user(self):
         url = reverse(self.URL_NAME)
         request = RequestFactory().get(url)
-        request.user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
-        response = views.custom_password_change(request)
+        request.user = User.objects.create(username="testuser", is_superuser=False, is_staff=False)
+        response = views.ChangePasswordView.as_view()(request)
 
         assert response.status_code == 200, "Should be callable"
 
@@ -92,10 +90,10 @@ class TestPasswordChangeView:
 
         url = reverse(self.URL_NAME)
         request = RequestFactory().get(url)
-        request.user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+        request.user = User.objects.create(username="testuser", is_superuser=False, is_staff=False)
         request.user.ldap_user = True
 
-        response = views.custom_password_change(request)
+        response = views.ChangePasswordView.as_view()(request)
 
         assert response.status_code == 403
 
@@ -117,7 +115,7 @@ class TestPasswordChangeDoneView:
     def test_authenticated_user(self):
         url = reverse(self.URL_NAME)
         request = RequestFactory().get(url)
-        request.user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+        request.user = User.objects.create(username="testuser", is_superuser=False, is_staff=False)
         response = views.custom_password_change_done(request)
 
         assert response.status_code == 200, "Should be callable"
@@ -130,7 +128,7 @@ class TestPasswordChangeDoneView:
 
         url = reverse(self.URL_NAME)
         request = RequestFactory().get(url)
-        request.user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+        request.user = User.objects.create(username="testuser", is_superuser=False, is_staff=False)
         request.user.ldap_user = True
 
         response = views.custom_password_change_done(request)
@@ -154,7 +152,7 @@ class TestLoginLogoutView:
     def test_authenticated_user(self):
         url = reverse(self.URL_NAME)
         request = RequestFactory().get(url)
-        request.user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+        request.user = User.objects.create(username="testuser", is_superuser=False, is_staff=False)
 
         response = views.login_user(request)
 
@@ -164,7 +162,7 @@ class TestLoginLogoutView:
     def test_authenticated_user_logout(self):
         url = reverse("logout")
         request = RequestFactory().get(url)
-        request.user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+        request.user = User.objects.create(username="testuser", is_superuser=False, is_staff=False)
         middleware = SessionMiddleware()
         middleware.process_request(request)
         request.session.save()
@@ -301,7 +299,7 @@ class TestProgressView:
     def test_authenticated_user(self):
         url = reverse(self.URL_NAME, kwargs={"task_id": "mock_task_id"})
         request = RequestFactory().get(url)
-        request.user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+        request.user = User.objects.create(username="testuser", is_superuser=False, is_staff=False)
         response = views.task_progress_view(request, "mock_task_id")
 
         assert response.status_code == 200, "Should be callable"
@@ -315,7 +313,7 @@ class TestProgressView:
         )
         url = reverse(self.URL_NAME, kwargs={"task_id": "mock_task_id"})
         request = RequestFactory().get(url)
-        request.user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+        request.user = User.objects.create(username="testuser", is_superuser=False, is_staff=False)
         response = views.task_progress_view(request, "mock_task_id")
 
         assert response.status_code == 200, "Should be callable"
@@ -368,7 +366,7 @@ class TestStatusAjaxCall:
         url = reverse(self.URL_NAME, kwargs={"task_id": "mock_task_id"})
         request = RequestFactory().get(url)
         request.META["HTTP_X_REQUESTED_WITH"] = "XMLHttpRequest"  # AJAX request
-        request.user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+        request.user = User.objects.create(username="testuser", is_superuser=False, is_staff=False)
 
         response = views.task_status_ajax(request, "mock_task_id")
 
@@ -387,7 +385,7 @@ class TestStatusAjaxCall:
         url = reverse(self.URL_NAME, kwargs={"task_id": "mock_task_id"})
         request = RequestFactory().get(url)
         request.META["HTTP_X_REQUESTED_WITH"] = "XMLHttpRequest"  # AJAX request
-        request.user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+        request.user = User.objects.create(username="testuser", is_superuser=False, is_staff=False)
 
         response = views.task_status_ajax(request, "mock_task_id")
 
@@ -406,7 +404,7 @@ class TestStatusAjaxCall:
         url = reverse(self.URL_NAME, kwargs={"task_id": "mock_task_id"})
         request = RequestFactory().get(url)
         request.META["HTTP_X_REQUESTED_WITH"] = "XMLHttpRequest"  # AJAX request
-        request.user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+        request.user = User.objects.create(username="testuser", is_superuser=False, is_staff=False)
 
         response = views.task_status_ajax(request, "mock_task_id")
 
@@ -428,7 +426,7 @@ class TestStatusAjaxCall:
         url = reverse(self.URL_NAME, kwargs={"task_id": "mock_task_id"})
         request = RequestFactory().get(url)
         request.META["HTTP_X_REQUESTED_WITH"] = "XMLHttpRequest"  # AJAX request
-        request.user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+        request.user = User.objects.create(username="testuser", is_superuser=False, is_staff=False)
 
         response = views.task_status_ajax(request, "mock_task_id")
 
@@ -454,7 +452,7 @@ class TestStatusAjaxCall:
         url = reverse(self.URL_NAME, kwargs={"task_id": "mock_task_id"})
         request = RequestFactory().get(url)
         request.META["HTTP_X_REQUESTED_WITH"] = "XMLHttpRequest"  # AJAX request
-        request.user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+        request.user = User.objects.create(username="testuser", is_superuser=False, is_staff=False)
 
         response = views.task_status_ajax(request, "mock_task_id")
 
@@ -474,7 +472,7 @@ class TestStatusAjaxCall:
         url = reverse(self.URL_NAME, kwargs={"task_id": "mock_task_id"})
         request = RequestFactory().get(url)
         request.META["HTTP_X_REQUESTED_WITH"] = "XMLHttpRequest"  # AJAX request
-        request.user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+        request.user = User.objects.create(username="testuser", is_superuser=False, is_staff=False)
 
         response = views.task_status_ajax(request, "mock_task_id")
 
@@ -493,7 +491,7 @@ class TestStatusAjaxCall:
         url = reverse(self.URL_NAME, kwargs={"task_id": "mock_task_id"})
         request = RequestFactory().get(url)
         request.META["HTTP_X_REQUESTED_WITH"] = "XMLHttpRequest"  # AJAX request
-        request.user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+        request.user = User.objects.create(username="testuser", is_superuser=False, is_staff=False)
 
         response = views.task_status_ajax(request, "mock_task_id")
 
@@ -506,7 +504,7 @@ class TestStatusAjaxCall:
     def test_call_with_unknown_task(self):
         url = reverse(self.URL_NAME, kwargs={"task_id": "mock_task_id"})
         request = RequestFactory().get(url)
-        request.user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+        request.user = User.objects.create(username="testuser", is_superuser=False, is_staff=False)
         response = views.task_status_ajax(request, "mock_task_id")
 
         assert response.status_code == 400

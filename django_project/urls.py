@@ -10,14 +10,14 @@ from django_project import views
 admin.site.site_header = "Product Database Administration"
 
 urlpatterns = [
-    url(r'^productdb/admin/', include(admin.site.urls)),
+    url(r'^productdb/admin/', admin.site.urls),
 
     # common views for the application
     url(r"^productdb/task/watch/(?P<task_id>.*)", views.task_status_ajax, name="task_state"),
     url(r"^productdb/task/(?P<task_id>.*)", views.task_progress_view, name="task_in_progress"),
     url(r'^productdb/login/$', views.login_user, name="login"),
     url(r'^productdb/logout/$', views.logout_user, name="logout"),
-    url(r'^productdb/change-password/', views.custom_password_change, name="change_password"),
+    url(r'^productdb/change-password/', views.ChangePasswordView.as_view(), name="change_password"),
     url(r'^productdb/change-done/', views.custom_password_change_done, name="custom_password_change_done"),
 
     url(r'^productdb/config/', include('app.config.urls', namespace='productdb_config')),

@@ -29,12 +29,11 @@ INSTALLED_APPS = [
     "cacheops",
 ]
 
-MIDDLEWARE_CLASSES = [
+MIDDLEWARE = [
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "django.contrib.auth.middleware.SessionAuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "django.middleware.security.SecurityMiddleware"
@@ -87,6 +86,7 @@ else:
             "timeout": 4 * 60 * 60
         }
         CACHEOPS = {
+            "auth.*": {},
             "auth.user": {
                 "ops": "all",
                 "timeout": 15 * 60
@@ -218,7 +218,7 @@ if os.getenv("PDB_DEBUG"):
     debug_ip = os.getenv("DEBUG_IP", "127.0.0.1/32")
     INTERNAL_IPS = [str(host) for host in IPv4Interface(debug_ip).network]
     INSTALLED_APPS += ["debug_toolbar"]
-    MIDDLEWARE_CLASSES += ["debug_toolbar.middleware.DebugToolbarMiddleware"]
+    MIDDLEWARE += ["debug_toolbar.middleware.DebugToolbarMiddleware"]
     CELERY_ALWAYS_EAGER = True
     CELERY_EAGER_PROPAGATES_EXCEPTIONS = True
 

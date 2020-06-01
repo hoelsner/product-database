@@ -4,7 +4,7 @@ Test suite for the selenium test cases
 import os
 import pytest
 import time
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from tests import BaseSeleniumTest
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys

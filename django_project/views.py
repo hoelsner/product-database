@@ -4,11 +4,12 @@ import redis
 from django.conf import settings
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.views import password_change
-from django.core.urlresolvers import reverse
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.views import PasswordChangeView
 from django.http import HttpResponseForbidden, JsonResponse, HttpResponse
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect, render, render_to_response
+from django.urls import reverse_lazy, reverse
 
 from app.config.settings import AppSettings
 from app.productdb.utils import login_required_if_login_only_mode
@@ -18,7 +19,7 @@ from django_project import context_processors
 logger = logging.getLogger("productdb")
 
 
-def custom_page_not_found_view(request):
+def custom_page_not_found_view(request, exception):
     response = render(request, 'django_project/custom_404_page.html', {})
     response.status_code = 404
     return response
@@ -30,13 +31,13 @@ def custom_error_view(request):
     return response
 
 
-def custom_bad_request_view(request):
+def custom_bad_request_view(request, exception):
     response = render(request, 'django_project/custom_400_page.html', {})
     response.status_code = 400
     return response
 
 
-def custom_permission_denied_view(request):
+def custom_permission_denied_view(request, exception):
     response = render(request, 'django_project/custom_403_page.html', {})
     response.status_code = 403
     return response
@@ -49,18 +50,15 @@ def custom_csrf_failure_page(request, reason=""):
     return render_to_response('django_project/custom_csrf_failure_page.html', context)
 
 
-@login_required
-def custom_password_change(request):
-    """custom change password form"""
-    # check if the request comes from an LDAP account, if so, raise a PermissionDenied exception
-    if context_processors.is_ldap_authenticated_user(request)["IS_LDAP_ACCOUNT"]:
-        return HttpResponseForbidden("You're not allowed to change your password in this application")
+class ChangePasswordView(LoginRequiredMixin, PasswordChangeView):
+    template_name = "django_project/change_password.html"
+    success_url = reverse_lazy("custom_password_change_done")
 
-    else:
-        return password_change(request,
-                               template_name='django_project/change_password.html',
-                               extra_context={},
-                               post_change_redirect="custom_password_change_done")
+    def get(self, request, *args, **kwargs):
+        if context_processors.is_ldap_authenticated_user(request)["IS_LDAP_ACCOUNT"]:
+            return HttpResponseForbidden("You're not allowed to change your password in this application")
+
+        return super().get(request, *args, **kwargs)
 
 
 @login_required
@@ -83,7 +81,7 @@ def login_user(request):
     context = {
         "login_only_mode": app_config.is_login_only_mode()
     }
-    if request.user.is_authenticated():
+    if request.user.is_authenticated:
         return HttpResponseRedirect(reverse("productdb:home"))
 
     if request.GET:
@@ -121,7 +119,7 @@ def logout_user(request):
     :param request:
     :return:
     """
-    if request.user.is_authenticated():
+    if request.user.is_authenticated:
         logout(request)
 
     return redirect(reverse("login"))

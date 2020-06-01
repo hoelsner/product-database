@@ -4,8 +4,8 @@ Test suite for the productdb.validators module
 import pytest
 import json
 from django.core.exceptions import ValidationError
-from mixer.backend.django import mixer
 from app.productdb.validators import validate_json, validate_product_list_string
+from app.productdb import models
 
 pytestmark = pytest.mark.django_db
 
@@ -24,10 +24,10 @@ def test_validate_json():
 
 
 def test_validate_product_list_string():
-    v = mixer.blend("productdb.Vendor", name="unassigned", id=0)
-    mixer.blend("productdb.Product", product_id="myprod1", vendor=v)
-    mixer.blend("productdb.Product", product_id="myprod2", vendor=v)
-    mixer.blend("productdb.Product", product_id="myprod3", vendor=v)
+    v = models.Vendor.objects.create(name="unassigned", id=0)
+    models.Product.objects.create(product_id="myprod1", vendor=v)
+    models.Product.objects.create(product_id="myprod2", vendor=v)
+    models.Product.objects.create(product_id="myprod3", vendor=v)
 
     # valid test strings
     test_product_string = "myprod1;myprod2;myprod3"

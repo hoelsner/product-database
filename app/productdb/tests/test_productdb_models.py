@@ -10,9 +10,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.core.files import File
 from django.db.models import QuerySet
-from mixer.backend.django import mixer
-from app.productdb.models import Vendor, ProductList, JobFile, Product, UserProfile, ProductGroup, ProductMigrationSource, \
-    ProductMigrationOption, ProductCheck, ProductCheckEntry, ProductCheckInputChunks, ProductIdNormalizationRule
+from app.productdb import models
 
 pytestmark = pytest.mark.django_db
 
@@ -27,15 +25,15 @@ class TestJobFile:
         f.close()
         f = open(filename, "r")
 
-        jf = JobFile.objects.create()
+        jf = models.JobFile.objects.create()
         jf.file.save("test file.txt", File(f))
 
-        assert JobFile.objects.count() == 1, "A single object should exist in the database"
+        assert models.JobFile.objects.count() == 1, "A single object should exist in the database"
         assert os.path.exists(jf.file.path), "file should be created in the data directory"
 
-        JobFile.objects.all().first().delete()
+        models.JobFile.objects.all().first().delete()
 
-        assert JobFile.objects.count() == 0, "Object should be deleted from the database"
+        assert models.JobFile.objects.count() == 0, "Object should be deleted from the database"
         assert not os.path.exists(jf.file.path), "file should be remove automatically"
 
 
@@ -43,30 +41,30 @@ class TestVendorModel:
     """Test Vendor model"""
     @pytest.mark.usefixtures("import_default_vendors")
     def test_vendor_object(self):
-        mixer.blend("productdb.Vendor")
-        assert Vendor.objects.count() == 4, "an additional vendor should be created"
+        models.Vendor.objects.create(name="Another Vendor")
+        assert models.Vendor.objects.count() == 4, "an additional vendor should be created"
 
         expected_vendor_name = "unassigned"
-        v = Vendor.objects.get(name=expected_vendor_name)
+        v = models.Vendor.objects.get(name=expected_vendor_name)
 
         assert expected_vendor_name == str(v), "unexpected string representation of the Vendor object"
 
     def test_vendor_unique_name_constraint(self):
         test_name = "my vendor"
-        mixer.blend("productdb.Vendor", name=test_name)
+        models.Vendor.objects.create(name=test_name)
 
         with pytest.raises(ValidationError) as exinfo:
-            Vendor.objects.create(name=test_name)
+            models.Vendor.objects.create(name=test_name)
 
         assert exinfo.match("name': \['Vendor with this Name already exists.")
 
     @pytest.mark.usefixtures("import_default_vendors")
     def test_delete_vendor(self):
-        assert Vendor.objects.count() == 3, "default vendors not loaded successfully"
+        assert models.Vendor.objects.count() == 3, "default vendors not loaded successfully"
 
         # delete the predefined "unassigned" vendor is not allowed/possible
         expected_vendor_name = "unassigned"
-        v = Vendor.objects.get(name=expected_vendor_name)
+        v = models.Vendor.objects.get(name=expected_vendor_name)
 
         with pytest.raises(Exception) as exinfo:
             v.delete()
@@ -75,19 +73,19 @@ class TestVendorModel:
 
         # delete any other vendor is possible (also the predefined objects)
         expected_vendor_name = "Cisco Systems"
-        v = Vendor.objects.get(name=expected_vendor_name)
+        v = models.Vendor.objects.get(name=expected_vendor_name)
 
         v.delete()
 
-        assert Vendor.objects.count() == 2
+        assert models.Vendor.objects.count() == 2
 
     @pytest.mark.usefixtures("import_default_vendors")
     def test_default_vendor_fixture(self):
         # verify default vendors
-        assert Vendor.objects.count() == 3, "three vendors should be part of the fixture"
-        assert Vendor.objects.get(name="unassigned").pk == 0, "PK 0 should be unassigned"
-        assert Vendor.objects.get(name="Cisco Systems").pk == 1, "PK 1 should be Cisco Systems"
-        assert Vendor.objects.get(name="Juniper Networks").pk == 2, "PK 2 should be Juniper Networks"
+        assert models.Vendor.objects.count() == 3, "three vendors should be part of the fixture"
+        assert models.Vendor.objects.get(name="unassigned").pk == 0, "PK 0 should be unassigned"
+        assert models.Vendor.objects.get(name="Cisco Systems").pk == 1, "PK 1 should be Cisco Systems"
+        assert models.Vendor.objects.get(name="Juniper Networks").pk == 2, "PK 2 should be Juniper Networks"
 
 
 class TestProductGroup:
@@ -95,13 +93,17 @@ class TestProductGroup:
     @pytest.mark.usefixtures("import_default_vendors")
     def test_product_group(self):
         expected_product_group = "Test Product Group"
-        v = Vendor.objects.get(id=1)
-        pg = mixer.blend("productdb.ProductGroup", name=expected_product_group)
-        p1 = mixer.blend("productdb.Product", vendor=v)
-        p2 = mixer.blend("productdb.Product", vendor=v)
+        v = models.Vendor.objects.get(id=1)
+        pg = models.ProductGroup.objects.create(name=expected_product_group)
+        pg2 = models.ProductGroup.objects.create(name="yapg", vendor=v)
+        p1 = models.Product.objects.create(product_id="product A", vendor=v)
+        p2 = models.Product.objects.create(product_id="product B", vendor=v)
         assert str(pg) == expected_product_group, "unexpected string representation of the ProductGroup object"
         assert pg.get_all_products() is None, "If no Product is part of the group, it should return None"
-        assert pg.vendor == Vendor.objects.get(id=0), "Should be associated to the unassigned vendor"
+        assert pg.vendor == models.Vendor.objects.get(id=0), "Should be associated to the unassigned vendor"
+        assert str(pg2) == "yapg", "unexpected string representation of the ProductGroup object"
+        assert pg2.get_all_products() is None, "If no Product is part of the group, it should return None"
+        assert pg2.vendor == models.Vendor.objects.get(id=1), "Should be associated to the unassigned vendor"
 
         # change vendor of group
         pg.vendor = v
@@ -123,36 +125,36 @@ class TestProductGroup:
 
         # drop vendor from DB and verify SET_DEFAULT
         v.delete()
-        pg = ProductGroup.objects.get(name=expected_product_group)
+        pg = models.ProductGroup.objects.get(name=expected_product_group)
         assert pg.vendor is not None, "Should not use None value"
         assert pg.vendor.id == 0, "unassigned Vendor has the ID 0 by default"
         assert pg.vendor.name == "unassigned", "Unexpected vendor name"
 
     def test_product_group_and_vendor_unique_together_constraint(self):
-        v1 = mixer.blend("productdb.Vendor", name="first vendor")
-        v2 = mixer.blend("productdb.Vendor", name="second vendor")
+        v1 = models.Vendor.objects.create(name="first vendor")
+        v2 = models.Vendor.objects.create(name="second vendor")
 
-        mixer.blend("productdb.ProductGroup", name="Group1", vendor=v1)
-        mixer.blend("productdb.ProductGroup", name="Group2", vendor=v1)
-        mixer.blend("productdb.ProductGroup", name="Group1", vendor=v2)
+        models.ProductGroup.objects.create(name="Group1", vendor=v1)
+        models.ProductGroup.objects.create(name="Group2", vendor=v1)
+        models.ProductGroup.objects.create(name="Group1", vendor=v2)
 
-        assert ProductGroup.objects.count() == 3, "Three separate Product Groups should exist"
+        assert models.ProductGroup.objects.count() == 3, "Three separate Product Groups should exist"
 
         # try to create another Group1 for the first vendor
         with pytest.raises(ValidationError) as exinfo:
-            mixer.blend("productdb.ProductGroup", name="Group1", vendor=v1)
+            models.ProductGroup.objects.create(name="Group1", vendor=v1)
 
         assert exinfo.match("name': \['group name already defined for this vendor'")
 
     @pytest.mark.usefixtures("import_default_vendors")
     def test_product_group_vendor_change(self):
-        v1 = Vendor.objects.get(name="unassigned")
-        v2 = Vendor.objects.get(name="Cisco Systems")
+        v1 = models.Vendor.objects.get(name="unassigned")
+        v2 = models.Vendor.objects.get(name="Cisco Systems")
 
         expected_product_group = "Test Product Group"
-        pg = mixer.blend("productdb.ProductGroup", name=expected_product_group, vendor=v1)
-        p1 = mixer.blend("productdb.Product", vendor=v2)
-        p2 = mixer.blend("productdb.Product", vendor=v2)
+        pg = models.ProductGroup.objects.create(name=expected_product_group, vendor=v1)
+        p1 = models.Product.objects.create(product_id="product A", vendor=v2)
+        p2 = models.Product.objects.create(product_id="product B", vendor=v2)
 
         # change the vendor of a product group that has no products associated to it
         assert pg.get_all_products() is None, "No products are associated to the group and None should be returned"
@@ -175,30 +177,30 @@ class TestProductGroup:
 class TestProduct:
     """Test Product model object"""
     def test_product(self):
-        p = mixer.blend("productdb.Product")
+        p = models.Product.objects.create(product_id="product")
 
         assert str(p) == p.product_id, "unexpected string representation of the Product object"
 
     def test_current_lifecycle_states(self):
-        p = Product.objects.create(product_id="Test")
+        p = models.Product.objects.create(product_id="Test")
         assert p.current_lifecycle_states is None, "Nothing is defined for the product, should be None"
 
         # the update timestamp indicated that the product lifecycle state was checked
         p.eox_update_time_stamp = _datetime.datetime.now()
-        assert p.current_lifecycle_states == [Product.NO_EOL_ANNOUNCEMENT_STR], "No EoX announcement found at this point"
+        assert p.current_lifecycle_states == [models.Product.NO_EOL_ANNOUNCEMENT_STR], "No EoX announcement found at this point"
 
         # set the eox announcement state
         p.eol_ext_announcement_date = _datetime.date.today()
-        expected_output = [Product.EOS_ANNOUNCED_STR]
+        expected_output = [models.Product.EOS_ANNOUNCED_STR]
         assert p.current_lifecycle_states == expected_output, "EoL announcement should be visible"
 
         # set the End of Sale date
         p.end_of_sale_date = _datetime.date.today() + _datetime.timedelta(days=1)
-        expected_output = [Product.EOS_ANNOUNCED_STR]
+        expected_output = [models.Product.EOS_ANNOUNCED_STR]
         assert p.current_lifecycle_states == expected_output, \
             "Nothing should change, because the date is in the future"
         p.end_of_sale_date = _datetime.date.today()
-        expected_output = [Product.END_OF_SALE_STR]
+        expected_output = [models.Product.END_OF_SALE_STR]
         assert p.current_lifecycle_states == expected_output
 
         # set the End of new Service Attachment Date
@@ -206,7 +208,7 @@ class TestProduct:
         assert p.current_lifecycle_states == expected_output, \
             "Nothing should change, because the date is in the future"
         p.end_of_new_service_attachment_date = _datetime.date.today()
-        expected_output = [Product.END_OF_SALE_STR, Product.END_OF_NEW_SERVICE_ATTACHMENT_STR]
+        expected_output = [models.Product.END_OF_SALE_STR, models.Product.END_OF_NEW_SERVICE_ATTACHMENT_STR]
         assert p.current_lifecycle_states == expected_output
 
         # set the End of SW maintenance date
@@ -215,9 +217,9 @@ class TestProduct:
             "Nothing should change, because the date is in the future"
         p.end_of_sw_maintenance_date = _datetime.date.today()
         expected_output = [
-            Product.END_OF_SALE_STR,
-            Product.END_OF_NEW_SERVICE_ATTACHMENT_STR,
-            Product.END_OF_SW_MAINTENANCE_RELEASES_STR
+            models.Product.END_OF_SALE_STR,
+            models.Product.END_OF_NEW_SERVICE_ATTACHMENT_STR,
+            models.Product.END_OF_SW_MAINTENANCE_RELEASES_STR
         ]
         assert p.current_lifecycle_states == expected_output
 
@@ -227,10 +229,10 @@ class TestProduct:
             "Nothing should change, because the date is in the future"
         p.end_of_routine_failure_analysis = _datetime.date.today()
         expected_output = [
-            Product.END_OF_SALE_STR,
-            Product.END_OF_NEW_SERVICE_ATTACHMENT_STR,
-            Product.END_OF_SW_MAINTENANCE_RELEASES_STR,
-            Product.END_OF_ROUTINE_FAILURE_ANALYSIS_STR
+            models.Product.END_OF_SALE_STR,
+            models.Product.END_OF_NEW_SERVICE_ATTACHMENT_STR,
+            models.Product.END_OF_SW_MAINTENANCE_RELEASES_STR,
+            models.Product.END_OF_ROUTINE_FAILURE_ANALYSIS_STR
         ]
         assert p.current_lifecycle_states == expected_output
 
@@ -240,11 +242,11 @@ class TestProduct:
             "Nothing should change, because the date is in the future"
         p.end_of_service_contract_renewal = _datetime.date.today()
         expected_output = [
-            Product.END_OF_SALE_STR,
-            Product.END_OF_NEW_SERVICE_ATTACHMENT_STR,
-            Product.END_OF_SW_MAINTENANCE_RELEASES_STR,
-            Product.END_OF_ROUTINE_FAILURE_ANALYSIS_STR,
-            Product.END_OF_SERVICE_CONTRACT_RENEWAL_STR
+            models.Product.END_OF_SALE_STR,
+            models.Product.END_OF_NEW_SERVICE_ATTACHMENT_STR,
+            models.Product.END_OF_SW_MAINTENANCE_RELEASES_STR,
+            models.Product.END_OF_ROUTINE_FAILURE_ANALYSIS_STR,
+            models.Product.END_OF_SERVICE_CONTRACT_RENEWAL_STR
         ]
         assert p.current_lifecycle_states == expected_output
 
@@ -254,12 +256,12 @@ class TestProduct:
             "Nothing should change, because the date is in the future"
         p.end_of_sec_vuln_supp_date = _datetime.date.today()
         expected_output = [
-            Product.END_OF_SALE_STR,
-            Product.END_OF_NEW_SERVICE_ATTACHMENT_STR,
-            Product.END_OF_SW_MAINTENANCE_RELEASES_STR,
-            Product.END_OF_ROUTINE_FAILURE_ANALYSIS_STR,
-            Product.END_OF_SERVICE_CONTRACT_RENEWAL_STR,
-            Product.END_OF_VUL_SUPPORT_STR
+            models.Product.END_OF_SALE_STR,
+            models.Product.END_OF_NEW_SERVICE_ATTACHMENT_STR,
+            models.Product.END_OF_SW_MAINTENANCE_RELEASES_STR,
+            models.Product.END_OF_ROUTINE_FAILURE_ANALYSIS_STR,
+            models.Product.END_OF_SERVICE_CONTRACT_RENEWAL_STR,
+            models.Product.END_OF_VUL_SUPPORT_STR
         ]
         assert p.current_lifecycle_states == expected_output
 
@@ -268,30 +270,30 @@ class TestProduct:
         assert p.current_lifecycle_states == expected_output, \
             "Nothing should change, because the date is in the future"
         p.end_of_support_date = _datetime.date.today()
-        assert p.current_lifecycle_states == [Product.END_OF_SUPPORT_STR]
+        assert p.current_lifecycle_states == [models.Product.END_OF_SUPPORT_STR]
 
     def test_product_id_unique_constraint(self):
         test_name = "my product id"
-        v1 = Vendor.objects.create(name="test vendor")
-        v2 = Vendor.objects.create(name="another test vendor")
-        mixer.blend("productdb.Product", product_id=test_name, vendor=v1)
-        mixer.blend("productdb.Product", product_id=test_name, vendor=v2)
+        v1 = models.Vendor.objects.create(name="test vendor")
+        v2 = models.Vendor.objects.create(name="another test vendor")
+        models.Product.objects.create(product_id=test_name, vendor=v1)
+        models.Product.objects.create(product_id=test_name, vendor=v2)
 
-        assert Product.objects.count() == 2
+        assert models.Product.objects.count() == 2
 
         # test unique constraint
         with pytest.raises(ValidationError) as exinfo:
-            Product.objects.create(product_id=test_name, vendor=v1)
+            models.Product.objects.create(product_id=test_name, vendor=v1)
 
         assert exinfo.match("__all__': \['Product with this Product id and Vendor already exists.'"), \
             "product ID must be unique in the database"
 
     def test_product_vendor_change(self):
-        v1 = Vendor.objects.get(name="unassigned")
-        v2 = Vendor.objects.get(name="Cisco Systems")
+        v1 = models.Vendor.objects.get(name="unassigned")
+        v2 = models.Vendor.objects.get(name="Cisco Systems")
 
-        p = mixer.blend("productdb.Product", vendor=v1)
-        pg = mixer.blend("productdb.ProductGroup", vendor=v2)
+        p = models.Product.objects.create(product_id="product", vendor=v1)
+        pg = models.ProductGroup.objects.create(vendor=v2, name="TestPG")
 
         # change vendor of a product that is not associated to a product group
         p.vendor = v2
@@ -342,7 +344,7 @@ class TestProduct:
             }
         ]
 
-        p = mixer.blend("productdb.Product", list_price=None)
+        p = models.Product.objects.create(product_id="product", list_price=None)
         assert p.list_price is None
 
         for val in valid_values:
@@ -357,7 +359,7 @@ class TestProduct:
             assert exinfo.match(ival["exp_error"])
 
     def test_product_eol_url_with_whitespace(self):
-        p = mixer.blend("productdb.Product")
+        p = models.Product.objects.create(product_id="product")
 
         assert p.eol_reference_url is None
 
@@ -382,30 +384,29 @@ class TestProduct:
 
     def test_timestamp_values(self, monkeypatch):
         date = _datetime.date.today()
-        first_date = _datetime.date(year=1970, day=1, month=1)
 
-        p = mixer.blend("productdb.Product", update_timestamp=first_date, lc_state_sync=True)
+        p = models.Product.objects.create(product_id="product", lc_state_sync=True)
 
-        assert p.update_timestamp == first_date, "Date is not overwritten by the save methode, because the state " \
+        assert p.update_timestamp == date, "Date is not overwritten by the save method, because the state " \
                                                  "sync was changed"
         assert p.list_price_timestamp is None, "No timestamp because no list price was set"
 
         # change the lc_sync_state (update_timestamp should not change)
-        p = Product.objects.get(id=p.id)
+        p = models.Product.objects.get(id=p.id)
         p.lc_state_sync = False
         p.save()
 
-        assert p.update_timestamp == first_date, "timestamp not changed, only lc flag updated"
+        assert p.update_timestamp == date, "timestamp not changed, only lc flag updated"
         assert p.list_price_timestamp is None, "timestamp not changed, only lc flag updated"
 
-        p = Product.objects.get(id=p.id)
+        p = models.Product.objects.get(id=p.id)
         p.description = "Test"
         p.save()
 
         assert p.update_timestamp == date, "timestamp updated"
         assert p.list_price_timestamp is None
 
-        p = Product.objects.get(id=p.id)
+        p = models.Product.objects.get(id=p.id)
         p.list_price = 1000
         p.save()
 
@@ -418,10 +419,10 @@ class TestProductList:
     @pytest.mark.usefixtures("import_default_users")
     @pytest.mark.usefixtures("import_default_vendors")
     def test_product_list_created_without_a_product(self):
-        v = Vendor.objects.get(name__contains="Cisco")
+        v = models.Vendor.objects.get(name__contains="Cisco")
         # Product List must contain a single when created
         with pytest.raises(ValidationError) as exinfo:
-            ProductList.objects.create(
+            models.ProductList.objects.create(
                 name="example product list",
                 update_user=User.objects.get(username="api"),
                 vendor=v
@@ -430,7 +431,7 @@ class TestProductList:
         expected_message = r"'string_product_list': \['This field cannot be blank.'\]"
         assert exinfo.match(expected_message), "Should contain the error message for the string_product_list"
 
-        pl = ProductList()
+        pl = models.ProductList()
         pl.vendor = v
         pl.name = "example product list"
         with pytest.raises(ValidationError) as exinfo:
@@ -441,69 +442,88 @@ class TestProductList:
     @pytest.mark.usefixtures("import_default_users")
     @pytest.mark.usefixtures("import_default_vendors")
     def test_product_list_name_unique_constraint(self):
+        u = User.objects.get(username="pdb_admin")
         test_name = "test product list"
-        mixer.blend("productdb.Product",
-                    product_id="myprod1",
-                    vendor=Vendor.objects.get(name__contains="Cisco"))
-        mixer.blend("productdb.ProductList",
-                    name=test_name,
-                    string_product_list="myprod1",
-                    vendor=Vendor.objects.get(name__contains="Cisco"))
+        models.Product.objects.create(
+            product_id="myprod1",
+            vendor=models.Vendor.objects.get(name__contains="Cisco")
+        )
+        models.ProductList.objects.create(
+            name=test_name,
+            string_product_list="myprod1",
+            vendor=models.Vendor.objects.get(name__contains="Cisco"),
+            update_user=u
+        )
 
         with pytest.raises(ValidationError) as exinfo:
-            ProductList.objects.create(
+            models.ProductList.objects.create(
                 name=test_name,
                 string_product_list="myprod1",
                 update_user=User.objects.get(username="api"),
-                vendor=Vendor.objects.get(name__contains="Cisco")
+                vendor=models.Vendor.objects.get(name__contains="Cisco")
             )
 
         assert exinfo.match("name': \['Product List with this Product List Name already exists.'")
 
     @pytest.mark.usefixtures("import_default_vendors")
     def test_product_list_created_with_a_product(self):
-        v = Vendor.objects.get(name__contains="Cisco")
-        mixer.blend("productdb.Product", product_id="myprod1", vendor=v)
+        u = User.objects.create(username="pdb_admin")
+        v = models.Vendor.objects.get(name__contains="Cisco")
+        models.Product.objects.create(product_id="myprod1", vendor=v)
         # Product List must contain an element when created
-        mixer.blend("productdb.ProductList",
-                    name="example product list",
-                    string_product_list="myprod1",
-                    vendor=v)
+        models.ProductList.objects.create(
+            name="example product list",
+            string_product_list="myprod1",
+            vendor=v,
+            update_user=u
+        )
 
-        assert ProductList.objects.count() == 1, "a ProductList should be created"
-        assert ProductList.objects.all().first().update_date is not None, "The update date should not be None"
-        assert ProductList.objects.all().first().update_user is not None, "The update user should not be None"
+        assert models.ProductList.objects.count() == 1, "a ProductList should be created"
+        assert models.ProductList.objects.all().first().update_date is not None, "The update date should not be None"
+        assert models.ProductList.objects.all().first().update_user is not None, "The update user should not be None"
 
     @pytest.mark.usefixtures("import_default_vendors")
     def test_product_list_created_with_a_product_and_vendor_autodiscovery(self):
-        v = Vendor.objects.get(name__contains="Cisco")
-        v2 = Vendor.objects.get(name__contains="Juniper")
-        mixer.blend("productdb.Product", product_id="myprod1", vendor=v)
-        mixer.blend("productdb.Product", product_id="myprod1", vendor=v2)
+        u = User.objects.create(username="pdb_admin")
+        v = models.Vendor.objects.get(name__contains="Cisco")
+        v2 = models.Vendor.objects.get(name__contains="Juniper")
+        models.Product.objects.create(product_id="myprod1", vendor=v)
+        models.Product.objects.create(product_id="myprod1", vendor=v2)
 
         # Product List must contain an element when created
-        mixer.blend("productdb.ProductList", name="example product list", string_product_list="myprod1", vendor=v)
-        assert ProductList.objects.count() == 1, "a ProductList should be created"
-        assert ProductList.objects.all().first().update_date is not None, "The update date should not be None"
-        assert ProductList.objects.all().first().update_user is not None, "The update user should not be None"
+        models.ProductList.objects.create(
+            name="example product list",
+            string_product_list="myprod1",
+            vendor=v,
+            update_user=u
+        )
+        assert models.ProductList.objects.count() == 1, "a ProductList should be created"
+        assert models.ProductList.objects.all().first().update_date is not None, "The update date should not be None"
+        assert models.ProductList.objects.all().first().update_user is not None, "The update user should not be None"
 
-        assert ProductList.objects.all().first().vendor == v
+        assert models.ProductList.objects.all().first().vendor == v
 
     @pytest.mark.usefixtures("import_default_vendors")
     def test_product_list(self):
-        mixer.blend("productdb.Product",
-                    product_id="myprod1",
-                    vendor=Vendor.objects.get(name__contains="Cisco"))
-        mixer.blend("productdb.Product",
-                    product_id="myprod2",
-                    vendor=Vendor.objects.get(name__contains="Cisco"))
-        mixer.blend("productdb.Product",
-                    product_id="myprod3",
-                    vendor=Vendor.objects.get(name__contains="Cisco"))
-        pl = mixer.blend("productdb.ProductList",
-                         name="Test Product List",
-                         string_product_list="myprod1",
-                         vendor=Vendor.objects.get(name__contains="Cisco"))
+        u = User.objects.create(username="pdb_admin")
+        models.Product.objects.create(
+            product_id="myprod1",
+            vendor=models.Vendor.objects.get(name__contains="Cisco")
+        )
+        models.Product.objects.create(
+            product_id="myprod2",
+            vendor=models.Vendor.objects.get(name__contains="Cisco")
+        )
+        models.Product.objects.create(
+            product_id="myprod3",
+            vendor=models.Vendor.objects.get(name__contains="Cisco")
+        )
+        pl = models.ProductList.objects.create(
+            name="Test Product List",
+            string_product_list="myprod1",
+            vendor=models.Vendor.objects.get(name__contains="Cisco"),
+            update_user=u
+        )
 
         assert pl.update_user is not None, "Should contain the update user"
         assert pl.update_date is not None, "Should contain the update timestamp"
@@ -548,20 +568,26 @@ class TestProductList:
 
     @pytest.mark.usefixtures("import_default_vendors")
     def test_hash_function(self):
-        v = Vendor.objects.get(name__contains="Cisco")
-        mixer.blend("productdb.Product",
-                    product_id="myprod1",
-                    vendor=v)
-        mixer.blend("productdb.Product",
-                    product_id="myprod2",
-                    vendor=v)
-        mixer.blend("productdb.Product",
-                    product_id="myprod3",
-                    vendor=v)
-        pl = mixer.blend("productdb.ProductList",
-                         name="Test Product List",
-                         string_product_list="myprod1",
-                         vendor=v)
+        u = User.objects.create(username="pdb_admin")
+        v = models.Vendor.objects.get(name__contains="Cisco")
+        models.Product.objects.create(
+            product_id="myprod1",
+            vendor=v
+        )
+        models.Product.objects.create(
+            product_id="myprod2",
+            vendor=v
+        )
+        models.Product.objects.create(
+            product_id="myprod3",
+            vendor=v
+        )
+        pl = models.ProductList.objects.create(
+            name="Test Product List",
+            string_product_list="myprod1",
+            vendor=v,
+            update_user=u
+        )
         assert pl.hash is not None
         hash = pl.hash
 
@@ -573,24 +599,28 @@ class TestProductList:
         hash = pl.hash
 
         # change the vendor of the product list (should modify the hash)
-        j_vendor = Vendor.objects.get(name__contains="Juniper")
+        j_vendor = models.Vendor.objects.get(name__contains="Juniper")
         pl.vendor = j_vendor
         with pytest.raises(ValidationError) as ex:
             pl.save()
+
         expected_message = "The following products are not found in the database for the vendor Juniper " \
                            "Networks: myprod1"
         assert expected_message in str(ex.value)
 
         # create entries for the other vendor
-        mixer.blend("productdb.Product",
-                    product_id="myprod1",
-                    vendor=j_vendor)
-        mixer.blend("productdb.Product",
-                    product_id="myprod2",
-                    vendor=j_vendor)
-        mixer.blend("productdb.Product",
-                    product_id="myprod3",
-                    vendor=j_vendor)
+        models.Product.objects.create(
+            product_id="myprod1",
+            vendor=j_vendor
+        )
+        models.Product.objects.create(
+            product_id="myprod2",
+            vendor=j_vendor
+        )
+        models.Product.objects.create(
+            product_id="myprod3",
+            vendor=j_vendor
+        )
 
         pl.vendor = j_vendor
         pl.save()
@@ -616,53 +646,53 @@ class TestUserProfile:
     """Test UserProfile model object"""
     @pytest.mark.usefixtures("import_default_vendors")
     def test_create_new_user_profile_when_user_is_created(self):
-        assert UserProfile.objects.count() == 0, "No user profile should be created at this time"
+        assert models.UserProfile.objects.count() == 0, "No user profile should be created at this time"
 
         u = User.objects.create(username="My test user")
-        assert UserProfile.objects.count() == 1, "A User Profile object should be created automatically"
+        assert models.UserProfile.objects.count() == 1, "A User Profile object should be created automatically"
         assert u.profile is not None, "User Profile should be associated to the new user"
         assert str(u.profile) == "User Profile for My test user", "Unexpected string representation of the User Profile"
         assert u.profile.regex_search is False, "the advanced search operation should be disabled by default"
-        assert u.profile.preferred_vendor == Vendor.objects.get(id=1), "Default vendor should be defined"
+        assert u.profile.preferred_vendor == models.Vendor.objects.get(id=1), "Default vendor should be defined"
 
     @pytest.mark.usefixtures("import_default_vendors")
     def test_natural_key_serialization(self):
         u = User.objects.create(username="test_user")
-        assert UserProfile.objects.count() == 1, "A User Profile object should be created automatically"
-        up = UserProfile.objects.get_by_natural_key(u.username)
+        assert models.UserProfile.objects.count() == 1, "A User Profile object should be created automatically"
+        up = models.UserProfile.objects.get_by_natural_key(u.username)
         assert up is not None
         assert up.natural_key() == "test_user"
 
 
 class TestProductMigrationSource:
     def test_model(self):
-        pmiggrp = ProductMigrationSource.objects.create(name="Test", description="description")
+        pmiggrp = models.ProductMigrationSource.objects.create(name="Test", description="description")
 
         assert str(pmiggrp) == "Test"
         assert pmiggrp.preference == 50, "Default value"
 
         # test ordering
-        pmiggrp2 = ProductMigrationSource.objects.create(
+        pmiggrp2 = models.ProductMigrationSource.objects.create(
             name="Test2", preference=70
         )
 
-        assert ProductMigrationSource.objects.count() == 2
-        assert ProductMigrationSource.objects.all().first().name == pmiggrp2.name
+        assert models.ProductMigrationSource.objects.count() == 2
+        assert models.ProductMigrationSource.objects.all().first().name == pmiggrp2.name
 
         # test second
-        ProductMigrationSource.objects.create(
+        models.ProductMigrationSource.objects.create(
             name="Test3", preference=70
         )
 
-        assert ProductMigrationSource.objects.count() == 3
-        assert ProductMigrationSource.objects.all().first().name == pmiggrp2.name
+        assert models.ProductMigrationSource.objects.count() == 3
+        assert models.ProductMigrationSource.objects.all().first().name == pmiggrp2.name
 
     def test_unique_name(self):
         test_name = "Test Migration Source"
-        mixer.blend("productdb.ProductMigrationSource", name=test_name)
+        models.ProductMigrationSource.objects.create(name=test_name)
 
         with pytest.raises(ValidationError) as exinfo:
-            ProductMigrationSource.objects.create(name=test_name)
+            models.ProductMigrationSource.objects.create(name=test_name)
 
         assert exinfo.match("\'name\': \[\'Product Migration Source with this Name already exists.\'\]")
 
@@ -672,13 +702,12 @@ class TestProductCheck:
     """Test the ProductCheck and ProductCheckEntry model"""
     def test_model(self):
         test_product_string = "myprod"
-        mixer.blend(
-            "productdb.Product",
+        models.Product.objects.create(
             product_id=test_product_string,
-            vendor=Vendor.objects.get(id=1)
+            vendor=models.Vendor.objects.get(id=1)
         )
 
-        pc = ProductCheck.objects.create(name="Test", input_product_ids="TestTest")
+        pc = models.ProductCheck.objects.create(name="Test", input_product_ids="TestTest")
 
         assert pc.migration_source is None
         assert pc.use_preferred_migration_source is True  # should be true, because no migration source is defined
@@ -697,13 +726,13 @@ class TestProductCheck:
         assert pc.input_product_ids_list == ["Test", "Test", "TestTest", "asdf"]
 
         # test migration source
-        pc.migration_source = mixer.blend("productdb.ProductMigrationSource", name="Test")
+        pc.migration_source = models.ProductMigrationSource.objects.create(name="Test")
         pc.save()
 
         assert pc.use_preferred_migration_source is False
 
         # test create user
-        pc.create_user = mixer.blend("auth.User")
+        pc.create_user = User.objects.create(username="testuser")
         pc.save()
 
         assert pc.is_public is False
@@ -718,7 +747,7 @@ class TestProductCheck:
         first_large_string = "".join(["\n" if e % 32 == 0 else "1" for e in range(1, 65536)])
         second_large_string = "".join(["\n" if e % 32 == 0 else "2" for e in range(1, 65536)])
 
-        pc = ProductCheck.objects.create(name="Test", input_product_ids=first_large_string)
+        pc = models.ProductCheck.objects.create(name="Test", input_product_ids=first_large_string)
 
         # single chunk (maximum size)
         assert pc.productcheckinputchunks_set.count() == 1
@@ -738,7 +767,7 @@ class TestProductCheck:
         assert pc.productcheckinputchunks_set.count() == 1
 
         # read from DB
-        read_pc = ProductCheck.objects.get(id=pc.id)
+        read_pc = models.ProductCheck.objects.get(id=pc.id)
 
         assert sha512(read_pc.input_product_ids.encode()).digest() == sls_hash
 
@@ -747,7 +776,7 @@ class TestProductCheck:
         vls_hash = sha512(very_large_string.encode()).digest()
 
         # test setter property with very large string
-        new_pc = ProductCheck.objects.create(name="Test", input_product_ids=very_large_string)
+        new_pc = models.ProductCheck.objects.create(name="Test", input_product_ids=very_large_string)
 
         assert sha512(new_pc._input_product_ids.encode()).digest() == vls_hash, "internal buffer should be set"
         assert sha512(new_pc.input_product_ids.encode()).digest() == vls_hash, "Should return the buffer value"
@@ -756,44 +785,44 @@ class TestProductCheck:
         new_pc.save()
 
         assert new_pc.productcheckinputchunks_set.count() == 3
-        assert ProductCheckInputChunks.objects.count() == 3 + 1
+        assert models.ProductCheckInputChunks.objects.count() == 3 + 1
 
         # read and save again
-        new_pc = ProductCheck.objects.get(id=new_pc.id)
+        new_pc = models.ProductCheck.objects.get(id=new_pc.id)
         new_pc.save()
 
         assert sha512(new_pc.input_product_ids.encode()).digest() == vls_hash
 
     def test_basic_product_check(self):
+        u = User.objects.create(username="username")
         test_product_string = "myprod"
         test_list = "myprod;myprod\nmyprod;myprod\n" \
                     "Test;Test"
-        v = Vendor.objects.get(id=1)
-        p = mixer.blend(
-            "productdb.Product",
+        v = models.Vendor.objects.get(id=1)
+        p = models.Product.objects.create(
             product_id=test_product_string,
             vendor=v
         )
-        pms1 = mixer.blend("productdb.ProductMigrationSource", name="Preferred Migration Source", preference=60)
-        pms2 = mixer.blend("productdb.ProductMigrationSource", name="Another Migration Source")
-        pmo1 = mixer.blend("productdb.ProductMigrationOption", product=p, migration_source=pms1,
+        pms1 = models.ProductMigrationSource.objects.create(name="Preferred Migration Source", preference=60)
+        pms2 = models.ProductMigrationSource.objects.create(name="Another Migration Source")
+        pmo1 = models.ProductMigrationOption.objects.create(product=p, migration_source=pms1,
                            replacement_product_id="replacement")
-        pmo2 = mixer.blend("productdb.ProductMigrationOption", product=p, migration_source=pms2,
+        pmo2 = models.ProductMigrationOption.objects.create(product=p, migration_source=pms2,
                            replacement_product_id="other_replacement")
-        pl = mixer.blend(
-            "productdb.ProductList",
+        pl = models.ProductList.objects.create(
             name="TestList",
             string_product_list="myprod",
-            vendor=v
+            vendor=v,
+            update_user=u
         )
-        pl2 = mixer.blend(
-            "productdb.ProductList",
+        pl2 = models.ProductList.objects.create(
             name="AnotherTestList",
             string_product_list="myprod",
-            vendor=v
+            vendor=v,
+            update_user=u
         )
 
-        pc = ProductCheck.objects.create(name="Test", input_product_ids=test_list)
+        pc = models.ProductCheck.objects.create(name="Test", input_product_ids=test_list)
         pc.perform_product_check()
         assert pc.productcheckentry_set.count() == 2
 
@@ -828,7 +857,7 @@ class TestProductCheck:
         # run again (should reset and recreate the results)
         pc.perform_product_check()
         assert pc.productcheckentry_set.count() == 2
-        assert ProductCheckEntry.objects.all().count() == 2
+        assert models.ProductCheckEntry.objects.all().count() == 2
 
         # run again with a specific migration source
         pc.migration_source = pms2  # use the less preferred migration source
@@ -856,58 +885,57 @@ class TestProductCheck:
         assert not_in_db.migration_product is None
 
     def test_recursive_product_check(self):
+        u = User.objects.create(username="username")
         test_product_string = "myprod"
         test_list = "myprod;myprod\nmyprod;myprod\n" \
                     "Test;Test"
-        v = Vendor.objects.get(id=1)
-        p = mixer.blend(
-            "productdb.Product",
+        v = models.Vendor.objects.get(id=1)
+        p = models.Product.objects.create(
             product_id=test_product_string,
             vendor=v,
             eox_update_time_stamp=_datetime.datetime.utcnow(),
             eol_ext_announcement_date=_datetime.date(2016, 1, 1),
             end_of_sale_date=_datetime.date(2016, 1, 1)
         )
-        p2 = mixer.blend(
-            "productdb.Product",
+        p2 = models.Product.objects.create(
             product_id="replacement_pid",
             vendor=v,
             eox_update_time_stamp=_datetime.datetime.utcnow(),
             eol_ext_announcement_date=_datetime.date(2016, 1, 1),
             end_of_sale_date=_datetime.date(2016, 1, 1)
         )
-        mixer.blend(
-            "productdb.Product",
+        models.Product.objects.create(
             product_id="another_replacement_pid",
             vendor=v
         )
-        pms = mixer.blend(
-            "productdb.ProductMigrationSource",
+        pms = models.ProductMigrationSource.objects.create(
             name="Preferred Migration Source",
             preference=60
         )
-        mixer.blend("productdb.ProductMigrationOption",
-                    product=p,
-                    migration_source=pms,
-                    replacement_product_id="replacement_pid")
-        mixer.blend("productdb.ProductMigrationOption",
-                    product=p2,
-                    migration_source=pms,
-                    replacement_product_id="another_replacement_pid")
-        pl = mixer.blend(
-            "productdb.ProductList",
+        models.ProductMigrationOption.objects.create(
+            product=p,
+            migration_source=pms,
+            replacement_product_id="replacement_pid"
+        )
+        models.ProductMigrationOption.objects.create(
+            product=p2,
+            migration_source=pms,
+            replacement_product_id="another_replacement_pid"
+        )
+        pl = models.ProductList.objects.create(
             name="TestList",
             string_product_list="myprod",
-            vendor=v
+            vendor=v,
+            update_user=u
         )
-        pl2 = mixer.blend(
-            "productdb.ProductList",
+        pl2 = models.ProductList.objects.create(
             name="AnotherTestList",
             string_product_list="myprod",
-            vendor=v
+            vendor=v,
+            update_user=u
         )
 
-        pc = ProductCheck.objects.create(
+        pc = models.ProductCheck.objects.create(
             name="Test",
             input_product_ids=test_list,
             migration_source=pms
@@ -936,51 +964,47 @@ class TestProductCheck:
 
     def test_basic_product_check_with_less_preferred_migration_source(self):
         """only Product Migration sources that have a preference > 25 should be considered as preferred"""
+        u = User.objects.create(username="username")
         test_product_string = "myprod"
         test_list = "myprod;myprod\nmyprod;myprod\n" \
                     "Test;Test"
-        v = Vendor.objects.get(id=1)
-        p = mixer.blend(
-            "productdb.Product",
+        v = models.Vendor.objects.get(id=1)
+        p = models.Product.objects.create(
             product_id=test_product_string,
             vendor=v
         )
-        pms1 = mixer.blend(
-            "productdb.ProductMigrationSource",
+        pms1 = models.ProductMigrationSource.objects.create(
             name="Preferred Migration Source",
             preference=25
         )
-        pms2 = mixer.blend(
-            "productdb.ProductMigrationSource",
+        pms2 = models.ProductMigrationSource.objects.create(
             name="Another Migration Source",
             preference=10
         )
-        pmo1 = mixer.blend(
-            "productdb.ProductMigrationOption",
+        pmo1 = models.ProductMigrationOption.objects.create(
             product=p,
             migration_source=pms1,
             replacement_product_id="replacement"
         )
-        pmo2 = mixer.blend(
-            "productdb.ProductMigrationOption",
+        pmo2 = models.ProductMigrationOption.objects.create(
             product=p,
             migration_source=pms2,
             replacement_product_id="other_replacement"
         )
-        pl = mixer.blend(
-            "productdb.ProductList",
+        pl = models.ProductList.objects.create(
             name="TestList",
             string_product_list="myprod",
-            vendor=v
+            vendor=v,
+            update_user=u
         )
-        pl2 = mixer.blend(
-            "productdb.ProductList",
+        pl2 = models.ProductList.objects.create(
             name="AnotherTestList",
             string_product_list="myprod",
-            vendor=v
+            vendor=v,
+            update_user=u
         )
 
-        pc = ProductCheck.objects.create(name="Test", input_product_ids=test_list)
+        pc = models.ProductCheck.objects.create(name="Test", input_product_ids=test_list)
         pc.perform_product_check()
         assert pc.productcheckentry_set.count() == 2
 
@@ -1023,54 +1047,57 @@ class TestProductCheck:
 
     def test_recursive_product_check_with_less_preferred_migration_source(self):
         """test recursive Product Check with specific less preferred migration source"""
+        u = User.objects.create(username="username")
         test_product_string = "myprod"
         test_list = "myprod;myprod\nmyprod;myprod\n" \
                     "Test;Test"
-        v = Vendor.objects.get(id=1)
-        p = mixer.blend(
-            "productdb.Product",
+        v = models.Vendor.objects.get(id=1)
+        p = models.Product.objects.create(
             product_id=test_product_string,
             vendor=v,
             eox_update_time_stamp=_datetime.datetime.utcnow(),
             eol_ext_announcement_date=_datetime.date(2016, 1, 1),
             end_of_sale_date=_datetime.date(2016, 1, 1)
         )
-        p2 = mixer.blend(
-            "productdb.Product",
+        p2 = models.Product.objects.create(
             product_id="replacement_pid",
             vendor=v,
             eox_update_time_stamp=_datetime.datetime.utcnow(),
             eol_ext_announcement_date=_datetime.date(2016, 1, 1),
             end_of_sale_date=_datetime.date(2016, 1, 1)
         )
-        mixer.blend(
-            "productdb.Product",
+        models.Product.objects.create(
             product_id="another_replacement_pid",
             vendor=v
         )
-        pms = mixer.blend(
-            "productdb.ProductMigrationSource",
+        pms = models.ProductMigrationSource.objects.create(
             name="Preferred Migration Source",
             preference=25
         )
-        mixer.blend("productdb.ProductMigrationOption", product=p, migration_source=pms,
-                    replacement_product_id="replacement_pid")
-        mixer.blend("productdb.ProductMigrationOption", product=p2, migration_source=pms,
-                    replacement_product_id="another_replacement_pid")
-        pl = mixer.blend(
-            "productdb.ProductList",
+        models.ProductMigrationOption.objects.create(
+            product=p,
+            migration_source=pms,
+            replacement_product_id="replacement_pid"
+        )
+        models.ProductMigrationOption.objects.create(
+            product=p2,
+            migration_source=pms,
+            replacement_product_id="another_replacement_pid"
+        )
+        pl = models.ProductList.objects.create(
             name="TestList",
             string_product_list="myprod",
-            vendor=v
+            vendor=v,
+            update_user=u
         )
-        pl2 = mixer.blend(
-            "productdb.ProductList",
+        pl2 = models.ProductList.objects.create(
             name="AnotherTestList",
             string_product_list="myprod",
-            vendor=v
+            vendor=v,
+            update_user=u
         )
 
-        pc = ProductCheck.objects.create(name="Test", input_product_ids=test_list, migration_source=pms)
+        pc = models.ProductCheck.objects.create(name="Test", input_product_ids=test_list, migration_source=pms)
         pc.perform_product_check()
         assert pc.productcheckentry_set.count() == 2
 
@@ -1099,30 +1126,29 @@ class TestProductMigrationOption:
     def test_model(self):
         test_product_id = "My Product ID"
         replacement_product_id = "replaced product"
-        p = mixer.blend(
-            "productdb.Product",
+        p = models.Product.objects.create(
             product_id=test_product_id,
-            vendor=Vendor.objects.get(id=1)
+            vendor=models.Vendor.objects.get(id=1)
         )
-        repl_p = mixer.blend("productdb.Product", product_id=replacement_product_id)
-        promiggrp = ProductMigrationSource.objects.create(name="Test")
+        repl_p = models.Product.objects.create(product_id=replacement_product_id)
+        promiggrp = models.ProductMigrationSource.objects.create(name="Test")
 
         with pytest.raises(ValidationError) as exinfo:
-            ProductMigrationOption.objects.create(
+            models.ProductMigrationOption.objects.create(
                 migration_source=promiggrp
             )
 
         assert exinfo.match("\'product\': \[\'This field cannot be null.\'\]")
 
         with pytest.raises(ValidationError) as exinfo:
-            ProductMigrationOption.objects.create(
+            models.ProductMigrationOption.objects.create(
                 product=p
             )
 
         assert exinfo.match("\'migration_source\': \[\'This field cannot be null.\'\]")
 
         # test replacement_product_id with a product ID that is not in the database
-        pmo = ProductMigrationOption.objects.create(
+        pmo = models.ProductMigrationOption.objects.create(
             product=p,
             migration_source=promiggrp,
             replacement_product_id="Missing Product"
@@ -1136,7 +1162,7 @@ class TestProductMigrationOption:
         pmo.delete()
 
         # test replacement_product_id with a product ID that is in the database
-        pmo2 = ProductMigrationOption.objects.create(
+        pmo2 = models.ProductMigrationOption.objects.create(
             product=p,
             migration_source=promiggrp,
             replacement_product_id=replacement_product_id
@@ -1149,25 +1175,23 @@ class TestProductMigrationOption:
         assert pmo2.get_valid_replacement_product().product_id == replacement_product_id
 
         # test replacement_product_id with a product ID that is in the database but EoL announced
-        p = mixer.blend(
-            "productdb.Product",
+        p = models.Product.objects.create(
             product_id="eol_product",
-            vendor=Vendor.objects.get(id=1),
+            vendor=models.Vendor.objects.get(id=1),
             eox_update_time_stamp=_datetime.datetime.utcnow(),
             eol_ext_announcement_date=_datetime.date(2016, 1, 1),
             end_of_sale_date=_datetime.date(2016, 1, 1)
         )
-        mixer.blend(
-            "productdb.Product",
+        models.Product.objects.create(
             product_id="replacement_eol_product",
-            vendor=Vendor.objects.get(id=1),
+            vendor=models.Vendor.objects.get(id=1),
             eox_update_time_stamp=_datetime.datetime.utcnow(),
             eol_ext_announcement_date=_datetime.date(2016, 1, 1),
             end_of_sale_date=_datetime.date(2016, 1, 1)
         )
-        assert p.current_lifecycle_states == [Product.END_OF_SALE_STR]
+        assert p.current_lifecycle_states == [models.Product.END_OF_SALE_STR]
 
-        pmo3 = ProductMigrationOption.objects.create(
+        pmo3 = models.ProductMigrationOption.objects.create(
             product=p,
             migration_source=promiggrp,
             replacement_product_id="replacement_eol_product",
@@ -1178,30 +1202,28 @@ class TestProductMigrationOption:
         assert pmo3.get_valid_replacement_product() is None
 
     def test_unique_together_constraint(self):
-        p = mixer.blend(
-            "productdb.Product",
+        p = models.Product.objects.create(
             product_id="Product",
-            vendor=Vendor.objects.get(id=1)
+            vendor=models.Vendor.objects.get(id=1)
         )
-        promiggrp = ProductMigrationSource.objects.create(name="Test")
-        ProductMigrationOption.objects.create(migration_source=promiggrp, product=p)
+        promiggrp = models.ProductMigrationSource.objects.create(name="Test")
+        models.ProductMigrationOption.objects.create(migration_source=promiggrp, product=p)
 
         with pytest.raises(ValidationError) as exinfo:
-            ProductMigrationOption.objects.create(migration_source=promiggrp, product=p)
+            models.ProductMigrationOption.objects.create(migration_source=promiggrp, product=p)
 
         assert exinfo.match("Product Migration Option with this Product and Migration source already exists.")
 
     def test_product_migration_group_set(self):
         test_product_id = "My Product ID"
-        p = mixer.blend(
-            "productdb.Product",
+        p = models.Product.objects.create(
             product_id=test_product_id,
-            vendor=Vendor.objects.get(id=1)
+            vendor=models.Vendor.objects.get(id=1)
         )
         assert p.get_product_migration_source_names_set() == []
 
-        promiggrp = ProductMigrationSource.objects.create(name="Test")
-        ProductMigrationOption.objects.create(
+        promiggrp = models.ProductMigrationSource.objects.create(name="Test")
+        models.ProductMigrationOption.objects.create(
             product=p,
             migration_source=promiggrp,
             replacement_product_id="Missing Product"
@@ -1211,8 +1233,8 @@ class TestProductMigrationOption:
         assert p.get_product_migration_source_names_set() == ["Test"]
 
         # test with additional migration group
-        promiggrp2 = ProductMigrationSource.objects.create(name="Test 2")
-        ProductMigrationOption.objects.create(
+        promiggrp2 = models.ProductMigrationSource.objects.create(name="Test 2")
+        models.ProductMigrationOption.objects.create(
             product=p,
             migration_source=promiggrp2,
             replacement_product_id="Additional Missing Product"
@@ -1223,10 +1245,9 @@ class TestProductMigrationOption:
 
     def test_no_migration_option_provided_in_product(self):
         test_product_id = "My Product ID"
-        p = mixer.blend(
-            "productdb.Product",
+        p = models.Product.objects.create(
             product_id=test_product_id,
-            vendor=Vendor.objects.get(id=1)
+            vendor=models.Vendor.objects.get(id=1)
         )
 
         assert p.has_migration_options() is False
@@ -1234,13 +1255,12 @@ class TestProductMigrationOption:
 
     def test_single_valid_migration_option_provided_in_product(self):
         test_product_id = "My Product ID"
-        p = mixer.blend(
-            "productdb.Product",
+        p = models.Product.objects.create(
             product_id=test_product_id,
-            vendor=Vendor.objects.get(id=1)
+            vendor=models.Vendor.objects.get(id=1)
         )
-        promiggrp = ProductMigrationSource.objects.create(name="Test")
-        pmo = ProductMigrationOption.objects.create(
+        promiggrp = models.ProductMigrationSource.objects.create(name="Test")
+        pmo = models.ProductMigrationOption.objects.create(
             product=p,
             migration_source=promiggrp,
             replacement_product_id="Missing Product"
@@ -1254,13 +1274,12 @@ class TestProductMigrationOption:
 
     def test_single_valid_migration_option_provided_in_product_without_replacement_id(self):
         test_product_id = "My Product ID"
-        p = mixer.blend(
-            "productdb.Product",
+        p = models.Product.objects.create(
             product_id=test_product_id,
-            vendor=Vendor.objects.get(id=1)
+            vendor=models.Vendor.objects.get(id=1)
         )
-        promiggrp = ProductMigrationSource.objects.create(name="Test")
-        pmo = ProductMigrationOption.objects.create(
+        promiggrp = models.ProductMigrationSource.objects.create(name="Test")
+        pmo = models.ProductMigrationOption.objects.create(
             product=p,
             migration_source=promiggrp
         )
@@ -1273,19 +1292,18 @@ class TestProductMigrationOption:
 
     def test_multiple_migration_options_provided_in_product(self):
         test_product_id = "My Product ID"
-        p = mixer.blend(
-            "productdb.Product",
+        p = models.Product.objects.create(
             product_id=test_product_id,
-            vendor=Vendor.objects.get(id=1)
+            vendor=models.Vendor.objects.get(id=1)
         )
-        promiggrp = ProductMigrationSource.objects.create(name="Test")
-        preferred_promiggrp = ProductMigrationSource.objects.create(name="Test2", preference=100)
-        pmo = ProductMigrationOption.objects.create(
+        promiggrp = models.ProductMigrationSource.objects.create(name="Test")
+        preferred_promiggrp = models.ProductMigrationSource.objects.create(name="Test2", preference=100)
+        pmo = models.ProductMigrationOption.objects.create(
             product=p,
             migration_source=promiggrp,
             replacement_product_id="Missing Product"
         )
-        pmo2 = ProductMigrationOption.objects.create(
+        pmo2 = models.ProductMigrationOption.objects.create(
             product=p,
             migration_source=preferred_promiggrp,
             replacement_product_id="Another Missing Product"
@@ -1301,41 +1319,37 @@ class TestProductMigrationOption:
 
     def test_get_migration_path(self):
         # create basic object structure
-        group1 = ProductMigrationSource.objects.create(name="Group One")
-        group2 = ProductMigrationSource.objects.create(name="Group Two", preference=100)
-        root_product = mixer.blend(
-            "productdb.Product",
+        group1 = models.ProductMigrationSource.objects.create(name="Group One")
+        group2 = models.ProductMigrationSource.objects.create(name="Group Two", preference=100)
+        root_product = models.Product.objects.create(
             product_id="C2960XS",
-            vendor=Vendor.objects.get(id=1)
+            vendor=models.Vendor.objects.get(id=1)
         )
-        p11 = mixer.blend(
-            "productdb.Product",
+        p11 = models.Product.objects.create(
             product_id="C2960XL",
-            vendor=Vendor.objects.get(id=1)
+            vendor=models.Vendor.objects.get(id=1)
         )
-        p12 = mixer.blend(
-            "productdb.Product",
+        p12 = models.Product.objects.create(
             product_id="C2960XT",
-            vendor=Vendor.objects.get(id=1)
+            vendor=models.Vendor.objects.get(id=1)
         )
-        p23 = mixer.blend(
-            "productdb.Product",
+        p23 = models.Product.objects.create(
             product_id="C2960XR",
-            vendor=Vendor.objects.get(id=1)
+            vendor=models.Vendor.objects.get(id=1)
         )
         # root is replaced by 11 by Group One and by 12 by Group Two
-        ProductMigrationOption.objects.create(
+        models.ProductMigrationOption.objects.create(
             product=root_product,
             migration_source=group1,
             replacement_product_id=p11.product_id
         )
-        ProductMigrationOption.objects.create(
+        models.ProductMigrationOption.objects.create(
             product=root_product,
             migration_source=group2,
             replacement_product_id=p12.product_id
         )
         # p12 is replaced by 23 by group 2
-        ProductMigrationOption.objects.create(
+        models.ProductMigrationOption.objects.create(
             product=p12,
             migration_source=group2,
             replacement_product_id=p23.product_id
@@ -1387,22 +1401,21 @@ class TestProductMigrationOption:
                          "suggested replacement Product ID'\]}"
 
         # create basic object structure
-        group1 = ProductMigrationSource.objects.create(name="Group One")
-        root_product = mixer.blend(
-            "productdb.Product",
+        group1 = models.ProductMigrationSource.objects.create(name="Group One")
+        root_product = models.Product.objects.create(
             product_id="C2960XS",
-            vendor=Vendor.objects.get(id=1)
+            vendor=models.Vendor.objects.get(id=1)
         )
 
         with pytest.raises(ValidationError) as exinfo:
-            ProductMigrationOption.objects.create(
+            models.ProductMigrationOption.objects.create(
                 product=root_product,
                 migration_source=group1,
                 replacement_product_id=root_product.product_id
             )
         assert exinfo.match(expected_error)
 
-        pmo = ProductMigrationOption.objects.create(
+        pmo = models.ProductMigrationOption.objects.create(
             product=root_product,
             migration_source=group1,
             replacement_product_id="Not in Database"
@@ -1415,25 +1428,22 @@ class TestProductMigrationOption:
 
     def test_update_replacement_db_product_field_in_product_migration_options(self):
         # create basic object structure
-        group1 = ProductMigrationSource.objects.create(name="Group One")
-        root_product = mixer.blend(
-            "productdb.Product",
+        group1 = models.ProductMigrationSource.objects.create(name="Group One")
+        root_product = models.Product.objects.create(
             product_id="C2960XS",
-            vendor=Vendor.objects.get(id=1)
+            vendor=models.Vendor.objects.get(id=1)
         )
-        p11 = mixer.blend(
-            "productdb.Product",
+        p11 = models.Product.objects.create(
             product_id="C2960XL",
-            vendor=Vendor.objects.get(id=1)
+            vendor=models.Vendor.objects.get(id=1)
         )
-        p12 = mixer.blend(
-            "productdb.Product",
+        p12 = models.Product.objects.create(
             product_id="C2960XT",
-            vendor=Vendor.objects.get(id=1)
+            vendor=models.Vendor.objects.get(id=1)
         )
 
         # add first replacement with a valid database option
-        pmo1 = ProductMigrationOption.objects.create(
+        pmo1 = models.ProductMigrationOption.objects.create(
             product=root_product,
             migration_source=group1,
             replacement_product_id=p11.product_id
@@ -1444,7 +1454,7 @@ class TestProductMigrationOption:
         assert pmo1.replacement_db_product == p11
 
         # create a cascade
-        pmo2 = ProductMigrationOption.objects.create(
+        pmo2 = models.ProductMigrationOption.objects.create(
             product=p11,
             migration_source=group1,
             replacement_product_id=p12.product_id
@@ -1455,7 +1465,7 @@ class TestProductMigrationOption:
         assert pmo2.replacement_db_product == p12
 
         # create a replacement product ID that is not part of the database for p12
-        pmo3 = ProductMigrationOption.objects.create(
+        pmo3 = models.ProductMigrationOption.objects.create(
             product=p12,
             migration_source=group1,
             replacement_product_id="Not in the database"
@@ -1471,7 +1481,7 @@ class TestProductMigrationOption:
         # update objects from DB, the migration chain is broken after the first migration option (because p11 will
         # delete pmo2, bus pmo1 drops only the foreign key
         pmo1.refresh_from_db()
-        with pytest.raises(ProductMigrationOption.DoesNotExist):
+        with pytest.raises(models.ProductMigrationOption.DoesNotExist):
             pmo2.refresh_from_db()
         pmo3.refresh_from_db()
 
@@ -1488,8 +1498,8 @@ class TestProductMigrationOption:
 @pytest.mark.usefixtures("import_default_vendors")
 class TestProductIdNormalization:
     def test_model(self):
-        v1 = Vendor.objects.get(id=1)
-        pnr = ProductIdNormalizationRule.objects.create(
+        v1 = models.Vendor.objects.get(id=1)
+        pnr = models.ProductIdNormalizationRule.objects.create(
             vendor=v1,
             product_id="PWR-C1-715WAC=",
             regex_match=r"^PWR\-C1\-715WAC$"
@@ -1500,7 +1510,7 @@ class TestProductIdNormalization:
         assert pnr.matches("") is False
         assert pnr.get_normalized_product_id("PWR-C1-715WAC") == "PWR-C1-715WAC="
 
-        pnr2 = ProductIdNormalizationRule.objects.create(
+        pnr2 = models.ProductIdNormalizationRule.objects.create(
             vendor=v1,
             product_id="PWR-C1-%sWAC=",
             regex_match=r"^PWR\-C1\-(\d+)WAC$"
@@ -1512,7 +1522,7 @@ class TestProductIdNormalization:
         assert pnr2.get_normalized_product_id("PWR-C1-715WAC") == "PWR-C1-715WAC="
 
         with pytest.raises(ValidationError):
-            ProductIdNormalizationRule.objects.create(
+            models.ProductIdNormalizationRule.objects.create(
                 vendor=v1,
                 product_id="PWR-C1-715WAC=",
                 regex_match=r"^PWR\-C1\-715WAC$",

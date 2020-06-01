@@ -3,10 +3,9 @@ Test suite for the productdb.forms module
 """
 import pytest
 from django.contrib.auth.models import AnonymousUser, User
-from mixer.backend.django import mixer
 from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework.authtoken.models import Token
-from app.productdb import utils
+from app.productdb import utils, models
 from app.productdb.forms import UserProfileForm, ProductListForm, ImportProductsFileUploadForm, \
     ImportProductMigrationFileUploadForm, ProductMigrationOptionForm, ProductCheckForm
 from app.productdb.models import Vendor, UserProfile
@@ -17,7 +16,7 @@ pytestmark = pytest.mark.django_db
 @pytest.mark.usefixtures("import_default_vendors")
 class TestUserProfileForm:
     def test_form(self):
-        user = mixer.blend("auth.User")
+        user = User.objects.create(username="foo")
         form = UserProfileForm(user, data={})
         assert form.fields["email"].initial == user.email, "Should be the email of the current user"
         assert form.is_valid() is False
@@ -48,14 +47,14 @@ class TestUserProfileForm:
         assert "preferred_vendor" in form.errors, "Should contain field error for the preferred_vendor"
 
     def test_form_with_instance(self):
-        user = mixer.blend("auth.User")
+        user = User.objects.create(username="foo", email="test@test.com")
         data = {
             "email": user.email,
             "preferred_vendor": 1
         }
         form = UserProfileForm(user, data=data, instance=user.profile)
 
-        assert form.is_valid() is True
+        assert form.is_valid() is True, form.errors
         assert form.cleaned_data.get("email") == user.email, "User eMail should be added automatically"
 
     def test_recreate_token(self):
@@ -116,16 +115,16 @@ class TestProductListForm:
             "string_product_list": "Product",
             "vendor": "1"
         }
-        mixer.blend("productdb.Product", product_id="Product", vendor=v)
+        models.Product.objects.create(product_id="Product", vendor=v)
         form = ProductListForm(data=data)
         assert form.is_valid() is True, form.errors
 
     @pytest.mark.usefixtures("import_default_vendors")
     def test_input_variations_of_string_product_list(self):
         v = Vendor.objects.get(name__contains="Cisco")
-        mixer.blend("productdb.Product", product_id="Product A", vendor=v)
-        mixer.blend("productdb.Product", product_id="Product B", vendor=v)
-        mixer.blend("productdb.Product", product_id="Product C", vendor=v)
+        models.Product.objects.create(product_id="Product A", vendor=v)
+        models.Product.objects.create(product_id="Product B", vendor=v)
+        models.Product.objects.create(product_id="Product C", vendor=v)
         data = {
             "name": "Test Product List",
             "description": "",
@@ -171,7 +170,7 @@ class TestImportProductsFileUploadForm:
         assert form.cleaned_data["suppress_notification"] is True
 
         # authenticated users are not allowed to add a notification
-        authuser = mixer.blend("auth.User")
+        authuser = User.objects.create(username="foo")
         files = {"excel_file": SimpleUploadedFile("myfile.xlsx", b"yxz")}
         data = {"suppress_notification": False}
         form = ImportProductsFileUploadForm(user=authuser, data=data, files=files)
@@ -181,7 +180,7 @@ class TestImportProductsFileUploadForm:
         assert form.cleaned_data["suppress_notification"] is True
 
         # superusers are allowed to change the parameter
-        superuser = mixer.blend("auth.User", is_superuser=True)
+        superuser = User.objects.create(username="test", is_superuser=True)
         files = {"excel_file": SimpleUploadedFile("myfile.xlsx", b"yxz")}
         data = {"suppress_notification": False}
         form = ImportProductsFileUploadForm(user=superuser, data=data, files=files)
@@ -309,8 +308,8 @@ class TestImportProductMigrationFileUploadForm:
 @pytest.mark.usefixtures("import_default_vendors")
 class TestProductMigrationOptionForm:
     def test_form(self):
-        p = mixer.blend("productdb.Product", product_id="Test", vendor=Vendor.objects.get(id=1))
-        mg = migration_source = mixer.blend("productdb.ProductMigrationSource", name="Test")
+        p = models.Product.objects.create(product_id="Test", vendor=Vendor.objects.get(id=1))
+        mg = migration_source = models.ProductMigrationSource.objects.create(name="Test")
 
         form = ProductMigrationOptionForm(data={
             "migration_source": migration_source.id,
@@ -338,7 +337,7 @@ class TestProductMigrationOptionForm:
         })
         assert form.is_valid() is True
 
-        pmo = mixer.blend("productdb.ProductMigrationOption", product=p, migration_source=mg)
+        pmo = models.ProductMigrationOption.objects.create(product=p, migration_source=mg)
         form = ProductMigrationOptionForm(instance=pmo, data={
             "migration_source": migration_source.id,
             "product_id": "Test",

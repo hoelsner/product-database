@@ -7,13 +7,12 @@ from django.contrib.auth.models import AnonymousUser, User
 from django.contrib.messages.storage.fallback import FallbackStorage
 from django.core.cache import cache
 from django.core.exceptions import PermissionDenied
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.http import Http404
 from django.test import RequestFactory
-from mixer.backend.django import mixer
 from django_project import celery
 from app.config import views
-from app.config.models import NotificationMessage, TextBlock
+from app.config import models
 from app.config import utils
 from app.config.settings import AppSettings
 
@@ -97,7 +96,7 @@ class TestAddNotificationView:
 
     def test_authenticated_user(self):
         # require super user permissions
-        user = mixer.blend("auth.User", is_superuser=False)
+        user = User.objects.create(username="username", is_superuser=False)
         url = reverse(self.URL_NAME)
         request = RequestFactory().get(url)
         request.user = user
@@ -107,7 +106,7 @@ class TestAddNotificationView:
 
     def test_superuser_access(self):
         # require super user permissions
-        user = mixer.blend("auth.User", is_superuser=True)
+        user = User.objects.create(username="username", is_superuser=True)
         url = reverse(self.URL_NAME)
         request = RequestFactory().get(url)
         request.user = user
@@ -118,7 +117,7 @@ class TestAddNotificationView:
 
     def test_post(self):
         # require super user permissions
-        user = mixer.blend("auth.User", is_superuser=True)
+        user = User.objects.create(username="username", is_superuser=True)
         url = reverse(self.URL_NAME)
         data = {
             "title": "MyTitle",
@@ -132,9 +131,9 @@ class TestAddNotificationView:
         response = views.add_notification(request)
 
         assert response.status_code == 302
-        assert NotificationMessage.objects.count() == 1
-        n = NotificationMessage.objects.filter(title="MyTitle").first()
-        assert n.type == NotificationMessage.MESSAGE_ERROR
+        assert models.NotificationMessage.objects.count() == 1
+        n = models.NotificationMessage.objects.filter(title="MyTitle").first()
+        assert n.type == models.NotificationMessage.MESSAGE_ERROR
 
         # test with missing input
         data = {
@@ -167,7 +166,7 @@ class TestStatusView:
     @pytest.mark.usefixtures("mock_cisco_eox_api_access_available")
     def test_authenticated_user(self):
         # require super user permissions
-        user = mixer.blend("auth.User", is_superuser=False)
+        user = User.objects.create(username="username", is_superuser=False)
         url = reverse(self.URL_NAME)
         request = RequestFactory().get(url)
         request.user = user
@@ -178,7 +177,7 @@ class TestStatusView:
     @pytest.mark.usefixtures("mock_cisco_eox_api_access_available")
     def test_superuser_access(self):
         # require super user permissions
-        user = mixer.blend("auth.User", is_superuser=True)
+        user = User.objects.create(username="username", is_superuser=True)
         url = reverse(self.URL_NAME)
         request = RequestFactory().get(url)
         request.user = user
@@ -205,7 +204,7 @@ class TestStatusView:
         cache.delete("CISCO_EOX_API_TEST")  # ensure that cache is not set
 
         # require super user permissions
-        user = mixer.blend("auth.User", is_superuser=True)
+        user = User.objects.create(username="username", is_superuser=True)
         url = reverse(self.URL_NAME)
         request = RequestFactory().get(url)
         request.user = user
@@ -231,7 +230,7 @@ class TestStatusView:
         cache.delete("CISCO_EOX_API_TEST")  # ensure that cache is not set
 
         # require super user permissions
-        user = mixer.blend("auth.User", is_superuser=True)
+        user = User.objects.create(username="username", is_superuser=True)
         url = reverse(self.URL_NAME)
         request = RequestFactory().get(url)
         request.user = user
@@ -253,7 +252,7 @@ class TestStatusView:
     @pytest.mark.usefixtures("mock_cisco_eox_api_access_broken")
     def test_access_with_broken_api(self):
         # require super user permissions
-        user = mixer.blend("auth.User", is_superuser=True)
+        user = User.objects.create(username="username", is_superuser=True)
         url = reverse(self.URL_NAME)
         request = RequestFactory().get(url)
         request.user = user
@@ -269,7 +268,7 @@ class TestStatusView:
     @pytest.mark.usefixtures("mock_cisco_eox_api_access_exception")
     def test_access_with_broken_api_by_exception(self):
         # require super user permissions
-        user = mixer.blend("auth.User", is_superuser=True)
+        user = User.objects.create(username="username", is_superuser=True)
         url = reverse(self.URL_NAME)
         request = RequestFactory().get(url)
         request.user = user
@@ -300,7 +299,7 @@ class TestChangeConfiguration:
     @pytest.mark.usefixtures("mock_cisco_eox_api_access_available")
     def test_authenticated_user(self):
         # require super user permissions
-        user = mixer.blend("auth.User", is_superuser=False)
+        user = User.objects.create(username="username", is_superuser=False)
         url = reverse(self.URL_NAME)
         request = RequestFactory().get(url)
         request.user = user
@@ -312,7 +311,7 @@ class TestChangeConfiguration:
     @pytest.mark.usefixtures("import_default_text_blocks")
     def test_superuser_access(self):
         # require super user permissions
-        user = mixer.blend("auth.User", is_superuser=True)
+        user = User.objects.create(username="username", is_superuser=True)
         url = reverse(self.URL_NAME)
         request = RequestFactory().get(url)
         request.user = user
@@ -322,7 +321,7 @@ class TestChangeConfiguration:
 
         assert response.status_code == 200
 
-        for content in TextBlock.objects.all().values_list("html_content", flat=True):
+        for content in models.TextBlock.objects.all().values_list("html_content", flat=True):
             assert escape(content) in response.content.decode()
 
     def test_global_options_are_visible(self):
@@ -331,7 +330,7 @@ class TestChangeConfiguration:
         app_config.set_internal_product_id_label(test_internal_id)
 
         # require super user permissions
-        user = mixer.blend("auth.User", is_superuser=True)
+        user = User.objects.create(username="username", is_superuser=True)
         url = reverse(self.URL_NAME)
         request = RequestFactory().get(url)
         request.user = user
@@ -346,7 +345,7 @@ class TestChangeConfiguration:
     @pytest.mark.usefixtures("import_default_text_blocks")
     def test_post_with_active_api(self):
         # require super user permissions
-        user = mixer.blend("auth.User", is_superuser=True)
+        user = User.objects.create(username="username", is_superuser=True)
         url = reverse(self.URL_NAME)
         data = {}
         request = RequestFactory().post(url, data=data)
@@ -390,7 +389,7 @@ class TestChangeConfiguration:
     @pytest.mark.usefixtures("import_default_text_blocks")
     def test_post_with_inactive_api(self):
         # require super user permissions
-        user = mixer.blend("auth.User", is_superuser=True)
+        user = User.objects.create(username="username", is_superuser=True)
         url = reverse(self.URL_NAME)
         data = {
             "cisco_api_enabled": "on",
@@ -423,7 +422,7 @@ class TestChangeConfiguration:
     @pytest.mark.usefixtures("import_default_text_blocks")
     def test_post_with_broken_api(self):
         # require super user permissions
-        user = mixer.blend("auth.User", is_superuser=True)
+        user = User.objects.create(username="username", is_superuser=True)
         url = reverse(self.URL_NAME)
         data = {
             "cisco_api_enabled": "on",
@@ -464,14 +463,14 @@ class TestServerMessagesList:
             "Should contain a next parameter for redirect"
 
     def test_authenticated_user(self):
-        mixer.blend("config.NotificationMessage")
-        mixer.blend("config.NotificationMessage")
-        mixer.blend("config.NotificationMessage")
-        mixer.blend("config.NotificationMessage")
-        mixer.blend("config.NotificationMessage")
+        models.NotificationMessage.objects.create(title="A1", summary_message="B", detailed_message="C")
+        models.NotificationMessage.objects.create(title="A2", summary_message="B", detailed_message="C")
+        models.NotificationMessage.objects.create(title="A3", summary_message="B", detailed_message="C")
+        models.NotificationMessage.objects.create(title="A4", summary_message="B", detailed_message="C")
+        models.NotificationMessage.objects.create(title="A5", summary_message="B", detailed_message="C")
         url = reverse(self.URL_NAME)
         request = RequestFactory().get(url)
-        request.user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+        request.user = User.objects.create(username="username", is_superuser=False, is_staff=False)
         response = views.server_messages_list(request)
 
         assert response.status_code == 200, "Should be callable"
@@ -482,7 +481,7 @@ class TestServerMessagesDetail:
     URL_NAME = "productdb_config:notification-detail"
 
     def test_anonymous_default(self):
-        nm = mixer.blend("config.NotificationMessage")
+        nm = models.NotificationMessage.objects.create(title="A1", summary_message="B", detailed_message="C")
 
         url = reverse(self.URL_NAME, kwargs={"message_id": nm.id})
         request = RequestFactory().get(url)
@@ -493,7 +492,7 @@ class TestServerMessagesDetail:
 
     @pytest.mark.usefixtures("enable_login_only_mode")
     def test_anonymous_login_only_mode(self):
-        nm = mixer.blend("config.NotificationMessage")
+        nm = models.NotificationMessage.objects.create(title="A1", summary_message="B", detailed_message="C")
 
         url = reverse(self.URL_NAME, kwargs={"message_id": nm.id})
         request = RequestFactory().get(url)
@@ -505,11 +504,11 @@ class TestServerMessagesDetail:
             "Should contain a next parameter for redirect"
 
     def test_authenticated_user(self):
-        nm = mixer.blend("config.NotificationMessage")
+        nm = models.NotificationMessage.objects.create(title="A1", summary_message="B", detailed_message="C")
 
         url = reverse(self.URL_NAME, kwargs={"message_id": nm.id})
         request = RequestFactory().get(url)
-        request.user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+        request.user = User.objects.create(username="username", is_superuser=False, is_staff=False)
         response = views.server_message_detail(request, nm.id)
 
         assert response.status_code == 200, "Should be callable"
@@ -517,7 +516,7 @@ class TestServerMessagesDetail:
     def test_404(self):
         url = reverse(self.URL_NAME, kwargs={"message_id": 9999})
         request = RequestFactory().get(url)
-        request.user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+        request.user = User.objects.create(username="username", is_superuser=False, is_staff=False)
 
         with pytest.raises(Http404):
             views.server_message_detail(request, 9999)
@@ -551,7 +550,7 @@ class TestFlushCache:
     def test_authenticated_user(self):
         url = reverse(self.URL_NAME)
         request = RequestFactory().get(url)
-        request.user = mixer.blend("auth.User", is_superuser=False, is_staff=False)
+        request.user = User.objects.create(username="username", is_superuser=False, is_staff=False)
 
         with pytest.raises(PermissionDenied):
             views.flush_cache(request)

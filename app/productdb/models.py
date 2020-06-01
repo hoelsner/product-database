@@ -84,9 +84,11 @@ class ProductGroup(models.Model):
 
     def get_all_products(self):
         """returns a query set that contains all Products"""
-        result = Product.objects.filter(product_group=self)
-        if result.count() == 0:
-            result = None
+        result = None
+        if self.pk:
+            result = Product.objects.filter(product_group_id=self.pk)
+            if result.count() == 0:
+                result = None
 
         return result
 
@@ -104,6 +106,12 @@ class ProductGroup(models.Model):
 
         # verify that all associated Products have the same Vendor as the product list
         associated_products = self.get_all_products()
+        import logging
+        logging.debug("Associated Products to %s: %s - %s" %(
+            self.name,
+            len(associated_products) if associated_products is not None else "0 (None)",
+            associated_products.values_list("product_id", flat=True) if associated_products is not None else "[]"
+        ))
 
         # if no products are associated to the group, no check is required
         if associated_products:
@@ -260,8 +268,7 @@ class Product(models.Model):
         null=True,
         blank=True,
         verbose_name="Product Group",
-        on_delete=models.SET_NULL,
-        validators=[]
+        on_delete=models.SET_NULL
     )
 
     lc_state_sync = models.BooleanField(
@@ -500,8 +507,8 @@ class ProductMigrationSource(models.Model):
 
 
 class ProductMigrationOption(models.Model):
-    product = models.ForeignKey(Product)
-    migration_source = models.ForeignKey(ProductMigrationSource)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    migration_source = models.ForeignKey(ProductMigrationSource, on_delete=models.CASCADE)
 
     replacement_product_id = models.CharField(
         max_length=512,
@@ -593,6 +600,7 @@ class ProductList(models.Model):
         Vendor,
         help_text="vendor for the product list (only products from a single vendor can be used within a product list)",
         verbose_name="Vendor",
+        on_delete=models.CASCADE,
         # auto-discovery based on the list entries is implemented as part of the save function
         # required only for data migration
         null=True,
@@ -701,7 +709,12 @@ class UserProfileManager(models.Manager):
 
 class UserProfile(models.Model):
     objects = UserProfileManager()
-    user = models.OneToOneField(User, related_name='profile', unique=True)
+    user = models.OneToOneField(
+        User,
+        related_name='profile',
+        on_delete=models.CASCADE,
+        unique=True
+    )
 
     preferred_vendor = models.ForeignKey(
         Vendor,
@@ -743,7 +756,10 @@ class ProductCheckInputChunks(models.Model):
         blank=True
     )
 
-    product_check = models.ForeignKey("ProductCheck")
+    product_check = models.ForeignKey(
+        "ProductCheck",
+        on_delete=models.CASCADE
+    )
 
     class Meta:
         ordering = ['sequence']
@@ -762,7 +778,8 @@ class ProductCheck(models.Model):
         help_text="migration source to identify the replacement options, if not selected the preferred migration path "
                   "is used",
         null=True,
-        blank=True
+        blank=True,
+        on_delete=models.CASCADE
     )
 
     @property
@@ -804,6 +821,7 @@ class ProductCheck(models.Model):
     create_user = models.ForeignKey(
         User,
         help_text="if not null, the product check is available to all users",
+        on_delete=models.CASCADE,
         null=True,
         blank=True
     )
@@ -877,7 +895,8 @@ class ProductCheck(models.Model):
 
 class ProductCheckEntry(models.Model):
     product_check = models.ForeignKey(
-        ProductCheck
+        ProductCheck,
+        on_delete=models.CASCADE
     )
 
     input_product_id = models.CharField(
@@ -904,6 +923,7 @@ class ProductCheckEntry(models.Model):
     migration_product = models.ForeignKey(
         ProductMigrationOption,
         verbose_name="Migration Option",
+        on_delete=models.CASCADE,
         null=True,
         blank=True
     )
@@ -973,7 +993,8 @@ class ProductIdNormalizationRule(models.Model):
     vendor = models.ForeignKey(
         Vendor,
         verbose_name="Vendor",
-        help_text="Vendor where the rule should apply"
+        help_text="Vendor where the rule should apply",
+        on_delete=models.CASCADE
     )
 
     product_id = models.CharField(

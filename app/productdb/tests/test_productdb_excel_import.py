@@ -6,9 +6,9 @@ import pandas as pd
 import pytest
 import datetime
 from django.contrib.auth.models import User
-from mixer.backend.django import mixer
 from app.productdb.excel_import import ProductsExcelImporter, InvalidImportFormatException, InvalidExcelFileFormat, \
     ProductMigrationsExcelImporter
+from app.productdb import models
 from app.productdb.models import Product, Vendor, ProductGroup, ProductMigrationSource, ProductMigrationOption
 
 pytestmark = pytest.mark.django_db
@@ -584,8 +584,8 @@ class TestProductsExcelImporter:
 class TestProductMigrationExcelImporter:
     @pytest.mark.usefixtures("apply_base_import_products_excel_file_mock")
     def test_valid_import(self):
-        mixer.blend("productdb.Product", product_id="Product A", vendor=Vendor.objects.get(id=1))
-        mixer.blend("productdb.ProductMigrationSource", name="Existing Migration Source")
+        models.Product.objects.create(product_id="Product A", vendor=Vendor.objects.get(id=1))
+        models.ProductMigrationSource.objects.create(name="Existing Migration Source")
 
         product_migrations_file = ProductMigrationsExcelImporter("virtual_file.xlsx")
         assert product_migrations_file.is_valid_file() is False
@@ -629,8 +629,8 @@ class TestProductMigrationExcelImporter:
                 ]
             ], columns=PRODUCT_MIGRATION_TEST_DATA_COLUMNS
         )
-        mixer.blend("productdb.Product", product_id="Product A", vendor=Vendor.objects.get(id=1))
-        mixer.blend("productdb.ProductMigrationSource", name="Existing Migration Source")
+        models.Product.objects.create(product_id="Product A", vendor=Vendor.objects.get(id=1))
+        models.ProductMigrationSource.objects.create(name="Existing Migration Source")
 
         product_migrations_file = ProductMigrationsExcelImporter("virtual_file.xlsx")
         assert product_migrations_file.is_valid_file() is False
@@ -661,8 +661,8 @@ class TestProductMigrationExcelImporter:
                 ]
             ], columns=PRODUCT_MIGRATION_TEST_DATA_COLUMNS
         )
-        mixer.blend("productdb.Product", product_id="Product A", vendor=Vendor.objects.get(id=1))
-        mixer.blend("productdb.ProductMigrationSource", name="Existing Migration Source")
+        models.Product.objects.create(product_id="Product A", vendor=Vendor.objects.get(id=1))
+        models.ProductMigrationSource.objects.create(name="Existing Migration Source")
 
         product_migrations_file = ProductMigrationsExcelImporter("no file.xlsx")
         assert product_migrations_file.is_valid_file() is False
@@ -694,8 +694,8 @@ class TestProductMigrationExcelImporter:
                 ]
             ], columns=PRODUCT_MIGRATION_TEST_DATA_COLUMNS
         )
-        mixer.blend("productdb.Product", product_id="Product A", vendor=Vendor.objects.get(id=1))
-        mixer.blend("productdb.ProductMigrationSource", name="Existing Migration Source")
+        models.Product.objects.create(product_id="Product A", vendor=Vendor.objects.get(id=1))
+        models.ProductMigrationSource.objects.create(name="Existing Migration Source")
 
         product_migrations_file = ProductMigrationsExcelImporter("virtual_file.xlsx")
         assert product_migrations_file.is_valid_file() is False
@@ -728,8 +728,8 @@ class TestProductMigrationExcelImporter:
                 ]
             ], columns=PRODUCT_MIGRATION_TEST_DATA_COLUMNS
         )
-        mixer.blend("productdb.Product", product_id="Product A", vendor=Vendor.objects.get(id=1))
-        mixer.blend("productdb.ProductMigrationSource", name="Existing Migration Source")
+        models.Product.objects.create(product_id="Product A", vendor=Vendor.objects.get(id=1))
+        models.ProductMigrationSource.objects.create(name="Existing Migration Source")
 
         product_migrations_file = ProductMigrationsExcelImporter("virtual_file.xlsx")
         assert product_migrations_file.is_valid_file() is False
@@ -845,7 +845,7 @@ class TestMigratedImportProductsExcelFile:
                 'vendor': 'Cisco Systems',
             }
         ]
-        mixer.blend("productdb.Product", product_id="WS-C2960S-48FPD-L", vendor=Vendor.objects.get(id=1))
+        models.Product.objects.create(product_id="WS-C2960S-48FPD-L", vendor=Vendor.objects.get(id=1))
 
         product_file = self.prepare_import_products_excel_file("excel_import_products_test.xlsx", start_import=False)
         product_file.import_to_database(update_only=True)
