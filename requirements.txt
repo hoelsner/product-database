@@ -1,6 +1,6 @@
 anyjson==0.3.3
 celery==4.3.0
-Django==2.2.12
+Django==2.2.13
 django-annoying==0.10.6
 django-datatables-view==1.19.1
 drf-yasg==1.17.1
