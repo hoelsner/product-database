@@ -3,6 +3,7 @@ Test suite for the ciscoeox.base_api module
 """
 import datetime
 import json
+import os
 import pytest
 import requests
 from requests.models import Response
@@ -12,20 +13,12 @@ from app.ciscoeox.base_api import CiscoHelloApi, CiscoApiCallFailed, Credentials
 from django.core.cache import cache
 
 pytestmark = pytest.mark.django_db
-online = pytest.mark.skipif(not pytest.config.getoption("--online"), reason="need --online to run")
 
 
 class BaseCiscoApiConsoleSettings:
     """
     Mock object that provides the Cisco API credentials used for online tests. If no credentials are found, dummy
-    values are used. The source file for the Test API credentials are read from the ".cisco_api_credentials" file,
-    which should have the following format:
-
-    {
-        "id": "",
-        "secret": ""
-    }
-
+    values are used.
     """
     CREDENTIALS_FILE = ".cisco_api_credentials"
 
@@ -42,18 +35,10 @@ class BaseCiscoApiConsoleSettings:
         pass
 
     def get_cisco_api_client_id(self):
-        try:
-            with open(self.CREDENTIALS_FILE) as f:
-                return json.loads(f.read())["client_id"]
-        except:
-            return "dummy_id"
+        return os.getenv("TEST_CISCO_API_CLIENT_ID", "dummy_id")
 
     def get_cisco_api_client_secret(self):
-        try:
-            with open(self.CREDENTIALS_FILE) as f:
-                return json.loads(f.read())["client_secret"]
-        except:
-            return "dummy_secret"
+        return os.getenv("TEST_CISCO_API_CLIENT_SECRET", "dummy_secret")
 
 
 def mock_access_token_generation():
@@ -76,7 +61,7 @@ def use_test_api_configuration(monkeypatch):
 class TestCiscoHelloApi:
     """Test of the Cisco Hello API class, test also the functionality of the base class"""
     @pytest.mark.usefixtures("use_test_api_configuration")
-    @online
+    @pytest.mark.online
     def test_base_functionality(self):
         cisco_hello_api = CiscoHelloApi()
         assert cisco_hello_api.is_ready_for_use() is False
@@ -90,10 +75,6 @@ class TestCiscoHelloApi:
         cisco_hello_api.load_client_credentials()
         assert cisco_hello_api.client_id != "dummy_id", "Should contain valid test credentials"
         assert cisco_hello_api.client_id != "dummy_secret", "Should contain valid test credentials"
-
-        with open(BaseCiscoApiConsoleSettings.CREDENTIALS_FILE) as f:
-            jdata = json.loads(f.read())
-        assert jdata == cisco_hello_api.get_client_credentials()
 
         # create a temporary access token
         cisco_hello_api.create_temporary_access_token()
@@ -131,7 +112,7 @@ class TestCiscoHelloApi:
         cisco_hello_api.drop_cached_token()
 
     @pytest.mark.usefixtures("use_test_api_configuration")
-    @online
+    @pytest.mark.online
     def test_read_from_cached_token(self):
         cisco_hello_api_one = CiscoHelloApi()
         cisco_hello_api_one.load_client_credentials()
@@ -159,7 +140,7 @@ class TestCiscoHelloApi:
         assert cisco_hello_api.client_secret is not None
 
     @pytest.mark.usefixtures("use_test_api_configuration")
-    @online
+    @pytest.mark.online
     def test_automatic_renew_of_expired_token(self):
         cisco_hello_api = CiscoHelloApi()
         cisco_hello_api.load_client_credentials()
@@ -279,7 +260,7 @@ class TestCiscoHelloApi:
         assert exinfo.match("unexpected content from API endpoint")
 
     @pytest.mark.usefixtures("use_test_api_configuration")
-    @online
+    @pytest.mark.online
     def test_online_hello_api_call(self):
         cisco_hello_api = CiscoHelloApi()
         cisco_hello_api.load_client_credentials()
@@ -417,7 +398,7 @@ class TestCiscoEoxApi:
     }
 
     @pytest.mark.usefixtures("use_test_api_configuration")
-    @online
+    @pytest.mark.online
     def test_online_query_product_single_page_results(self):
         cisco_eox_api = CiscoEoxApi()
         cisco_eox_api.load_client_credentials()
@@ -545,7 +526,7 @@ class TestCiscoEoxApi:
         assert cisco_eox_api.get_error_description(jresult["EOXRecord"][0]) == ""
 
     @pytest.mark.usefixtures("use_test_api_configuration")
-    @online
+    @pytest.mark.online
     def test_online_query_product_no_results(self):
         cisco_eox_api = CiscoEoxApi()
 
@@ -643,7 +624,7 @@ class TestCiscoEoxApi:
         assert cisco_eox_api.get_error_description(jresult["EOXRecord"][0]) == ""
 
     @pytest.mark.usefixtures("use_test_api_configuration")
-    @online
+    @pytest.mark.online
     def test_online_query_year(self):
         cisco_eox_api = CiscoEoxApi()
 

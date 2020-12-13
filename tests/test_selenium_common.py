@@ -14,11 +14,9 @@ from selenium.webdriver.support.wait import WebDriverWait
 
 from tests import BaseSeleniumTest
 
-selenium_test = pytest.mark.skipif(not pytest.config.getoption("--selenium"),
-                                   reason="need --selenium to run (implicit usage of the --online flag")
 
-
-@selenium_test
+@pytest.mark.online
+@pytest.mark.selenium
 class TestCommonFunctions(BaseSeleniumTest):
     def test_login_only_mode(self, browser, liveserver):
         self.api_helper.drop_all_data(liveserver)
@@ -212,7 +210,7 @@ class TestCommonFunctions(BaseSeleniumTest):
         self.logout_user(browser)
 
 
-@selenium_test
+@pytest.mark.selenium
 class TestUserProfile(BaseSeleniumTest):
     def test_preferred_vendor_user_profile(self, browser, liveserver):
         self.api_helper.drop_all_data(liveserver)
@@ -357,7 +355,7 @@ class TestUserProfile(BaseSeleniumTest):
         self.logout_user(browser)
 
 
-@selenium_test
+@pytest.mark.selenium
 class TestProductLists(BaseSeleniumTest):
     def test_product_list(self, browser, liveserver):
         self.api_helper.drop_all_data(liveserver)
@@ -461,7 +459,7 @@ class TestProductLists(BaseSeleniumTest):
         assert "Product List %s successfully deleted." % test_pl_name in body
 
 
-@selenium_test
+@pytest.mark.selenium
 class TestProductDatabaseViews(BaseSeleniumTest):
     def test_search_on_homepage(self, browser, liveserver):
         self.api_helper.drop_all_data(liveserver)

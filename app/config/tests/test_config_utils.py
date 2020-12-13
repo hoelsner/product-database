@@ -6,11 +6,10 @@ from app.ciscoeox.base_api import CiscoEoxApi
 from app.config.utils import check_cisco_hello_api_access, check_cisco_eox_api_access
 
 pytestmark = pytest.mark.django_db
-online = pytest.mark.skipif(not pytest.config.getoption("--online"), reason="need --online to run")
 
 
 @pytest.mark.usefixtures("import_default_vendors")
-@online
+@pytest.mark.online
 class TestConfigUtils:
     @pytest.mark.usefixtures("load_test_cisco_api_credentials")
     def test_cisco_hello_api_access(self):

@@ -52,7 +52,7 @@ if os.getenv("PDB_DEBUG", False) and os.getenv("PDB_DEBUG_NO_CACHE", False):
 else:
     redis_server = os.environ.get("PDB_REDIS_HOST", "127.0.0.1")
     redis_port = os.environ.get("PDB_REDIS_PORT", "6379")
-    redis_pass = os.environ.get("PDB_REDIS_PASSWORD", None)
+    redis_pass = os.environ.get("PDB_REDIS_PASSWORD", "PlsChgMe")
     CACHES = {
         "default": {
             "BACKEND": "redis_cache.RedisCache",
@@ -143,7 +143,15 @@ DATABASES = {
         "USER": DATABASE_USER,
         "PASSWORD": DATABASE_PASSWORD,
         "HOST": DATABASE_HOST,
-        "PORT": DATABASE_PORT
+        "PORT": DATABASE_PORT,
+        "OPTIONS": {
+            "sslmode": os.getenv(
+                "PDB_DATABASE_SSLMODE",
+                "require" if not os.getenv("PDB_DEBUG", False) and not os.getenv("PDB_TESTING", False) else "prefer"
+            ),
+            "sslcert": os.getenv("PDB_DATABASE_SSLCERT", "/var/www/productdb/ssl/database.crt"),
+            "sslkey": os.getenv("PDB_DATABASE_SSLKEY", "/var/www/productdb/ssl/database.key")
+        },
     }
 }
 
@@ -177,9 +185,10 @@ STATICFILES_DIRS = (
 
 if os.getenv("PDB_SESSION_EXPIRE_ON_BROWSER_CLOSE", None):
     SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+    SESSION_COOKIE_AGE = os.getenv("SESSION_COOKIE_AGE", 60 * 60)
 
 else:
-    SESSION_COOKIE_AGE = 60 * 15
+    SESSION_COOKIE_AGE = os.getenv("SESSION_COOKIE_AGE", 60 * 60)
     SESSION_SAVE_EVERY_REQUEST = True
 
 SESSION_COOKIE_NAME = "productdb"
@@ -219,8 +228,9 @@ if os.getenv("PDB_DEBUG"):
     INTERNAL_IPS = [str(host) for host in IPv4Interface(debug_ip).network]
     INSTALLED_APPS += ["debug_toolbar"]
     MIDDLEWARE += ["debug_toolbar.middleware.DebugToolbarMiddleware"]
-    CELERY_ALWAYS_EAGER = True
-    CELERY_EAGER_PROPAGATES_EXCEPTIONS = True
+    if os.getenv("DISABLE_ASYNC_TASKS", False):
+        CELERY_ALWAYS_EAGER = True
+        CELERY_EAGER_PROPAGATES_EXCEPTIONS = True
 
 # Force HTTPs (always used in production) - disable for testing using the environment variable PDB_TESTING=1
 if not os.getenv("PDB_DEBUG") and not os.getenv("PDB_TESTING", False):

@@ -1,0 +1,77 @@
+#
+# compose file to stage the development services locally
+#
+version: '3'
+
+services:
+  redis:
+    container_name: productdb_dev_redis
+    image: redis:6
+    command: /bin/sh -c "redis-server --requirepass PlsChgMe"
+    volumes:
+      - productdb_dev_redis_data:/data
+    networks:
+      internal:
+         aliases:
+          - redis
+    ports:
+      - "127.0.0.1:6379:6379"
+
+  database:
+    container_name: productdb_dev_database
+    image: postgres:12.3
+    environment:
+      POSTGRES_DB: productdb
+      POSTGRES_PASSWORD: postgres
+    networks:
+      internal:
+        aliases:
+          - database
+    volumes:
+      - productdb_dev_pg_data:/var/lib/postgresql/data
+      - productdb_dev_pd_backup:/backups
+    ports:
+      - "127.0.0.1:5432:5432"
+
+  web:
+    container_name: productdb_dev_web
+    image: productdb/django:dev
+    command: "watchmedo auto-restart --directory=/var/www/productdb/source --pattern=*.py --recursive -- python3 manage.py runserver 0.0.0.0:8000"
+    build:
+      context: .
+      dockerfile: deploy/docker/Dockerfile-dev
+    environment:
+      DEBUG: "1"
+      PDB_DATABASE_HOST: "database"
+      PDB_REDIS_HOST: "redis"
+    volumes:
+      - "./:/var/www/productdb/source"
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    networks:
+      - internal
+    ports:
+      - "127.0.0.1:8000:8000"
+
+  worker:
+    container_name: productdb_dev_worker
+    image: productdb/django:dev
+    command: "watchmedo auto-restart --directory=/var/www/productdb/source --pattern=*.py --recursive -- celery -A django_project worker -l debug --concurrency 1 --events --beat --statedb=/var/www/productdb/data/celerybeat-schedule.db"
+    build:
+      context: .
+      dockerfile: deploy/docker/Dockerfile-dev
+    environment:
+      DEBUG: "1"
+      PDB_DATABASE_HOST: "database"
+      PDB_REDIS_HOST: "redis"
+    networks:
+      - internal
+    volumes:
+      - "./:/var/www/productdb/source"
+
+networks:
+  internal:
+
+volumes:
+  productdb_dev_pg_data:
+  productdb_dev_pd_backup:
+  productdb_dev_redis_data:

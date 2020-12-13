@@ -4,13 +4,11 @@ from django_project.settings.common import *
 #
 # Celery configuration
 #
-#redis_server = os.environ.get("PDB_REDIS_HOST", "127.0.0.1")
-#redis_port = os.environ.get("PDB_REDIS_PORT", "6379")
-
-BROKER_URL = "redis://:%s@%s:%s" % (os.environ.get("PDB_REDIS_PASSWORD", ""), redis_server, redis_port)
+BROKER_URL = "redis://:%s@%s:%s" % (os.environ.get("PDB_REDIS_PASSWORD", "PlsChgMe"), redis_server, redis_port)
+BROKER_CONNECTION_TIMEOUT = 300
 CELERY_ENABLE_UTC = True
 CELERY_TIMEZONE = os.getenv("PDB_TIME_ZONE", "Europe/Berlin")
-CELERY_RESULT_BACKEND = "django-db"  # "redis://:%s@%s:%s" % (os.environ.get("PDB_REDIS_PASSWORD", ""), redis_server, redis_port)
+CELERY_RESULT_BACKEND = "django-db"
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
@@ -20,7 +18,7 @@ CELERY_TASK_RESULT_EXPIRES = 2419200
 CELERYBEAT_SCHEDULE_FILENAME = "../data/celerybeat-schedule.db"
 CELERYBEAT_PIDFILE = "../celerybeat.pid"
 CELERYBEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
-CELERYD_PREFETCH_MULTIPLIER = os.environ.get("PDB_CELERY_CONCURRENCY", 4)
+CELERYD_PREFETCH_MULTIPLIER = os.environ.get("PDB_CELERY_CONCURRENCY", 2)
 CELERYBEAT_SCHEDULE = {
     "periodic-sync-with-cisco-eox-api": {
         "task": "ciscoeox.synchronize_with_cisco_eox_api",

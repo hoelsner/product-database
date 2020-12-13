@@ -1,0 +1,202 @@
+#
+# the value of the INSTANCE_CONFIG is used to identify the correct environment file located at
+#   env.INSTANCE_CONFIG (default is 'demo')
+#
+version: '3'
+
+services:
+  build_deps:
+    image: productdb/build_deps:latest
+    build:
+      context: .
+      dockerfile: deploy/docker/Dockerfile-build_deps
+    environment: &app
+      INSTANCE_NAME: productdb
+      DJANGO_SECRET_KEY: plschgme
+      DJANGO_LOG_LEVEL: info
+      POSTGRES_DB: productdb
+      POSTGRES_USER: productdb
+      POSTGRES_PASSWORD: plschgme
+      PDB_REDIS_PASSWORD: plschgme
+      # only required for the initial build, the certificates can be changed afterwards within the ssl_files volume
+      #HTTPS_SELF_SIGNED_CERT_COUNTRY: DE
+      #HTTPS_SELF_SIGNED_CERT_FQDN: productdb
+
+      #==============================================================================================================
+      # Django (optional settings)
+      #
+      #PDB_LANGUAGE_CODE=en-us
+      #PDB_TIME_ZONE=Europe/Berlin
+      #PDB_TIME_FORMAT=P
+      #PDB_DATE_FORMAT=N j, Y
+      #PDB_SHORT_DATE_FORMAT=Y-m-d
+
+      #==============================================================================================================
+      # Sentry integration (optional settings)
+      #
+      #PDB_ENABLE_SENTRY=1
+      #PDB_SENTRY_DSN=https://localhost/4
+      # add ?verify_ssl=0 if self-signed certificates are used
+
+      #==============================================================================================================
+      # LDAP authentication (optional)
+      #PDB_LDAP_ENABLE=1
+      #PDB_LDAP_SERVER_URL=ldap://127.0.0.1:389/
+      #PDB_LDAP_BIND_AS_AUTHENTICATING_USER=1
+      #PDB_LDAP_USER_SEARCH=ou=users,dc=example,dc=com
+      #PDB_LDAP_ENABLE_TLS=1
+      # set the option if you want to use self-signed certificates
+      #PDB_LDAP_ALLOW_SELF_SIGNED_CERT=1
+      # limit the search to a specific group - leave empty to disable
+      #PDB_LDAP_GROUP_SEARCH=cn=groups,dc=example,dc=com
+      # if a specific LDAP group should be allowed to access the instance - leave empty to disable
+      #PDB_LDAP_REQUIRE_GROUP=cn=group,dc=example,dc=com
+    volumes:
+      - static_files:/var/www/productdb/static
+      - ssl_files:/var/www/productdb/ssl
+      - data:/var/www/productdb/data
+    networks:
+      - default
+      - internal
+
+  redis:
+    restart: always
+    image: redis:6
+    command: /bin/sh -c "redis-server --appendonly yes --requirepass $$PDB_REDIS_PASSWORD"
+    environment: *app
+    volumes:
+      - redis_data:/data
+    networks:
+      - internal
+    healthcheck:
+      interval: 30s
+      timeout: 5s
+      retries: 2
+      start_period: 30s
+      test: "redis-cli -a $$REDIS_PASSWORD ping"
+
+  database:
+    command: -c ssl=on -c ssl_cert_file=/var/www/productdb/ssl/database.crt -c ssl_key_file=/var/www/productdb/ssl/database.key
+    restart: always
+    image: postgres:12.3
+    environment: *app
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - postgres_backup:/backups
+      - ssl_files:/var/www/productdb/ssl:ro
+    networks:
+      - internal
+    healthcheck:
+      interval: 30s
+      timeout: 5s
+      retries: 2
+      start_period: 15s
+      test: [ "CMD-SHELL", "pg_isready -U $$POSTGRES_USER" ]
+
+  beat:
+    restart: always
+    image: productdb/django:latest
+    build:
+      context: .
+      dockerfile: deploy/docker/Dockerfile-django
+    command: start_celery_beat
+    environment: *app
+    networks:
+      - default
+      - internal
+    volumes:
+      - data:/var/www/productdb/data
+    depends_on:
+      - build_deps
+      - database
+      - redis
+
+  worker:
+    restart: always
+    image: productdb/django:latest
+    build:
+      context: .
+      dockerfile: deploy/docker/Dockerfile-django
+    command: start_celery_worker
+    environment: *app
+    networks:
+      - default
+      - internal
+    volumes:
+      - data:/var/www/productdb/data
+      - ssl_files:/var/www/productdb/ssl:ro
+    depends_on:
+      - build_deps
+      - database
+      - redis
+      - beat
+    healthcheck:
+      interval: 1m
+      timeout: 10s
+      retries: 2
+      start_period: 60s
+      test: "celery -A django_project inspect ping -d celery@$$HOSTNAME"
+
+  web:
+    restart: always
+    image: productdb/django:latest
+    build:
+      context: .
+      dockerfile: deploy/docker/Dockerfile-django
+    command: start_gunicorn
+    environment: *app
+    networks:
+      - default
+      - internal
+    volumes:
+      - data:/var/www/productdb/data
+      - ssl_files:/var/www/productdb/ssl:ro
+    depends_on:
+      - build_deps
+      - database
+      - redis
+    healthcheck:
+      test: [ "CMD", "curl", "--fail", "--insecure", "https://localhost:8443/productdb/" ]
+      interval: 1m
+      timeout: 10s
+      retries: 2
+      start_period: 60s
+
+  nginx:
+    restart: always
+    image: productdb/nginx:latest
+    build:
+      context: .
+      dockerfile: deploy/docker/Dockerfile-nginx
+    environment: *app
+    ports:
+      - "${EXPOSE_IP:-0.0.0.0}:${NGINX_HTTP_PORT:-80}:80"
+      - "${EXPOSE_IP:-0.0.0.0}:${NGINX_HTTPS_PORT:-443}:443"
+    networks:
+      - default
+    volumes:
+      - static_files:/var/www/productdb/static:ro
+      - ssl_files:/var/www/productdb/ssl:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - build_deps
+      - web
+    healthcheck:
+      test: "service nginx status || exit 1"
+      interval: 30s
+      timeout: 10s
+      retries: 2
+      start_period: 60s
+
+networks:
+  default:
+  internal:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  static_files:
+  ssl_files:
+  data:
+  postgres_backup:
+  redis_data:

@@ -62,7 +62,7 @@ def perform_product_check(self, product_check_id):
     return result
 
 
-@app.task(serializer='json', name="productdb.import_product_migrations", bind=True)
+@app.task(serializer="json", name="productdb.import_product_migrations", bind=True)
 def import_product_migrations(self, job_file_id, user_for_revision=None):
     """
     import product migrations from the Excel file
@@ -115,15 +115,15 @@ def import_product_migrations(self, job_file_id, user_for_revision=None):
         }
 
     except (InvalidImportFormatException, InvalidExcelFileFormat) as ex:
-        msg = "import failed, invalid file format (%s)" % ex
-        logger.error(msg, ex)
+        msg = f"import failed, invalid file format ({str(ex)})"
+        logger.error(msg, exc_info=True)
         result = {
             "error_message": msg
         }
 
     except Exception as ex:  # catch any exception
-        msg = "Unexpected exception occurred while importing product list (%s)" % ex
-        logger.error(msg, ex)
+        msg = f"Unexpected exception occurred while importing product list ({str(ex)})"
+        logger.error(msg, exc_info=True)
         result = {
             "error_message": msg
         }
@@ -215,15 +215,15 @@ def import_price_list(self, job_file_id, create_notification_on_server=True, upd
         }
 
     except (InvalidImportFormatException, InvalidExcelFileFormat) as ex:
-        msg = "import failed, invalid file format (%s)" % ex
-        logger.error(msg, ex)
+        msg = f"import failed, invalid file format ({str(ex)})"
+        logger.error(msg, exc_info=True)
         result = {
             "error_message": msg
         }
 
     except Exception as ex:  # catch any exception
-        msg = "Unexpected exception occurred while importing product list (%s)" % ex
-        logger.error(msg, ex)
+        msg = f"Unexpected exception occurred while importing product list ({str(ex)})"
+        logger.error(msg, exc_info=True)
         result = {
             "error_message": msg
         }

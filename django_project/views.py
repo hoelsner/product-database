@@ -146,7 +146,7 @@ def task_progress_view(request, task_id):
         auto_redirect = meta_data.get("auto_redirect", False)
 
     else:
-        logger.warn("Cannot find redirect link to task meta data, use homepage")
+        logger.warning("Cannot find redirect link to task meta data, use homepage")
         redirect_to = redirect_default
         auto_redirect = False
 

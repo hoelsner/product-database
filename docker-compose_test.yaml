@@ -1,19 +1,37 @@
-                                   #
-# Dockerfile that creates a test instance and runs all test cases (online and selenium) within docker containers
 #
-#
-# the value of the INSTANCE_CONFIG is used to identify the correct environment file located at
-#   env.INSTANCE_CONFIG (default to demo)
+# instance for selenium test cases
 #
 version: '3'
 
 services:
+  build_deps:
+    container_name: ${COMPOSE_PROJECT_NAME:-productdbtesting}_build_deps
+    image: productdb/build_deps:testing
+    build:
+      context: .
+      dockerfile: deploy/docker/Dockerfile-build_deps
+    environment: &app
+      LOAD_SELENIUM_TEST_DATA: 1
+      DJANGO_SECRET_KEY: justfortests
+      POSTGRES_DB: productdb
+      POSTGRES_USER: productdb
+      POSTGRES_PASSWORD: justfortests
+      DJANGO_LOG_LEVEL: debug
+      PDB_REDIS_PASSWORD: yetanothertest
+    volumes:
+      - static_files:/var/www/productdb/static
+      - ssl_files:/var/www/productdb/ssl
+      - data:/var/www/productdb/data
+    networks:
+      - default
+      - internal
+
   redis:
     container_name: ${COMPOSE_PROJECT_NAME:-productdbtesting}_redis
     restart: always
-    image: redis:4.0-alpine
+    image: redis:6
     command: /bin/sh -c "redis-server --requirepass $$PDB_REDIS_PASSWORD"
-    env_file: env.compose_test
+    environment: *app
     volumes:
       - redis_data:/data
     networks:
@@ -21,31 +39,15 @@ services:
 
   database:
     container_name: ${COMPOSE_PROJECT_NAME:-productdbtesting}_database
+    command: -c ssl=on -c ssl_cert_file=/var/www/productdb/ssl/database.crt -c ssl_key_file=/var/www/productdb/ssl/database.key
     restart: always
-    image: productdb/database:testing
-    build:
-      context: .
-      dockerfile: deploy/docker/Dockerfile-postgres
-    env_file: env.compose_test
+    image: postgres:12.3
+    environment: *app
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - postgres_backup:/backups
+      - ssl_files:/var/www/productdb/ssl:ro
     networks:
-      - internal
-
-  build_deps:
-    container_name: ${COMPOSE_PROJECT_NAME:-productdbtesting}_build_deps
-    image: productdb/build_deps:testing
-    build:
-      context: .
-      dockerfile: deploy/docker/Dockerfile-build_deps
-    env_file: env.compose_test
-    volumes:
-      - static_files:/var/www/productdb/static
-      - ssl_files:/var/www/productdb/ssl
-      - data:/var/www/productdb/data
-    networks:
-      - default
       - internal
 
   beat:
@@ -56,7 +58,7 @@ services:
       context: .
       dockerfile: deploy/docker/Dockerfile-django
     command: start_celery_beat
-    env_file: env.compose_test
+    environment: *app
     networks:
       - default
       - internal
@@ -74,12 +76,13 @@ services:
       context: .
       dockerfile: deploy/docker/Dockerfile-django
     command: start_celery_worker
-    env_file: env.compose_test
+    environment: *app
     networks:
       - default
       - internal
     volumes:
       - data:/var/www/productdb/data
+      - ssl_files:/var/www/productdb/ssl:ro
     depends_on:
       - build_deps
       - database
@@ -93,12 +96,13 @@ services:
       context: .
       dockerfile: deploy/docker/Dockerfile-django
     command: start_gunicorn
-    env_file: env.compose_test
+    environment: *app
     networks:
       - default
       - internal
     volumes:
       - data:/var/www/productdb/data
+      - ssl_files:/var/www/productdb/ssl:ro
     depends_on:
       - build_deps
       - database
@@ -111,12 +115,15 @@ services:
     build:
       context: .
       dockerfile: deploy/docker/Dockerfile-nginx
-    env_file: env.compose_test
+    environment: *app
     ports:
       - "${EXPOSE_IP:-127.0.0.1}:${NGINX_HTTP_PORT:-80}:80"
       - "${EXPOSE_IP:-127.0.0.1}:${NGINX_HTTPS_PORT:-27443}:443"
     networks:
-      - default
+      default:
+      source_internal:
+        aliases:
+          - productdbtestinstance
     volumes:
       - static_files:/var/www/productdb/static:ro
       - ssl_files:/var/www/productdb/ssl:ro
@@ -129,6 +136,8 @@ networks:
   default:
   internal:
     driver: bridge
+  source_internal:
+    external: true
 
 volumes:
   postgres_data:

@@ -11,11 +11,9 @@ from requests.auth import HTTPBasicAuth
 
 from tests import BaseSeleniumTest, PRODUCTS_API_ENDPOINT
 
-selenium_test = pytest.mark.skipif(not pytest.config.getoption("--selenium"),
-                                   reason="need --selenium to run (implicit usage of the --online flag")
 
-
-@selenium_test
+@pytest.mark.online
+@pytest.mark.selenium
 class TestApiUseCases(BaseSeleniumTest):
     def test_swagger_ui_has_no_500(self, browser, liveserver):
         browser.get(liveserver + "/productdb/api-docs/")
@@ -73,7 +71,7 @@ class TestApiUseCases(BaseSeleniumTest):
                     "product_id": "WS-C2960+24TC-L",
                     "tags": "",
                     "update_timestamp": today_string,
-                    "url": "https://127.0.0.1:27443/productdb/api/v1/products/%d/" % second_product["id"],
+                    "url": "https://productdbtestinstance/productdb/api/v1/products/%d/" % second_product["id"],
                     "vendor": 1
                 },
                 {
@@ -99,7 +97,7 @@ class TestApiUseCases(BaseSeleniumTest):
                     "product_id": "WS-C2960-24TC-L",
                     "tags": "",
                     "update_timestamp": today_string,
-                    "url": "https://127.0.0.1:27443/productdb/api/v1/products/%d/" % first_product["id"],
+                    "url": "https://productdbtestinstance/productdb/api/v1/products/%d/" % first_product["id"],
                     "vendor": 1
                 }
             ]

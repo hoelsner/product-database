@@ -3,6 +3,7 @@ Test suite for the ciscoeox.api_crawler module
 """
 import pytest
 import json
+import os
 import datetime
 import requests
 from copy import deepcopy
@@ -94,7 +95,12 @@ class TestGetRawApiData:
         class MockSession:
             def get(self, *args, **kwargs):
                 raise Exception("Server is down")
+
         monkeypatch.setattr(requests, "Session", MockSession)
+
+        # verify that a test credential is set
+        assert os.getenv("TEST_CISCO_API_CLIENT_ID", None) is not None, "cisco api test credentials not set"
+        assert os.getenv("TEST_CISCO_API_CLIENT_SECRET", None) is not None, "cisco api test credentials not set"
 
         with pytest.raises(ConnectionFailedException) as exinfo:
             api_crawler.get_raw_api_data("MyQuery")
@@ -135,6 +141,7 @@ class TestGetRawApiData:
                 with open("app/ciscoeox/tests/data/cisco_eox_response_page_1_of_1.json") as f:
                     r._content = f.read().encode("utf-8")
                 return r
+
         monkeypatch.setattr(requests, "Session", MockSession)
 
         result = api_crawler.get_raw_api_data("WS-C2950G-48-EI-WS")

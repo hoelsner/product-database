@@ -14,7 +14,7 @@ ENV PDB_REDIS_HOST redis
 ENV PDB_REDIS_PORT 6379
 
 # build variables
-ENV HTTPS_SELF_SIGNED_CERT_COUNTRY "Germany"
+ENV HTTPS_SELF_SIGNED_CERT_COUNTRY "DE"
 ENV HTTPS_SELF_SIGNED_CERT_FQDN "productdb"
 
 RUN echo \
@@ -22,7 +22,7 @@ RUN echo \
     && apt-get install -y \
         curl \
         build-essential \
-        python3.5 \
+        python3.7 \
         python3-pip \
         python3-dev \
         python-psycopg2 \
@@ -31,7 +31,7 @@ RUN echo \
         libldap2-dev \
         libssl-dev \
         git \
-    && curl -sL https://deb.nodesource.com/setup_8.x | bash - \
+    && curl -sL https://deb.nodesource.com/setup_12.x | bash - \
     && apt-get update  \
     && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/* \
@@ -42,21 +42,16 @@ RUN echo \
     && pip3 install --no-cache-dir -r /var/www/productdb/source/requirements.txt \
     && mkdir /var/www/productdb/logs
 
+VOLUME /var/www/productdb/static
+
 WORKDIR /var/www/productdb/source
 
 # install frontend deprendencies as part of the image (for later offline use)
 RUN npm install \
     && /var/www/productdb/source/node_modules/.bin/grunt copy \
-    && /var/www/productdb/source/node_modules/.bin/grunt clean
-
-# copy static directory to container directory
-RUN mkdir /var/www/productdb-static \
-    && mkdir /var/www/productdb-static/lib \
-    && cp -Rf /var/www/productdb/source/static/lib /var/www/productdb-static
-
-## Clean up
-RUN rm -rf /var/www/productdb/source/node_modules \
-    && rm -rf /var/www/productdb/source/static/lib \
+    && /var/www/productdb/source/node_modules/.bin/grunt clean \
+    && rm -rf /var/www/productdb/source/node_modules \
+    && rm -rf /var/www/productdb/source/node_modules \
     && rm -rf /var/lib/apt/lists/*
 
 RUN chmod +x ./deploy/docker/build_deps/build_dependencies.sh

@@ -1,0 +1,38 @@
+# development container used as remote interpreter
+FROM ubuntu:18.04
+
+ENV LANG en_US.UTF-8
+ENV LANGUAGE en_US:en
+ENV LC_ALL en_US.UTF-8
+
+ENV PDB_REDIS_HOST "redis"
+ENV PDB_DATABASE_HOST "database"
+ENV PYTHONDONTWRITEBYTECODE "1"
+ENV PYTHONIOENCODING utf-8
+# parameters for selenium tests
+ENV HEADLESS_TESTING 1
+ENV SERVER_HOST "productdbtestinstance"
+ENV SERVER_PORT 443
+ENV SERVER_PROTOCOL "https"
+
+RUN apt-get update && apt-get install -y libsasl2-dev \
+    libldap2-dev libssl-dev xvfb firefox wget locales python3.7 python3-pip python3-dev curl
+RUN curl -L "https://github.com/docker/compose/releases/download/1.27.4/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose \
+    && chmod +x /usr/local/bin/docker-compose
+
+WORKDIR /tmp
+RUN wget https://github.com/mozilla/geckodriver/releases/download/v0.28.0/geckodriver-v0.28.0-linux64.tar.gz \
+    && tar -xvzf geckodriver-v0.28.0-linux64.tar.gz \
+    && rm geckodriver-v0.28.0-linux64.tar.gz \
+    && chmod +x geckodriver \
+    && cp geckodriver /usr/local/bin/
+
+COPY ./requirements.txt /tmp/requirements.txt
+COPY ./requirements_dev.txt /tmp/requirements_dev.txt
+RUN pip3 install --no-cache-dir -r /tmp/requirements_dev.txt
+
+COPY . /var/www/productdb/source
+WORKDIR /var/www/productdb/source
+
+EXPOSE 8000
+CMD ["python3", "manage.py", "runserver", "0.0.0.0:8000"]

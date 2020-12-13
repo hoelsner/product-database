@@ -7,19 +7,13 @@ You can download the Docker Community Edition for free on the [Docker Homepage](
 
 ```bash
 git clone https://github.com/hoelsner/product-database.git
-docker-compose -p productdb build
-docker-compose -p productdb up -d database redis
-docker-compose -p productdb up build_deps
-docker-compose -p productdb up -d
+docker-compose -p productdb -f docker-compose.template.yaml build
+docker-compose -p productdb -f docker-compose.template.yaml up -d
 ```
 
-**Please note:** The docker-compose file will expose port 80 and 443 on your Machine for the Product Database by default. If
- you have a local webserver already running, set the `NGINX_HTTP_PORT` and `NGINX_HTTPS_PORT` environment variable. Otherwise
- the `docker-compose -p productdb up -d` command will fail.
+**Please note:** The docker-compose file will expose port 80 and 443 on your Machine for the Product Database by default. If a local webserver is already running this command will fail. In this case, you need to set the `NGINX_HTTP_PORT` and `NGINX_HTTPS_PORT` environment variable. Otherwise the `docker-compose -p productdb up -d` command will fail.
 
-After a successful execution of the commands, the Product Database is available at https://localhost. The default admin username/password is `pdb_admin/pdb_admin`.
-
-To shutdown the demo instance, use the following command:
+The Product Database is available at `https://localhost` after successful execution of the command. The default admin username and password is `pdb_admin`. To shutdown the demo instance, use the following command:
 
 ```
 docker-compose -p productdb down -v
@@ -27,24 +21,28 @@ docker-compose -p productdb down -v
 
 ## Stage a Production Instance
 
-The deployment of the Product Database is using docker-compose and includes all required components to get the service up an running (including the redis cache and the database).
+The deployment of the Product Database utilizes docker-compose which includes all required components to get the service up and running.
 
 ### Server requirements
 
 * 4 vCPU's
 * min. 4 GB RAM
-* Docker Engine (tested with Version 17.09.0-ce)
-* Docker compose (tested with Version 1.16.1)
+* Docker Engine (tested with Version >=17.09.0-ce)
+* Docker compose
 
-The Product Database is currently only tested in a Single Node Container Deployment.
+The Product Database is currently only tested within a Single Node Container environment.
 
 ### Single Node Container Deployment
 
-After cloning the Product Database from GitHub copy the `env.prod_template` to `env.production`. Then update the configuration by replacing all `plschgme` values. There are also
- several optional configuration options available e.g. the LDAP authentication or the integration to a sentry logging system.  Please make a backup of this file, because you need
- it every time you work on the instance.
+You need to clone the git repository to the server. Then you copy the `docker-compose.template.yaml` file to `docker-compose.yaml` with the following command:
 
-The following table shows all configuration options that are available in the system:
+```
+cp docker-compose.template.yaml docker-compose.yaml --scale worker=2 web=2
+```
+
+The docker-compose file is excluded from the git repository and you can therefore maintain the configuration options locally. Now you just need to update the configuration value by replacing (at least) all `plschgme` values. There are also several optional configuration options available e.g. the LDAP authentication or the integration to a Sentry logging system.
+
+The following table shows all configuration options that are available for the application:
 
 | environment variable   | description                 | default value  |
 | ---------------------- | --------------------------- | -------------- |
@@ -80,38 +78,27 @@ The following table shows all configuration options that are available in the sy
 | `HTTPS_SELF_SIGNED_CERT_COUNTRY`        |          |               |
 | `HTTPS_SELF_SIGNED_CERT_FQDN`           | Full Qualified Hostname         |               |
 
-Now use the following commands to start the Product Database:
+Now use the following command to start the Product Database:
 
 ```
-export INSTANCE_CONFIG=production
-export COMPOSE_PROJECT_NAME=productdbprod
-
-docker build -f deploy/docker/Dockerfile-basebox -t productdb/basebox:latest .
-docker-compose -p productdb build
-
-docker-compose up -d database redis
-docker-compose up build_deps
 docker-compose up -d
 ```
 
-By default the Product Database will run on Port 80 (HTTP) and Port 443 (HTTPs). The default admin username/password is `pdb_admin/pdb_admin`.
+By default, the Product Database will run on Port 80 (HTTP) and Port 443 (HTTPs). The default admin username/password is `pdb_admin/pdb_admin`.
 
-If you have a local webserver already running, set the `NGINX_HTTP_PORT` and `NGINX_HTTPS_PORT` environment variable. Otherwise
- the `docker-compose -p productdb up -d` command will fail.
+If a local webserver is already running, set the `NGINX_HTTP_PORT` and `NGINX_HTTPS_PORT` environment variable. Otherwise, docker-compose command will fail.
 
 ### Backup & Restore
 
-The database container provides several scripts for backup/restore purpose. These backup are stored in the named volume `postgres_backup`.
- You can use one of the following commands to take a backup, view a list with all backups and restore the database from a file. Please note that
- the restore operation require a shutdown of all services except the database.
+The custom postgres container with the backup and restore scripts was replaced with the stock postgres container in this release. You must therefore use the commands described in the postgres documentation (at https://www.postgresql.org/docs/12/backup.html) to perform these operations. 
 
 ```bash
-export INSTANCE_CONFIG=production
-export COMPOSE_PROJECT_NAME=productdbprod
+# e.g. for Backup
+pg_dump -Fc -h database -U $POSTGRES_USER $POSTGRES_DB > /backups/$filename
 
-docker-compose exec database backup
-docker-compose exec database list-backups
-docker-compose exec database restore <filename>
+# e.g. for Restore
+dropdb -h localhost -U $POSTGRES_USER $POSTGRES_DB
+pg_restore -h localhost -U $POSTGRES_USER -C -d postgres /backups/$1
 ```
 
 ### Update an existing instance
@@ -119,9 +106,6 @@ docker-compose exec database restore <filename>
 To update an existing instance, you need to rebuild the containers:
 
 ```bash
-export INSTANCE_CONFIG=production
-export COMPOSE_PROJECT_NAME=productdbprod
-
 docker-compose down
 git pull origin master
 docker-compose up -d --build --force-recreate
@@ -129,13 +113,12 @@ docker-compose up -d --build --force-recreate
 
 ### initial data import from Cisco EoX API
 
-To fetch all data initially from the Cisco EoX API (one time import), you can now use the following management command within a `web` container:
+To fetch all data initially from the Cisco EoX API (one time import), you can now use the following management command within a `web` services container:
 
 ```
 initialimport <years>
+# e.g.
+initialimport 2020 2019 2018
 ```
 
-Before starting the import you need to configure the Cisco EoX API in the webfrontend (Login as `pdb_admin` and enable the Cisco API with the credentials).
- The `initialimport` command requires a list of years that should be imported (e.g. `2017 2018` to import all Cisco EoX records that are announced in 2017 and 2018).
- Use the command `initialimportstatus` to verify the download-process.
- After the database update is finished, a notification will be shown in the webfrontend.
+Before starting the import you need to configure the Cisco EoX API in the UI (Login as `pdb_admin` and enable the Cisco API with the credentials). The `initialimport` command requires a list of years that should be imported (e.g. `2017 2018` to import all Cisco EoX records that are announced in 2017 and 2018). Use the command `initialimportstatus` to verify the download-process. After the database update is finished, a notification is added to the homepage.

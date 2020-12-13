@@ -3,7 +3,7 @@ Test suite for the ciscoeox.tasks module
 """
 import datetime
 import pytest
-import json
+import os
 import requests
 from requests import Response
 from app.ciscoeox import tasks
@@ -18,21 +18,17 @@ from django_project.celery import TaskState
 
 pytestmark = pytest.mark.django_db
 
-CREDENTIALS_FILE = ".cisco_api_credentials"
-
 
 @pytest.fixture
 def use_test_api_configuration():
     app = AppSettings()
-    with open(CREDENTIALS_FILE) as f:
-        content = json.loads(f.read())
     app.set_cisco_api_enabled(True)
     app.set_product_blacklist_regex("")
     app.set_cisco_eox_api_queries("")
     app.set_auto_create_new_products(True)
     app.set_periodic_sync_enabled(False)
-    app.set_cisco_api_client_id(content.get("client_id", "dummy_id"))
-    app.set_cisco_api_client_id(content.get("client_secret", "dummy_secret"))
+    app.set_cisco_api_client_id(os.getenv("TEST_CISCO_API_CLIENT_ID", "dummy_id"))
+    app.set_cisco_api_client_secret(os.getenv("TEST_CISCO_API_CLIENT_SECRET", "dummy_secret"))
 
 
 @pytest.mark.usefixtures("mock_cisco_api_authentication_server")

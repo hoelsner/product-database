@@ -17,7 +17,15 @@ The following diagram shows an overview about the web service and the usage-opti
 
 ## Setup & Installation
 
-See the [Setup & Installation](docs/SETUP.md) for details on how to setup the webservice.
+To create a quick demo instance, just run the following commands:
+
+```bash
+git clone https://github.com/hoelsner/product-database.git
+docker-compose -p productdb -f docker-compose.template.yaml build
+docker-compose -p productdb -f docker-compose.template.yaml up -d
+```
+
+More details about a production instance are available at [Setup & Installation](docs/SETUP.md).
 
 ## License
 
@@ -25,4 +33,4 @@ See the [license](LICENSE.md) file for license rights and limitations (MIT).
 
 ## Cisco EoX APIs (Cisco Support APIs) within the Product Database
 
-The Product Database is capable to synchronize the local database with the Cisco EoX API. More information about the API is available at [http://apiconsole.cisco.com](http://apiconsole.cisco.com) (login required). The Getting Started guide is available at the [Cisco DevNet](https://developer.cisco.com/docs/support-apis/#getting-started-with-cisco-support-apis-for-sntc).
+The Product Database is capable to synchronize the local database with the Cisco EoX API. More information about the API is available at [http://apiconsole.cisco.com](http://apiconsole.cisco.com) (login required). The Getting Started guide is available at the [Cisco DevNet](https://developer.cisco.com/docs/support-apis/#!introduction-to-cisco-support-apis/introduction-to-cisco-support-apis).

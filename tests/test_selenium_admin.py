@@ -16,13 +16,9 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 from tests import BaseSeleniumTest, PRODUCTS_API_ENDPOINT
 
-selenium_test = pytest.mark.skipif(not pytest.config.getoption("--selenium"),
-                                   reason="need --selenium to run (implicit usage of the --online flag")
-online = pytest.mark.skipif(not pytest.config.getoption("--online"),
-                            reason="need --online to run")
 
-
-@selenium_test
+@pytest.mark.online
+@pytest.mark.selenium
 class TestExcelImportFeature(BaseSeleniumTest):
     def test_import_product_procedure_with_excel_with_notification(self, browser, liveserver):
         self.api_helper.drop_all_data(liveserver)
@@ -365,7 +361,8 @@ class TestExcelImportFeature(BaseSeleniumTest):
         self.logout_user(browser)
 
 
-@selenium_test
+@pytest.mark.online
+@pytest.mark.selenium
 class TestSyncLocalDatabaseWithCiscoEoxApi(BaseSeleniumTest):
     """
     To execute this test suite, you require valid Cisco API client credentials with permissions for the EoX Version 5.
@@ -379,8 +376,11 @@ class TestSyncLocalDatabaseWithCiscoEoxApi(BaseSeleniumTest):
 
     """
     def configure_cisco_api_for_test_case(self, browser, liveserver):
-        with open(".cisco_api_credentials") as f:
-            json_credentials = json.loads(f.read())
+        # verify that a test credential is set
+        CISCO_API_CLIENT_ID = os.getenv("TEST_CISCO_API_CLIENT_ID", None)
+        CISCO_API_CLIENT_SECRET = os.getenv("TEST_CISCO_API_CLIENT_SECRET", None)
+        assert CISCO_API_CLIENT_ID is not None, "cisco api test credentials not set"
+        assert CISCO_API_CLIENT_SECRET is not None, "cisco api test credentials not set"
 
         browser.get(liveserver + reverse("productdb_config:change_settings"))
 
@@ -410,11 +410,11 @@ class TestSyncLocalDatabaseWithCiscoEoxApi(BaseSeleniumTest):
         # enter the credentials from the file ".cisco_api_credentials" and save the settings
         api_client_id = browser.find_element_by_id("id_cisco_api_client_id")
         api_client_id.clear()
-        api_client_id.send_keys(json_credentials["client_id"])
+        api_client_id.send_keys(CISCO_API_CLIENT_ID)
 
         api_client_secret = browser.find_element_by_id("id_cisco_api_client_secret")
         api_client_secret.clear()
-        api_client_secret.send_keys(json_credentials["client_secret"])
+        api_client_secret.send_keys(CISCO_API_CLIENT_SECRET)
 
         # change to Cisco API configuration tab
         browser.find_element_by_link_text("Cisco API settings").click()
@@ -513,14 +513,15 @@ class TestSyncLocalDatabaseWithCiscoEoxApi(BaseSeleniumTest):
         assert "The synchronization with the Cisco EoX API was successful." in browser.find_element_by_tag_name("body").text
         expected_content = "The following queries were executed:\n" \
                            "WS-C2960-24* (affects 30 products, success)\n" \
-                           "WS-C3750-24* (affects 16 products, success)"
+                           "WS-C3750-24* (affects 18 products, success)"
         assert expected_content in browser.find_element_by_tag_name("body").text
 
         # end session
         self.logout_user(browser)
 
 
-@selenium_test
+@pytest.mark.online
+@pytest.mark.selenium
 class TestSettingsPermissions(BaseSeleniumTest):
     def test_regular_user_has_no_access_to_settings_pages(self, browser, liveserver):
         self.api_helper.drop_all_data(liveserver)

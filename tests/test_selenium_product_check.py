@@ -11,12 +11,9 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 
-pytestmark = pytest.mark.django_db
-selenium_test = pytest.mark.skipif(not pytest.config.getoption("--selenium"),
-                                   reason="need --selenium to run (implicit usage of the --online flag")
 
-
-@selenium_test
+@pytest.mark.online
+@pytest.mark.selenium
 class TestBulkEolCheckFunction(BaseSeleniumTest):
     def test_optional_product_migration_entry(self, browser, liveserver):
         self.api_helper.drop_all_data(liveserver)

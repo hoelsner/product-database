@@ -1,26 +1,11 @@
 # Development Notes
 
-This web service is based on python 3.6 and Django 1.11. A detailed list with all dependencies is available in the `requirements.txt` file.
-
 ## Setup a local development environment
 
-Prior starting a local Django development server, a redis and postgres server must be reachable on localhost.
- The following commands will start these services as docker containers with the expected parameters.
+To start all required services on the local computer use the `docker-compose_dev.yaml` file (can also be used as a remote interpreter in several IDE's). 
 
 ```
-docker container run -d --rm -p 127.0.0.1:5432:5432 -v productdb_dev_postgres:/var/lib/postgresql/data -e POSTGRES_DB=productdb -e POSTGRES_PASSWORD=postgres --name dev_productdbpostgres postgres:9.6-alpine
-docker container run -d --rm -p 127.0.0.1:6379:6379 -v productdb_dev_redis:/data --name dev_productdbredis redis:4.0-alpine
-```
-
-A virtualenv should be created (python 3.6) and the dependencies from `requirements.txt` and `requirements_dev.txt` must be installed. 
-
-A separate json file at the root of the project is required to run the online unit-tests against the Cisco EoX API. The client credentials can be created at https://apiconsole.cisco.com. The JSON file `.cisco_api_credentials` must contain the following entries and is only locally saved (part of the .gitignore):
-
-```json
-{
-    "client_id": "",
-    "client_secret": ""
-}
+docker-compose -f docker-compose_dev.yaml up -d
 ```
 
 ## Django development server
@@ -35,7 +20,7 @@ npm install
 ./node_modules/grunt-cli/bin/grunt clean
 ```
 
-to create the database and load the initial data, use the following commands:
+To create the database and load the initial data, use the following commands:
 
 ```
 python3 manage.py collectstatic
@@ -43,34 +28,32 @@ python3 manage.py migrate
 python3 manage.py loaddata default_users default_vendors default_text_blocks
 ```
 
-The django development server can be started with the command `python3 manage.py runserver`
+The Django development server can be started with the command `python3 manage.py runserver`
 
 ## run the unit test cases
 
-The following commands will start all unit-tests (a flag to enable test mode is required):
+The following environment parameters and commands are required to start the unit-tests:
 
 ```
 export PDB_TESTING=1
+export TEST_CISCO_API_CLIENT_ID=client_id
+export TEST_CISCO_API_CLIENT_SECRET=client_secret
+
 pytest
 ```
 
 The following custom parameters are used to run tests with external dependencies:
 
- * `--online` - include Cisco EoX API unit-tests (online, require the `.cisco_api_credentials` at the repository root)
- * `--selenium` - run selenium test cases (against a local instance of the Product Database, see below)
+ * `--online` - include Cisco EoX API unit-tests (internet connections and `.cisco_api_credentials` required)
+ * `--selenium` - run selenium test cases (a local instance of the Product Database is started)
 
 ## run the selenium test cases (on Firefox)
 
-Before using the `--selenium` flag with py.test, a local test instance of the Product Database must be created and started:
+Before using the `--selenium` flag with py.test, a local test instance of the Product Database is created and started within pytest:
 
 ```
-export COMPOSE_PROJECT_NAME=productdbtesting
-
 docker-compose -p productdbtesting -f docker-compose_test.yaml build --pull
-docker-compose -p productdbtesting -f docker-compose_test.yaml up -d database redis
-docker-compose -p productdbtesting -f docker-compose_test.yaml up build_deps
-docker-compose -p productdbtesting -f docker-compose_test.yaml up -d web worker beat nginx
-
+docker-compose -p productdbtesting -f docker-compose_test.yaml up -d
 docker-compose -p productdbtesting -f docker-compose_test.yaml down -v
 ```
 

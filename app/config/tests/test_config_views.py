@@ -181,7 +181,6 @@ class TestStatusView:
         url = reverse(self.URL_NAME)
         request = RequestFactory().get(url)
         request.user = user
-
         response = views.status(request)
 
         assert response.status_code == 200
@@ -189,7 +188,6 @@ class TestStatusView:
             "No backend worker found, asynchronous and scheduled tasks are not executed.",
             "successful connected to the Cisco EoX API"
         ]
-        print(response.content.decode())
         for line in expected_content:
             assert line in response.content.decode()
 
@@ -217,7 +215,7 @@ class TestStatusView:
             "Backend worker found.",
             "successful connected to the Cisco EoX API"
         ]
-        print(response.content.decode())
+
         for line in expected_content:
             assert line in response.content.decode()
 

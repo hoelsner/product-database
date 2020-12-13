@@ -17,6 +17,7 @@ pytestmark = pytest.mark.django_db
 
 class TestJobFile:
     """Test JobFile model"""
+
     def test_auto_delete_job_file(self):
         # create temp test file
         filename = tempfile.mkstemp()[1]
@@ -39,6 +40,7 @@ class TestJobFile:
 
 class TestVendorModel:
     """Test Vendor model"""
+
     @pytest.mark.usefixtures("import_default_vendors")
     def test_vendor_object(self):
         models.Vendor.objects.create(name="Another Vendor")
@@ -56,7 +58,7 @@ class TestVendorModel:
         with pytest.raises(ValidationError) as exinfo:
             models.Vendor.objects.create(name=test_name)
 
-        assert exinfo.match("name': \['Vendor with this Name already exists.")
+        assert exinfo.match(r"name': \['Vendor with this Name already exists.")
 
     @pytest.mark.usefixtures("import_default_vendors")
     def test_delete_vendor(self):
@@ -90,6 +92,7 @@ class TestVendorModel:
 
 class TestProductGroup:
     """Test ProductGroup model object"""
+
     @pytest.mark.usefixtures("import_default_vendors")
     def test_product_group(self):
         expected_product_group = "Test Product Group"
@@ -144,7 +147,7 @@ class TestProductGroup:
         with pytest.raises(ValidationError) as exinfo:
             models.ProductGroup.objects.create(name="Group1", vendor=v1)
 
-        assert exinfo.match("name': \['group name already defined for this vendor'")
+        assert exinfo.match(r"name': \['group name already defined for this vendor'")
 
     @pytest.mark.usefixtures("import_default_vendors")
     def test_product_group_vendor_change(self):
@@ -176,6 +179,7 @@ class TestProductGroup:
 @pytest.mark.usefixtures("import_default_vendors")
 class TestProduct:
     """Test Product model object"""
+
     def test_product(self):
         p = models.Product.objects.create(product_id="product")
 
@@ -187,7 +191,8 @@ class TestProduct:
 
         # the update timestamp indicated that the product lifecycle state was checked
         p.eox_update_time_stamp = _datetime.datetime.now()
-        assert p.current_lifecycle_states == [models.Product.NO_EOL_ANNOUNCEMENT_STR], "No EoX announcement found at this point"
+        assert p.current_lifecycle_states == [
+            models.Product.NO_EOL_ANNOUNCEMENT_STR], "No EoX announcement found at this point"
 
         # set the eox announcement state
         p.eol_ext_announcement_date = _datetime.date.today()
@@ -285,7 +290,7 @@ class TestProduct:
         with pytest.raises(ValidationError) as exinfo:
             models.Product.objects.create(product_id=test_name, vendor=v1)
 
-        assert exinfo.match("__all__': \['Product with this Product id and Vendor already exists.'"), \
+        assert exinfo.match(r"__all__': \['Product with this Product id and Vendor already exists.'"), \
             "product ID must be unique in the database"
 
     def test_product_vendor_change(self):
@@ -308,7 +313,7 @@ class TestProduct:
             p.vendor = v1
             p.save()
 
-        expected_message = "product_group': \['Invalid product group, group and product must be associated to the " \
+        expected_message = r"product_group': \['Invalid product group, group and product must be associated to the " \
                            "same vendor"
         assert exinfo.match(expected_message)
 
@@ -328,15 +333,15 @@ class TestProduct:
         invalid_values = [
             {
                 "value": -4,
-                "exp_error": "list_price': \['Ensure this value is greater than or equal to 0"
+                "exp_error": r"list_price': \['Ensure this value is greater than or equal to 0"
             },
             {
                 "value": -54.123,
-                "exp_error": "list_price': \['Ensure this value is greater than or equal to 0"
+                "exp_error": r"list_price': \['Ensure this value is greater than or equal to 0"
             },
             {
                 "value": -23.00,
-                "exp_error": "list_price': \['Ensure this value is greater than or equal to 0"
+                "exp_error": r"list_price': \['Ensure this value is greater than or equal to 0"
             },
             {
                 "value": "One",
@@ -380,7 +385,7 @@ class TestProduct:
         with pytest.raises(ValidationError) as exinfo:
             p.save()
 
-        assert exinfo.match("eol_reference_url': \['Enter a valid URL.")
+        assert exinfo.match(r"eol_reference_url': \['Enter a valid URL.")
 
     def test_timestamp_values(self, monkeypatch):
         date = _datetime.date.today()
@@ -388,7 +393,7 @@ class TestProduct:
         p = models.Product.objects.create(product_id="product", lc_state_sync=True)
 
         assert p.update_timestamp == date, "Date is not overwritten by the save method, because the state " \
-                                                 "sync was changed"
+                                           "sync was changed"
         assert p.list_price_timestamp is None, "No timestamp because no list price was set"
 
         # change the lc_sync_state (update_timestamp should not change)
@@ -416,6 +421,7 @@ class TestProduct:
 
 class TestProductList:
     """Test ProductList model object"""
+
     @pytest.mark.usefixtures("import_default_users")
     @pytest.mark.usefixtures("import_default_vendors")
     def test_product_list_created_without_a_product(self):
@@ -463,7 +469,7 @@ class TestProductList:
                 vendor=models.Vendor.objects.get(name__contains="Cisco")
             )
 
-        assert exinfo.match("name': \['Product List with this Product List Name already exists.'")
+        assert exinfo.match(r"name': \['Product List with this Product List Name already exists.'")
 
     @pytest.mark.usefixtures("import_default_vendors")
     def test_product_list_created_with_a_product(self):
@@ -644,6 +650,7 @@ class TestProductList:
 
 class TestUserProfile:
     """Test UserProfile model object"""
+
     @pytest.mark.usefixtures("import_default_vendors")
     def test_create_new_user_profile_when_user_is_created(self):
         assert models.UserProfile.objects.count() == 0, "No user profile should be created at this time"
@@ -694,12 +701,13 @@ class TestProductMigrationSource:
         with pytest.raises(ValidationError) as exinfo:
             models.ProductMigrationSource.objects.create(name=test_name)
 
-        assert exinfo.match("\'name\': \[\'Product Migration Source with this Name already exists.\'\]")
+        assert exinfo.match(r"\'name\': \[\'Product Migration Source with this Name already exists.\'\]")
 
 
 @pytest.mark.usefixtures("import_default_vendors")
 class TestProductCheck:
     """Test the ProductCheck and ProductCheckEntry model"""
+
     def test_model(self):
         test_product_string = "myprod"
         models.Product.objects.create(
@@ -714,7 +722,7 @@ class TestProductCheck:
         assert pc.input_product_ids_list == ["TestTest"]
         assert pc.last_change is not None
         assert pc.create_user is None
-        assert pc.task_id is None   # used within the job scheduler
+        assert pc.task_id is None  # used within the job scheduler
         assert pc.is_public is True  # no user defined, Product Check is public
         assert pc.in_progress is False  # no job
         assert str(pc) == "Test"
@@ -806,9 +814,9 @@ class TestProductCheck:
         pms1 = models.ProductMigrationSource.objects.create(name="Preferred Migration Source", preference=60)
         pms2 = models.ProductMigrationSource.objects.create(name="Another Migration Source")
         pmo1 = models.ProductMigrationOption.objects.create(product=p, migration_source=pms1,
-                           replacement_product_id="replacement")
+                                                            replacement_product_id="replacement")
         pmo2 = models.ProductMigrationOption.objects.create(product=p, migration_source=pms2,
-                           replacement_product_id="other_replacement")
+                                                            replacement_product_id="other_replacement")
         pl = models.ProductList.objects.create(
             name="TestList",
             string_product_list="myprod",
@@ -1138,14 +1146,14 @@ class TestProductMigrationOption:
                 migration_source=promiggrp
             )
 
-        assert exinfo.match("\'product\': \[\'This field cannot be null.\'\]")
+        assert exinfo.match(r"\'product\': \[\'This field cannot be null.\'\]")
 
         with pytest.raises(ValidationError) as exinfo:
             models.ProductMigrationOption.objects.create(
                 product=p
             )
 
-        assert exinfo.match("\'migration_source\': \[\'This field cannot be null.\'\]")
+        assert exinfo.match(r"\'migration_source\': \[\'This field cannot be null.\'\]")
 
         # test replacement_product_id with a product ID that is not in the database
         pmo = models.ProductMigrationOption.objects.create(
@@ -1397,7 +1405,7 @@ class TestProductMigrationOption:
             p11.get_migration_path(123)
 
     def test_replacement_id_cannot_be_the_product_id_of_the_entry(self):
-        expected_error = "{'replacement_product_id': \['Product ID that should be replaced cannot be the same as the " \
+        expected_error = r"{'replacement_product_id': \['Product ID that should be replaced cannot be the same as the " \
                          "suggested replacement Product ID'\]}"
 
         # create basic object structure

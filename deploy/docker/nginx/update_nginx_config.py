@@ -39,7 +39,7 @@ if __name__ == "__main__":
     with open(os.path.join("/etc/nginx/template/default.template.conf")) as f:
         content = f.read()
 
-    server_list = "\n".join(["\tserver %s:8000 max_fails=5 fail_timeout=15s;" % host for host in hosts])
+    server_list = "\n".join(["\tserver %s:8443 max_fails=5 fail_timeout=15s;" % host for host in hosts])
 
     content = """\
 upstream webapp {

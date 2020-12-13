@@ -14,7 +14,7 @@ ENV PDB_REDIS_HOST redis
 ENV PDB_REDIS_PORT 6379
 
 # gunicorn variables
-ENV PDB_GUNICORN_WORKER 2
+ENV PDB_GUNICORN_WORKER 3
 
 # celery worker variables
 ENV PDB_CELERY_CONCURRENCY 2
@@ -22,7 +22,7 @@ ENV PDB_CELERY_CONCURRENCY 2
 RUN echo \
     && apt-get update  \
     && apt-get install -y \
-        python3.6 \
+        python3.7 \
         python3-pip \
         python3-dev \
         python-psycopg2 \
@@ -30,6 +30,7 @@ RUN echo \
         libsasl2-dev \
         libldap2-dev \
         libssl-dev \
+        curl \
     && rm -rf /var/lib/apt/lists/*
 
 ADD . /var/www/productdb/source
@@ -39,7 +40,7 @@ RUN echo \
 
 WORKDIR /var/www/productdb/source
 
-EXPOSE 8000
+EXPOSE 8443
 
 ADD ./deploy/docker/django/start_gunicorn.sh /usr/local/bin/start_gunicorn
 ADD ./deploy/docker/django/start_celery_worker.sh /usr/local/bin/start_celery_worker

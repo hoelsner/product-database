@@ -56,3 +56,4 @@ env.*
 !env.prod_template
 !env.compose_test
 .pytest_cache
+docker-compose.yaml
