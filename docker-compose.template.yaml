@@ -6,7 +6,7 @@ version: '3'
 
 services:
   build_deps:
-    image: productdb/build_deps:latest
+    image: "${DOCKER_REGISTRY:-localhost.localdomain}/productdb/build_deps:latest"
     build:
       context: .
       dockerfile: deploy/docker/Dockerfile-build_deps
@@ -95,7 +95,7 @@ services:
 
   beat:
     restart: always
-    image: productdb/django:latest
+    image: "${DOCKER_REGISTRY:-localhost.localdomain}/productdb/django:latest"
     build:
       context: .
       dockerfile: deploy/docker/Dockerfile-django
@@ -113,7 +113,7 @@ services:
 
   worker:
     restart: always
-    image: productdb/django:latest
+    image: "${DOCKER_REGISTRY:-localhost.localdomain}/productdb/django:latest"
     build:
       context: .
       dockerfile: deploy/docker/Dockerfile-django
@@ -139,7 +139,7 @@ services:
 
   web:
     restart: always
-    image: productdb/django:latest
+    image: "${DOCKER_REGISTRY:-localhost.localdomain}/productdb/django:latest"
     build:
       context: .
       dockerfile: deploy/docker/Dockerfile-django
@@ -164,7 +164,7 @@ services:
 
   nginx:
     restart: always
-    image: productdb/nginx:latest
+    image: "${DOCKER_REGISTRY:-localhost.localdomain}/productdb/nginx:latest"
     build:
       context: .
       dockerfile: deploy/docker/Dockerfile-nginx

@@ -26,6 +26,10 @@ class NotificationMessageAdmin(admin.ModelAdmin):
         'detailed_message',
     )
 
+    ordering = (
+        '-created',
+    )
+
 admin.site.register(NotificationMessage, NotificationMessageAdmin)
 
 

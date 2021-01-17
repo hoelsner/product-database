@@ -18,7 +18,7 @@ REST_FRAMEWORK = {
     "DEFAULT_FILTER_BACKENDS": (
         "django_filters.rest_framework.DjangoFilterBackend",
     ),
-    "COMPACT_JSON": False if os.getenv("COMPACT_JSON", False) else False,
+    "COMPACT_JSON": False if os.getenv("COMPACT_JSON", False) else True,
     "UNICODE_JSON": True,
     "DEFAULT_PAGINATION_CLASS": "django_project.pagination.CustomPagination",
     "PAGE_SIZE": 25,

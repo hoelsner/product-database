@@ -35,7 +35,7 @@ services:
 
   web:
     container_name: productdb_dev_web
-    image: productdb/django:dev
+    image: "${DOCKER_REGISTRY:-localhost.localdomain}/productdb/django:dev"
     command: "watchmedo auto-restart --directory=/var/www/productdb/source --pattern=*.py --recursive -- python3 manage.py runserver 0.0.0.0:8000"
     build:
       context: .
@@ -54,7 +54,7 @@ services:
 
   worker:
     container_name: productdb_dev_worker
-    image: productdb/django:dev
+    image: "${DOCKER_REGISTRY:-localhost.localdomain}/productdb/django:dev"
     command: "watchmedo auto-restart --directory=/var/www/productdb/source --pattern=*.py --recursive -- celery -A django_project worker -l debug --concurrency 1 --events --beat --statedb=/var/www/productdb/data/celerybeat-schedule.db"
     build:
       context: .

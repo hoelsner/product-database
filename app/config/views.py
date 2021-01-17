@@ -12,7 +12,6 @@ from app.config.forms import SettingsForm, NotificationMessageForm
 from app.config.models import NotificationMessage, TextBlock
 from app.config import utils
 from app.productdb.utils import login_required_if_login_only_mode
-from django_project import celery
 
 
 @login_required()
@@ -73,23 +72,7 @@ def status(request):
         context["cisco_eox_api_message"] = cisco_eox_api_message
 
     # determine worker status
-    state = celery.is_worker_active()
-
-    if state and not settings.DEBUG:
-        worker_status = """
-            <div class="alert alert-success" role="alert">
-                <span class="fa fa-info-circle"></span>
-                Backend worker found.
-            </div>"""
-
-    else:
-        worker_status = """
-            <div class="alert alert-danger" role="alert">
-                <span class="fa fa-exclamation-circle"></span>
-                No backend worker found, asynchronous and scheduled tasks are not executed.
-            </div>"""
-
-    context['worker_status'] = mark_safe(worker_status)
+    context['worker_status'] = mark_safe(utils.get_celery_worker_state_html())
 
     return render(request, "config/status.html", context=context)
 

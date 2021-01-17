@@ -6,7 +6,7 @@ version: '3'
 services:
   build_deps:
     container_name: ${COMPOSE_PROJECT_NAME:-productdbtesting}_build_deps
-    image: productdb/build_deps:testing
+    image: "${DOCKER_REGISTRY:-localhost.localdomain}/productdb/build_deps:testing"
     build:
       context: .
       dockerfile: deploy/docker/Dockerfile-build_deps
@@ -53,7 +53,7 @@ services:
   beat:
     container_name: ${COMPOSE_PROJECT_NAME:-productdbtesting}_beat
     restart: always
-    image: productdb/django:testing
+    image: "${DOCKER_REGISTRY:-localhost.localdomain}/productdb/django:testing"
     build:
       context: .
       dockerfile: deploy/docker/Dockerfile-django
@@ -71,7 +71,7 @@ services:
 
   worker:
     restart: always
-    image: productdb/django:testing
+    image: "${DOCKER_REGISTRY:-localhost.localdomain}/productdb/django:testing"
     build:
       context: .
       dockerfile: deploy/docker/Dockerfile-django
@@ -91,7 +91,7 @@ services:
 
   web:
     restart: always
-    image: productdb/django:testing
+    image: "${DOCKER_REGISTRY:-localhost.localdomain}/productdb/django:testing"
     build:
       context: .
       dockerfile: deploy/docker/Dockerfile-django
@@ -111,7 +111,7 @@ services:
   nginx:
     container_name: ${COMPOSE_PROJECT_NAME:-productdbtesting}_nginx
     restart: always
-    image: productdb/nginx:testing
+    image: "${DOCKER_REGISTRY:-localhost.localdomain}/productdb/nginx:testing"
     build:
       context: .
       dockerfile: deploy/docker/Dockerfile-nginx

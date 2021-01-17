@@ -535,14 +535,23 @@ class TestProductMigrationOptionAPIEndpoint:
         u.save()
         assert u.has_perm("productdb.add_productmigrationoption")
 
+        p = models.Product.objects.create(product_id="A")
+        ms = models.ProductMigrationSource.objects.create(name="Test")
+
         client = APIClient()
         client.login(username=test_user, password=test_user)
-        response = client.post(REST_PRODUCTMIGRATIONOPTION_LIST,
-                               data={"replacement_id": "Awesome Product Migration Option"})
+        response = client.post(
+            REST_PRODUCTMIGRATIONOPTION_LIST,
+            data={
+                "product": p.pk,
+                "migration_source": ms.pk,
+                "replacement_product_id": "B"
+            }
+        )
 
-        assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED, "API endpoint is always read only"
-        assert response.json() == {'detail': 'Method "POST" not allowed.'}
-        assert ProductMigrationOption.objects.count() == 0, "no additional product migration option is created"
+        assert response.status_code == status.HTTP_201_CREATED, "API endpoint is always read only"
+        assert "id" in response.json()
+        assert ProductMigrationOption.objects.count() == 1
 
     def test_change_access_with_permission(self):
         # create a user with permissions
@@ -554,18 +563,19 @@ class TestProductMigrationOptionAPIEndpoint:
         u.save()
         assert u.has_perm("productdb.change_productmigrationoption")
 
-        models.ProductMigrationOption.objects.create(
+        ms = models.ProductMigrationOption.objects.create(
             product=models.Product.objects.create(product_id="test pid"),
             migration_source=models.ProductMigrationSource.objects.create(name="test")
         )
         client = APIClient()
         client.login(username=test_user, password=test_user)
-        response = client.put(REST_PRODUCTMIGRATIONOPTION_DETAIL % 1, data={
+        response = client.put(REST_PRODUCTMIGRATIONOPTION_DETAIL % ms.pk, data={
             "comment": "renamed product migration source"
         })
 
-        assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED, "API endpoint is always read only"
-        assert response.json() == {'detail': 'Method "PUT" not allowed.'}
+        assert response.status_code == status.HTTP_200_OK, "API endpoint is always read only"
+        response_data = response.json()
+        assert response_data["comment"] == "renamed product migration source"
 
     def test_delete_access_with_permission(self):
         test_user = "user"
@@ -576,17 +586,16 @@ class TestProductMigrationOptionAPIEndpoint:
         u.save()
         assert u.has_perm("productdb.delete_productmigrationoption")
 
-        models.ProductMigrationOption.objects.create(
+        pm = models.ProductMigrationOption.objects.create(
             product=models.Product.objects.create(product_id="test pid"),
             migration_source=models.ProductMigrationSource.objects.create(name="test")
         )
         client = APIClient()
         client.login(username=test_user, password=test_user)
-        response = client.delete(REST_PRODUCTMIGRATIONOPTION_DETAIL % 1)
+        response = client.delete(REST_PRODUCTMIGRATIONOPTION_DETAIL % pm.pk)
 
-        assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED, "API endpoint is always read only"
-        assert response.json() == {'detail': 'Method "DELETE" not allowed.'}
-        assert ProductMigrationOption.objects.count() == 1, "no product migration option was deleted"
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+        assert ProductMigrationOption.objects.count() == 0
 
     def test_search_field(self):
         """
@@ -856,9 +865,9 @@ class TestProductMigrationSourceAPIEndpoint:
         client.login(username=test_user, password=test_user)
         response = client.post(REST_PRODUCTMIGRATIONSOURCE_LIST, data={"name": "Awesome Product Migration Source"})
 
-        assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED, "API endpoint is always read only"
-        assert response.json() == {'detail': 'Method "POST" not allowed.'}
-        assert ProductMigrationSource.objects.count() == 0, "no additional vendor is created"
+        assert response.status_code == status.HTTP_201_CREATED
+        assert "id" in response.json()
+        assert ProductMigrationSource.objects.count() == 1
 
     def test_change_access_with_permission(self):
         # create a user with permissions
@@ -870,13 +879,15 @@ class TestProductMigrationSourceAPIEndpoint:
         u.save()
         assert u.has_perm("productdb.change_productmigrationsource")
 
-        models.ProductMigrationSource.objects.create(name="foo")
+        ms = models.ProductMigrationSource.objects.create(name="foo")
         client = APIClient()
         client.login(username=test_user, password=test_user)
-        response = client.put(REST_PRODUCTMIGRATIONSOURCE_DETAIL % 1, data={"name": "renamed product migration source"})
+        response = client.put(REST_PRODUCTMIGRATIONSOURCE_DETAIL % ms.pk, data={"name": "renamed product migration source"})
 
-        assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED, "API endpoint is always read only"
-        assert response.json() == {'detail': 'Method "PUT" not allowed.'}
+        assert response.status_code == status.HTTP_200_OK
+        response_data = response.json()
+        assert response_data["id"] is not None
+        assert response_data["name"] == "renamed product migration source"
 
     def test_delete_access_with_permission(self):
         test_user = "user"
@@ -887,14 +898,13 @@ class TestProductMigrationSourceAPIEndpoint:
         u.save()
         assert u.has_perm("productdb.delete_productmigrationsource")
 
-        models.ProductMigrationSource.objects.create(name="source")
+        pm = models.ProductMigrationSource.objects.create(name="source")
         client = APIClient()
         client.login(username=test_user, password=test_user)
-        response = client.delete(REST_PRODUCTMIGRATIONSOURCE_DETAIL % 1)
+        response = client.delete(REST_PRODUCTMIGRATIONSOURCE_DETAIL % pm.pk)
 
-        assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED, "API endpoint is always read only"
-        assert response.json() == {'detail': 'Method "DELETE" not allowed.'}
-        assert ProductMigrationSource.objects.count() == 1, "no product migration source was deleted"
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+        assert ProductMigrationSource.objects.count() == 0
 
     def test_search_field(self):
         """
@@ -1552,7 +1562,6 @@ class TestProductAPIEndpoint:
         expected_result["id"] = Product.objects.get(product_id=test_product_id).id
         expected_result["url"] = "http://testserver/productdb/api/v1/products/%d/" % expected_result["id"]
         from pprint import pprint
-        pprint(response.json())
         assert response.json() == expected_result, "Should provide the new product"
 
     def test_change_lc_state_sync(self):

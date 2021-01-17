@@ -99,12 +99,32 @@ class VendorViewSet(viewsets.ReadOnlyModelViewSet):
         openapi.Parameter("search", openapi.IN_QUERY, description="search within Product Migration Source name using a regex string", type=openapi.TYPE_STRING),
     ]
 ))
+@method_decorator(name="create", decorator=swagger_auto_schema(
+    tags=["Product Migration Options"],
+    operation_id="v1_productmigrationsource_create",
+    operation_description="create a Product Migration Sources entry"
+))
 @method_decorator(name="retrieve", decorator=swagger_auto_schema(
     tags=["Product Migration Options"],
     operation_id="v1_productmigrationsource_read",
     operation_description="get a Product Migration Sources entry by `id`"
 ))
-class ProductMigrationSourceViewSet(viewsets.ReadOnlyModelViewSet):
+@method_decorator(name="destroy", decorator=swagger_auto_schema(
+    tags=["Product Migration Options"],
+    operation_id="v1_productmigrationsource_delete",
+    operation_description="delete a Product Migration Sources entry by `id`"
+))
+@method_decorator(name="update", decorator=swagger_auto_schema(
+    tags=["Product Migration Options"],
+    operation_id="v1_productmigrationsource_update",
+    operation_description="update a Product Migration Sources entry by `id`"
+))
+@method_decorator(name="partial_update", decorator=swagger_auto_schema(
+    tags=["Product Migration Options"],
+    operation_id="v1_productmigrationsource_partial_update",
+    operation_description="partial update of a Product Migration Sources entry by `id`"
+))
+class ProductMigrationSourceViewSet(viewsets.ModelViewSet):
     """API endpoint for the ProductMigrationSource objects which identify a specific information source of a
     product migration"""
     queryset = ProductMigrationSource.objects.all().order_by("name")
@@ -137,12 +157,32 @@ class ProductMigrationOptionFilter(django_filters.FilterSet):
         openapi.Parameter("search", openapi.IN_QUERY, description="search within Replacement Product ID and Product ID using a regex string", type=openapi.TYPE_STRING),
     ]
 ))
+@method_decorator(name="create", decorator=swagger_auto_schema(
+    tags=["Product Migration Options"],
+    operation_id="v1_productmigrationoption_create",
+    operation_description="create a Product Migration Option entry"
+))
 @method_decorator(name="retrieve", decorator=swagger_auto_schema(
     tags=["Product Migration Options"],
     operation_id="v1_productmigrationoption_read",
     operation_description="get a Product Migration Option entry by `id`"
 ))
-class ProductMigrationOptionViewSet(viewsets.ReadOnlyModelViewSet):
+@method_decorator(name="destroy", decorator=swagger_auto_schema(
+    tags=["Product Migration Options"],
+    operation_id="v1_productmigrationoption_delete",
+    operation_description="delete a Product Migration Option entry by `id`"
+))
+@method_decorator(name="update", decorator=swagger_auto_schema(
+    tags=["Product Migration Options"],
+    operation_id="v1_productmigrationoption_update",
+    operation_description="update a Product Migration Option entry by `id`"
+))
+@method_decorator(name="partial_update", decorator=swagger_auto_schema(
+    tags=["Product Migration Options"],
+    operation_id="v1_productmigrationoption_partial_update",
+    operation_description="partial update of a Product Migration Option entry by `id`"
+))
+class ProductMigrationOptionViewSet(viewsets.ModelViewSet):
     """
     API endpoint for the ProductMigrationOption objects
     """

@@ -90,7 +90,7 @@ class TestBulkEolCheckFunction(BaseSeleniumTest):
         browser.find_element_by_id("submit").click()
 
         # verify result within the product summary table
-        expected_product_summary_row = "WS-C2960-24LC-S 4 End of Support No"
+        expected_product_summary_row = "Cisco Systems WS-C2960-24LC-S 4 End of Support No"
         expected_not_found_query = "MOH 2 Not found in Database --- --- ---"
 
         # test that the Vendor Bulletin is not visible by default
@@ -131,7 +131,7 @@ class TestBulkEolCheckFunction(BaseSeleniumTest):
         # verify that the file is a CSV formatted field (with ";" as delimiter)
         # verify that the second line contains a link (not the Bulletin number)
         file = os.path.join(test_download_dir, "product check - Test.csv")
-        header_line = "Product ID;Amount;Lifecycle State;Replacement Product ID;Replacement suggested by;" \
+        header_line = "Vendor;Product ID;Amount;Lifecycle State;Replacement Product ID;Replacement suggested by;" \
                       "Vendor Bulletin;LC auto-sync"
         with open(file, "r", encoding="utf-8") as f:
             content = f.read().splitlines()

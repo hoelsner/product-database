@@ -573,6 +573,20 @@ class ProductMigrationOption(models.Model):
 
         return None
 
+    def clean(self):
+        # check required to get a proper validation working within the Django admin (unique together with the required
+        # FK values)
+        if self.product_id is not None and self.migration_source_id is not None:
+            # validate that this combination does not already exist (issue when using django admin)
+            qs = ProductMigrationOption.objects.exclude(pk=self.pk).filter(
+                product__id=self.product_id,
+                migration_source__id=self.migration_source_id
+            )
+            if qs.count() > 0:
+                # one of the fields must be changed, therefore view the error on both attributes
+                msg = "Product Migration Option with this Product ID and Migration Source already exists"
+                raise ValidationError({"product_id": msg, "migration_source": msg})
+
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
         self.full_clean()
         super().save(force_insert, force_update, using, update_fields)
@@ -608,7 +622,6 @@ class ProductList(models.Model):
     )
 
     string_product_list = models.TextField(
-        max_length=16384,
         help_text="Product IDs separated by word wrap or semicolon",
         verbose_name="Unstructured Product IDs separated by line break"
     )

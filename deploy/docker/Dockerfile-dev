@@ -1,9 +1,8 @@
 # development container used as remote interpreter
 FROM ubuntu:18.04
 
-ENV LANG en_US.UTF-8
-ENV LANGUAGE en_US:en
-ENV LC_ALL en_US.UTF-8
+ENV LANG C.UTF-8
+ENV LC_ALL C.UTF-8
 
 ENV PDB_REDIS_HOST "redis"
 ENV PDB_DATABASE_HOST "database"
@@ -14,10 +13,21 @@ ENV HEADLESS_TESTING 1
 ENV SERVER_HOST "productdbtestinstance"
 ENV SERVER_PORT 443
 ENV SERVER_PROTOCOL "https"
+ENV PDB_DEBUG "true"
 
-RUN apt-get update && apt-get install -y libsasl2-dev \
-    libldap2-dev libssl-dev xvfb firefox wget locales python3.7 python3-pip python3-dev curl
-RUN curl -L "https://github.com/docker/compose/releases/download/1.27.4/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose \
+RUN apt-get update && apt-get install -y \
+        libsasl2-dev \
+        libldap2-dev \
+        libssl-dev \
+        xvfb \
+        firefox \
+        wget \
+        locales \
+        python3.7 \
+        python3-pip \
+        python3-dev \
+        curl \
+    && curl -L "https://github.com/docker/compose/releases/download/1.27.4/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose \
     && chmod +x /usr/local/bin/docker-compose
 
 WORKDIR /tmp

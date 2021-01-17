@@ -13,6 +13,7 @@ from requests.auth import HTTPBasicAuth
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.select import Select
 from selenium.webdriver.support.wait import WebDriverWait
 from tests import BaseSeleniumTest, PRODUCTS_API_ENDPOINT
 
@@ -568,3 +569,65 @@ class TestSettingsPermissions(BaseSeleniumTest):
 
         # end session
         browser.get(liveserver + reverse("logout"))
+
+    def test_product_migration_option_admin_page(self, browser, liveserver):
+        self.api_helper.drop_all_data(liveserver)
+
+        # create some test data
+        p = self.api_helper.create_product(
+            liveserver_url=liveserver,
+            product_id="Product A",
+            vendor_id=1,
+            eol_ext_announcement_date="2016-01-01",
+            end_of_sale_date="2016-01-01",
+            eox_update_time_stamp=datetime.datetime.utcnow().strftime("%Y-%m-%d"),
+        )
+        self.api_helper.create_product(
+            liveserver_url=liveserver,
+            product_id="Product B",
+            vendor_id=1,
+            eol_ext_announcement_date="2016-01-01",
+            end_of_sale_date="2016-01-01",
+            eox_update_time_stamp=datetime.datetime.utcnow().strftime("%Y-%m-%d"),
+        )
+        ps = self.api_helper.create_product_migration_source(
+            liveserver_url=liveserver,
+            name="Source",
+            description="4 testing",
+            preference=50
+        )
+        self.api_helper.create_product_migration_option(
+            liveserver_url=liveserver,
+            product=p["id"],
+            migration_source=ps["id"],
+            comment="",
+            migration_product_info_url="",
+            replacement_product_id="Product B"
+        )
+
+        # login and go to create page
+        browser.get(liveserver + "/productdb/admin/productdb/productmigrationoption/add/")
+        self.login_user(browser, self.ADMIN_USERNAME, self.ADMIN_PASSWORD, "Add Product Migration Option", "site-name")
+        WebDriverWait(browser, 10).until(EC.presence_of_element_located((By.ID, "id_product_id")))
+
+        browser.find_element_by_id("id_product_id").send_keys("Product A")
+        browser.find_element_by_id("id_replacement_product_id").send_keys("Product B")
+        Select(browser.find_element_by_id("id_migration_source")).select_by_value(str(ps["id"]))
+        browser.find_element_by_name("_continue").send_keys(Keys.ENTER)
+
+        # verify that the error message appears (not a 500)
+        expected_content = "Please correct the errors below."
+        fail_msg_xpath = "//p[@class=\"errornote\"]"
+
+        self.wait_for_element_to_be_clickable_by_xpath(browser, fail_msg_xpath)
+        assert expected_content in browser.find_element_by_xpath(fail_msg_xpath).text
+
+        expected_content = "Product Migration Option with this Product ID and Migration Source already exists"
+        fail_msg_xpath = "//ul[@class=\"errorlist\"]"
+
+        self.wait_for_element_to_be_clickable_by_xpath(browser, fail_msg_xpath)
+        assert expected_content in browser.find_element_by_xpath(fail_msg_xpath).text
+
+        # end session
+        browser.get(liveserver + "/productdb/")
+        self.logout_user(browser)

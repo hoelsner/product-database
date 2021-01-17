@@ -185,13 +185,16 @@ STATICFILES_DIRS = (
 
 if os.getenv("PDB_SESSION_EXPIRE_ON_BROWSER_CLOSE", None):
     SESSION_EXPIRE_AT_BROWSER_CLOSE = True
-    SESSION_COOKIE_AGE = os.getenv("SESSION_COOKIE_AGE", 60 * 60)
+    SESSION_COOKIE_AGE = int(os.getenv("SESSION_COOKIE_AGE", str(60 * 60)))
 
 else:
-    SESSION_COOKIE_AGE = os.getenv("SESSION_COOKIE_AGE", 60 * 60)
+    SESSION_COOKIE_AGE = int(os.getenv("SESSION_COOKIE_AGE", str(60 * 60)))
     SESSION_SAVE_EVERY_REQUEST = True
 
+X_FRAME_OPTIONS = "DENY"
 SESSION_COOKIE_NAME = "productdb"
+SESSION_COOKIE_PATH = "/productdb/"
+SESSION_COOKIE_SAMESITE = "Strict"
 SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
 
 BOOTSTRAP3 = {
@@ -219,8 +222,6 @@ MEDIA_ROOT = DATA_DIRECTORY
 if not os.path.exists(DATA_DIRECTORY):
     os.makedirs(DATA_DIRECTORY, exist_ok=True)
 
-ADD_REVERSION_ADMIN = True
-
 if os.getenv("PDB_DEBUG"):
     from ipaddress import IPv4Interface
     # enable django debug toolbar (only installed with the dev requirements)
@@ -236,5 +237,5 @@ if os.getenv("PDB_DEBUG"):
 if not os.getenv("PDB_DEBUG") and not os.getenv("PDB_TESTING", False):
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
-    CSRF_COOKIE_AGE = 60 * 60 * 24 * 30
+    CSRF_COOKIE_AGE = 60 * 60 * 24
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")

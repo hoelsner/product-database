@@ -34,7 +34,7 @@ RUN echo \
     && curl -sL https://deb.nodesource.com/setup_12.x | bash - \
     && apt-get update  \
     && apt-get install -y nodejs \
-    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /var/lib/apt/lists/*  \
     && apt-get clean
 
 ADD . /var/www/productdb/source

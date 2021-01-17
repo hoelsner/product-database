@@ -1220,7 +1220,7 @@ class TestProductMigrationOption:
         with pytest.raises(ValidationError) as exinfo:
             models.ProductMigrationOption.objects.create(migration_source=promiggrp, product=p)
 
-        assert exinfo.match("Product Migration Option with this Product and Migration source already exists.")
+        assert exinfo.match("Product Migration Option with this Product ID and Migration Source already exists")
 
     def test_product_migration_group_set(self):
         test_product_id = "My Product ID"

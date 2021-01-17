@@ -10,6 +10,7 @@ from django_project import views
 admin.site.site_header = "Product Database Administration"
 
 urlpatterns = [
+    url(r'^productdb/admin/login/', views.login_user),
     url(r'^productdb/admin/', admin.site.urls),
 
     # common views for the application

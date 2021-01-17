@@ -175,6 +175,7 @@ class TestStatusView:
             views.status(request)
 
     @pytest.mark.usefixtures("mock_cisco_eox_api_access_available")
+    @pytest.mark.usefixtures("mock_worker_not_available_state")
     def test_superuser_access(self):
         # require super user permissions
         user = User.objects.create(username="username", is_superuser=True)
@@ -188,8 +189,9 @@ class TestStatusView:
             "No backend worker found, asynchronous and scheduled tasks are not executed.",
             "successful connected to the Cisco EoX API"
         ]
+        page_content = response.content.decode()
         for line in expected_content:
-            assert line in response.content.decode()
+            assert line in page_content, page_content
 
         assert cache.get("CISCO_EOX_API_TEST", None) is True
 

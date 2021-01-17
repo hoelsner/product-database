@@ -14,6 +14,8 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 
 PRODUCTS_API_ENDPOINT = "/productdb/api/v1/products/"
+PRODUCT_MIGRATION_SOURCES_API_ENDPOINT = "/productdb/api/v1/productmigrationsources/"
+PRODUCT_MIGRATION_OPTION_API_ENDPOINT = "/productdb/api/v1/productmigrationoptions/"
 PRODUCT_LISTS_API_ENDPOINT = "/productdb/api/v1/productlists/"
 NOTIFICATION_MESSAGES_API_ENDPOINT = "/productdb/api/v1/notificationmessages/"
 PRODUCT_GROUPS_API_ENDPOINT = "/productdb/api/v1/productgroups/"
@@ -108,6 +110,43 @@ class ProductDatabaseAPIHelper:
         return response.json()["data"][0]
 
     @staticmethod
+    def create_product_migration_source(liveserver_url: str, name: str, description: str, preference: int):
+        response = requests.post(liveserver_url + PRODUCT_MIGRATION_SOURCES_API_ENDPOINT,
+                                 auth=HTTPBasicAuth("pdb_admin", "pdb_admin"),
+                                 headers={'Content-Type': 'application/json'},
+                                 data=json.dumps({
+                                     "name": name,
+                                     "description": description,
+                                     "preference": preference
+                                 }),
+                                 verify=False,
+                                 timeout=10)
+
+        assert response.ok is True, "%s - %s" % (response.status_code, response.text)
+
+        return response.json()
+
+    @staticmethod
+    def create_product_migration_option(liveserver_url: str, product: int, migration_source: int, comment: str,
+                                        migration_product_info_url: str, replacement_product_id: str):
+        response = requests.post(liveserver_url + PRODUCT_MIGRATION_OPTION_API_ENDPOINT,
+                                 auth=HTTPBasicAuth("pdb_admin", "pdb_admin"),
+                                 headers={'Content-Type': 'application/json'},
+                                 data=json.dumps({
+                                     "product": product,
+                                     "migration_source": migration_source,
+                                     "comment": comment,
+                                     "migration_product_info_url": migration_product_info_url,
+                                     "replacement_product_id": replacement_product_id
+                                 }),
+                                 verify=False,
+                                 timeout=10)
+
+        assert response.ok is True, "%s - %s" % (response.status_code, response.text)
+
+        return response.json()
+
+    @staticmethod
     def drop_all_data(liveserver_url):
         response = requests.get(liveserver_url + PRODUCTS_API_ENDPOINT + "?page_size=100",
                                 auth=HTTPBasicAuth("pdb_admin", "pdb_admin"),
@@ -143,7 +182,7 @@ class ProductDatabaseAPIHelper:
                                 verify=False,
                                 timeout=10)
 
-            assert r.ok, "Cannot drop Product ID %s" % product
+            assert r.ok, "Cannot drop Product ID %s" % product_group
 
         response = requests.get(liveserver_url + NOTIFICATION_MESSAGES_API_ENDPOINT + "?page_size=100",
                                 auth=HTTPBasicAuth("pdb_admin", "pdb_admin"),
@@ -163,6 +202,48 @@ class ProductDatabaseAPIHelper:
                                 timeout=10)
 
             assert r.ok, "Cannot drop Notification Message ID %s" % notificationmessage
+
+        response = requests.get(liveserver_url + PRODUCT_MIGRATION_OPTION_API_ENDPOINT + "?page_size=100",
+                                auth=HTTPBasicAuth("pdb_admin", "pdb_admin"),
+                                headers={'Content-Type': 'application/json'},
+                                verify=False,
+                                timeout=10)
+
+        assert response.ok is True
+        data = response.json()
+
+        for product_migration_option in data["data"]:
+            r = requests.delete(liveserver_url + PRODUCT_MIGRATION_OPTION_API_ENDPOINT +
+                                "%s/" % product_migration_option["id"],
+                                auth=HTTPBasicAuth("pdb_admin", "pdb_admin"),
+                                headers={'Content-Type': 'application/json'},
+                                verify=False,
+                                timeout=10)
+
+            assert r.ok, "Cannot drop Product Migration Option ID %s" % product_migration_option
+
+        response = requests.get(liveserver_url + PRODUCT_MIGRATION_SOURCES_API_ENDPOINT + "?page_size=100",
+                                auth=HTTPBasicAuth("pdb_admin", "pdb_admin"),
+                                headers={'Content-Type': 'application/json'},
+                                verify=False,
+                                timeout=10)
+
+        assert response.ok is True
+        data = response.json()
+
+        for product_migration_source in data["data"]:
+            if product_migration_source["id"] == 1:
+                # don't drop the entry that was created by the fixture
+                continue
+
+            r = requests.delete(liveserver_url + PRODUCT_MIGRATION_SOURCES_API_ENDPOINT +
+                                "%s/" % product_migration_source["id"],
+                                auth=HTTPBasicAuth("pdb_admin", "pdb_admin"),
+                                headers={'Content-Type': 'application/json'},
+                                verify=False,
+                                timeout=10)
+
+            assert r.ok, "Cannot drop Product Migration Source ID %s" % product_migration_source
 
     @staticmethod
     def load_base_test_data(liveserver_url):
@@ -271,7 +352,7 @@ class BaseSeleniumTest:
         browser.find_element_by_id("submit").click()
 
     @staticmethod
-    def login_user(browser, username, password, expected_content):
+    def login_user(browser, username, password, expected_content, wait_for_id_success="navbar_loggedin"):
         """Handle the login dialog"""
         # perform user login with the given credentials
         WebDriverWait(browser, 30).until(EC.presence_of_element_located((By.ID, "username")))
@@ -281,7 +362,7 @@ class BaseSeleniumTest:
         browser.find_element_by_id("username").send_keys(username)
         browser.find_element_by_id("password").send_keys(password)
         browser.find_element_by_id("login_button").click()
-        WebDriverWait(browser, 30).until(EC.presence_of_element_located((By.ID, "navbar_loggedin")))
+        WebDriverWait(browser, 30).until(EC.presence_of_element_located((By.ID, wait_for_id_success)))
 
         # check that the user sees the expected title
         page_text = browser.find_element_by_tag_name('body').text
