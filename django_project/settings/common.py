@@ -215,12 +215,11 @@ BOOTSTRAP3 = {
     "success_css_class": "has-success",
 }
 
-DATA_DIRECTORY = os.path.join(os.path.join("..", "data"))
-MEDIA_ROOT = DATA_DIRECTORY
+MEDIA_ROOT = os.path.join(os.path.join("..", "data"))
 
 # install data directory if required
-if not os.path.exists(DATA_DIRECTORY):
-    os.makedirs(DATA_DIRECTORY, exist_ok=True)
+if not os.path.exists(MEDIA_ROOT):
+    os.makedirs(MEDIA_ROOT, exist_ok=True)
 
 if os.getenv("PDB_DEBUG"):
     from ipaddress import IPv4Interface

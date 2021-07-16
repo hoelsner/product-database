@@ -71,7 +71,7 @@ class TestApiUseCases(BaseSeleniumTest):
                     "product_id": "WS-C2960+24TC-L",
                     "tags": "",
                     "update_timestamp": today_string,
-                    "url": "https://productdbtestinstance/productdb/api/v1/products/%d/" % second_product["id"],
+                    "url": f"{liveserver}/productdb/api/v1/products/%d/" % second_product["id"],
                     "vendor": 1
                 },
                 {
@@ -97,7 +97,7 @@ class TestApiUseCases(BaseSeleniumTest):
                     "product_id": "WS-C2960-24TC-L",
                     "tags": "",
                     "update_timestamp": today_string,
-                    "url": "https://productdbtestinstance/productdb/api/v1/products/%d/" % first_product["id"],
+                    "url": f"{liveserver}/productdb/api/v1/products/%d/" % first_product["id"],
                     "vendor": 1
                 }
             ]

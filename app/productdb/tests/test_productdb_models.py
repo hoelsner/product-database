@@ -8,7 +8,7 @@ import datetime as _datetime
 from hashlib import sha512
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
-from django.core.files import File
+from django.core.files.base import ContentFile
 from django.db.models import QuerySet
 from app.productdb import models
 
@@ -19,15 +19,8 @@ class TestJobFile:
     """Test JobFile model"""
 
     def test_auto_delete_job_file(self):
-        # create temp test file
-        filename = tempfile.mkstemp()[1]
-        f = open(filename, 'w')
-        f.write("These are the file contents")
-        f.close()
-        f = open(filename, "r")
-
         jf = models.JobFile.objects.create()
-        jf.file.save("test file.txt", File(f))
+        jf.file.save("test.txt", ContentFile("These are the file contents"))
 
         assert models.JobFile.objects.count() == 1, "A single object should exist in the database"
         assert os.path.exists(jf.file.path), "file should be created in the data directory"

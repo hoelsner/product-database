@@ -125,6 +125,7 @@ def test_download_dir():
 def liveserver():
     server_host = os.environ.get("SERVER_HOST", "127.0.0.1")
     server_protocol = os.environ.get("SERVER_PROTOCOL", "https")
-    server_port = os.environ.get("SERVER_PORT", "443")
+    # pytest will stage the docker-compose_test.yaml file that uses port 27443 on the device
+    server_port = os.environ.get("SERVER_PORT", "27443")
 
     return "%s://%s:%s" % (server_protocol, server_host, server_port)

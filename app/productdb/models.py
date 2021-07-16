@@ -26,7 +26,7 @@ CURRENCY_CHOICES = (
 
 class JobFile(models.Model):
     """Uploaded files for tasks"""
-    file = models.FileField(upload_to=settings.DATA_DIRECTORY)
+    file = models.FileField(upload_to="data")
 
 
 @receiver(pre_delete, sender=JobFile)
