@@ -6,7 +6,7 @@ version: '3'
 
 services:
   build_deps:
-    image: "${DOCKER_REGISTRY:-localhost.localdomain}/productdb/build_deps:latest"
+    image: "${DOCKER_REGISTRY:-localhost.localdomain}/productdb/build_deps:stable"
     build:
       context: .
       dockerfile: deploy/docker/Dockerfile-build_deps
@@ -55,9 +55,12 @@ services:
       - static_files:/var/www/productdb/static
       - ssl_files:/var/www/productdb/ssl
       - data:/var/www/productdb/data
+      - postgres_backup:/backups
     networks:
       - default
       - internal
+    labels:
+      productdb: build_deps
 
   redis:
     restart: always
@@ -82,7 +85,6 @@ services:
     environment: *app
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - postgres_backup:/backups
       - ssl_files:/var/www/productdb/ssl:ro
     networks:
       - internal
@@ -95,7 +97,7 @@ services:
 
   beat:
     restart: always
-    image: "${DOCKER_REGISTRY:-localhost.localdomain}/productdb/django:latest"
+    image: "${DOCKER_REGISTRY:-localhost.local}/productdb/django:stable"
     build:
       context: .
       dockerfile: deploy/docker/Dockerfile-django
@@ -113,7 +115,7 @@ services:
 
   worker:
     restart: always
-    image: "${DOCKER_REGISTRY:-localhost.localdomain}/productdb/django:latest"
+    image: "${DOCKER_REGISTRY:-localhost.local}/productdb/django:stable"
     build:
       context: .
       dockerfile: deploy/docker/Dockerfile-django
@@ -139,7 +141,7 @@ services:
 
   web:
     restart: always
-    image: "${DOCKER_REGISTRY:-localhost.localdomain}/productdb/django:latest"
+    image: "${DOCKER_REGISTRY:-localhost.local}/productdb/django:stable"
     build:
       context: .
       dockerfile: deploy/docker/Dockerfile-django
@@ -161,10 +163,13 @@ services:
       timeout: 10s
       retries: 2
       start_period: 60s
+    labels:
+      # used to auto-build the nginx configuration in the nginx service
+      productdb: web
 
   nginx:
     restart: always
-    image: "${DOCKER_REGISTRY:-localhost.localdomain}/productdb/nginx:latest"
+    image: "${DOCKER_REGISTRY:-localhost.local}/productdb/nginx:stable"
     build:
       context: .
       dockerfile: deploy/docker/Dockerfile-nginx

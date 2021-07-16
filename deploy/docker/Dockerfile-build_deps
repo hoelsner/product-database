@@ -25,15 +25,16 @@ RUN echo \
         python3.7 \
         python3-pip \
         python3-dev \
-        python-psycopg2 \
         libpq-dev \
         libsasl2-dev \
         libldap2-dev \
         libssl-dev \
         git \
     && curl -sL https://deb.nodesource.com/setup_12.x | bash - \
+    && echo "deb http://apt.postgresql.org/pub/repos/apt bionic-pgdg main" > /etc/apt/sources.list.d/pgdg.list \
+    && curl -sL https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - \
     && apt-get update  \
-    && apt-get install -y nodejs \
+    && apt-get install -y nodejs postgresql-client-12 \
     && rm -rf /var/lib/apt/lists/*  \
     && apt-get clean
 
@@ -53,6 +54,9 @@ RUN npm install \
     && rm -rf /var/www/productdb/source/node_modules \
     && rm -rf /var/www/productdb/source/node_modules \
     && rm -rf /var/lib/apt/lists/*
+ADD ./deploy/docker/django/initialimport.sh /usr/local/bin/initialimport
+ADD ./deploy/docker/django/initialimportstatus.sh /usr/local/bin/initialimportstatus
 
 RUN chmod +x ./deploy/docker/build_deps/build_dependencies.sh
+
 CMD ./deploy/docker/build_deps/build_dependencies.sh

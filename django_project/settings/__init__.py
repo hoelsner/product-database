@@ -51,7 +51,8 @@ LOGGING = configure_logging(
     enable_sentry=True if PDB_SENTRY_DSN else False
 )
 
-logger.warning("DJANGO CONFIG: Start logging on level: %s" % DJANGO_LOG_LEVEL)
+if PDB_DEBUG:
+    logger.warning("DJANGO CONFIG: Start logging on level: %s" % DJANGO_LOG_LEVEL)
 
 from django_project.settings.rest_framework import *
 from django_project.settings.ldap import *

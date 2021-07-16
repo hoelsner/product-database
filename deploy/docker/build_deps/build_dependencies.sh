@@ -83,3 +83,6 @@ echo ""
 echo "==> collect static files..."
 echo ""
 python3 manage.py collectstatic --noinput
+
+# keep container alive
+sleep infinity

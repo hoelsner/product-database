@@ -4,7 +4,7 @@ RUN apt-get update \
     && apt-get install -y \
         python3 \
         python3-pip \
-    && pip3 install docker-py
+    && pip3 install docker-py==1.10.6
 
 ENV PDB_GUNICORN_WORKER 3
 
