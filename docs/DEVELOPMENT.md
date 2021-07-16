@@ -23,9 +23,10 @@ npm install
 To create the database and load the initial data, use the following commands:
 
 ```
+export PDB_DEBUG=1 
 python3 manage.py collectstatic
 python3 manage.py migrate
-python3 manage.py loaddata default_users default_vendors default_text_blocks
+python3 manage.py loaddata default_users default_vendors initial_data
 ```
 
 The Django development server can be started with the command `python3 manage.py runserver`
