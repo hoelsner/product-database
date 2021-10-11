@@ -104,7 +104,7 @@ pg_restore -h localhost -U $POSTGRES_USER -C -d postgres /backups/$1
 To update an existing instance (including postgres and redis), you need to update the git repository and rebuild the containers:
 
 ```bash
-git pull origin stable 
+git pull origin master 
 git checkout stable
 docker-compose build --pull
 docker-compose up -d --force-recreate

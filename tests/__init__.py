@@ -2,6 +2,8 @@
 common objects for the selenium test cases
 """
 import json
+import logging
+
 import pytest
 import os
 import time
@@ -45,7 +47,7 @@ class ProductDatabaseAPIHelper:
                                  verify=False,
                                  timeout=10)
 
-        assert response.ok is True, response.status_code
+        assert response.ok is True, response.text
 
         return response.json()
 
@@ -154,7 +156,7 @@ class ProductDatabaseAPIHelper:
                                 verify=False,
                                 timeout=10)
 
-        assert response.ok is True
+        assert response.ok is True, response.text
         data = response.json()
 
         for product in data["data"]:
@@ -172,7 +174,7 @@ class ProductDatabaseAPIHelper:
                                 verify=False,
                                 timeout=10)
 
-        assert response.ok is True
+        assert response.ok is True, response.text
         data = response.json()
 
         for product_group in data["data"]:
@@ -190,7 +192,7 @@ class ProductDatabaseAPIHelper:
                                 verify=False,
                                 timeout=10)
 
-        assert response.ok is True
+        assert response.ok is True, response.text
         data = response.json()
 
         for notificationmessage in data["data"]:
@@ -209,7 +211,7 @@ class ProductDatabaseAPIHelper:
                                 verify=False,
                                 timeout=10)
 
-        assert response.ok is True
+        assert response.ok is True, response.text
         data = response.json()
 
         for product_migration_option in data["data"]:
@@ -228,7 +230,7 @@ class ProductDatabaseAPIHelper:
                                 verify=False,
                                 timeout=10)
 
-        assert response.ok is True
+        assert response.ok is True, response.text
         data = response.json()
 
         for product_migration_source in data["data"]:
@@ -310,7 +312,7 @@ class BaseSeleniumTest:
             )
 
         except TimeoutException:
-            print(browser.find_element_by_tag_name("body").text)
+            logging.error(browser.find_element_by_tag_name("body").text)
             pytest.fail("expected text '%s' was not visible within 10 seconds")
 
     @staticmethod
@@ -321,7 +323,7 @@ class BaseSeleniumTest:
             )
 
         except TimeoutException:
-            print(browser.find_element_by_tag_name("body").text)
+            logging.error(browser.find_element_by_tag_name("body").text)
             pytest.fail("expected text '%s' was not visible within 10 seconds")
 
     @staticmethod
@@ -332,7 +334,7 @@ class BaseSeleniumTest:
             )
 
         except TimeoutException:
-            print(browser.find_element_by_tag_name("body").text)
+            logging.error(browser.find_element_by_tag_name("body").text)
             pytest.fail("expected text '%s' was not visible within 10 seconds")
 
     @staticmethod

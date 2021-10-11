@@ -1,6 +1,7 @@
 """
 Test suite for the selenium test cases
 """
+import logging
 import os
 import pytest
 import time
@@ -505,6 +506,8 @@ class TestProductDatabaseViews(BaseSeleniumTest):
         browser.find_element_by_id("nav_browse").click()
         browser.find_element_by_id("nav_browse_all_product_groups").click()
         self.wait_for_text_to_be_displayed_in_body_tag(browser, "All Product Groups")
+        # wait two additional seconds to
+        time.sleep(1)
 
         # test table content
         expected_table_content = """Vendor\nName"""
@@ -517,6 +520,10 @@ class TestProductDatabaseViews(BaseSeleniumTest):
 
         table = browser.find_element_by_id('product_group_table')
         self.wait_for_text_to_be_displayed_in_body_tag(browser, expected_table_content)
+        # wait two additional seconds to
+        time.sleep(1)
+
+        logging.debug("TABLE TEXT:\n%s" % table.text)
         for r in table_rows:
             assert r in table.text
 
@@ -528,6 +535,7 @@ class TestProductDatabaseViews(BaseSeleniumTest):
         browser.find_element_by_id("column_search_Vendor").send_keys("Juni")
         table = browser.find_element_by_id('product_group_table')
         assert expected_table_content in table.text
+        logging.debug("TABLE TEXT:\n%s" % table.text)
         for r in table_rows:
             assert r in table.text
         browser.find_element_by_id("column_search_Vendor").clear()
@@ -551,6 +559,8 @@ class TestProductDatabaseViews(BaseSeleniumTest):
         # click on the "Catalyst 2960X" link
         browser.find_element_by_partial_link_text("Catalyst 2960X").click()
         self.wait_for_text_to_be_displayed_in_body_tag(browser, "Catalyst 2960X Product Group details")
+        # wait two additional seconds to
+        time.sleep(1)
 
         # verify table content
         expected_table_content = """Product ID\nDescription\nList Price Lifecycle State"""
@@ -562,6 +572,7 @@ class TestProductDatabaseViews(BaseSeleniumTest):
 
         table = browser.find_element_by_id('product_table')
         assert expected_table_content in table.text
+        logging.debug("TABLE TEXT:\n%s" % table.text)
         for r in table_rows:
             assert r in table.text
             # search product group by vendor column
@@ -583,6 +594,8 @@ class TestProductDatabaseViews(BaseSeleniumTest):
         browser.find_element_by_partial_link_text("C2960X-STACK").click()
         detail_link = browser.current_url
         self.wait_for_text_to_be_displayed_in_body_tag(browser, "C2960X-STACK Product details")
+        # wait two additional seconds to
+        time.sleep(1)
 
         # verify that the "Internal Product ID" is not visible (because not set)
         assert "Internal Product ID" not in browser.find_element_by_tag_name("body").text
