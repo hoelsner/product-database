@@ -1,6 +1,8 @@
 import datetime
 import json
 import logging
+from json import JSONDecodeError
+
 import requests
 from django.conf import settings
 from django.core.cache import cache
@@ -77,27 +79,36 @@ class BaseCiscoApiConsole:
             logger.debug("cannot load cached token: register new token")
             return False
 
-    def __check_response_for_errors__(self, respone):
+    def __check_response_for_errors__(self, response):
         """check for common errors on the API endpoints"""
-        if respone.status_code == 401:
-            logger.error("cannot claim access token, Invalid client or client credentials (%s)" % respone.url)
+        if response.status_code == 401:
+            logger.error("cannot claim access token, Invalid client or client credentials (%s)" % response.url)
             raise InvalidClientCredentialsException("Invalid client or client credentials")
 
-        if respone.status_code == 500:
-            logger.error("API response invalid, result was HTTP 500 (%s)" % respone.url)
+        if response.status_code == 500:
+            logger.error("API response invalid, result was HTTP 500 (%s)" % response.url)
             raise CiscoApiCallFailed("API response invalid, result was HTTP 500")
 
-        if respone.text == "<h1>Not Authorized</h1>":
-            logger.error("cannot claim access token, authorization failed (%s)" % respone.url)
-            raise AuthorizationFailedException("User authorization failed")
-
-        elif respone.text == "<h1>Developer Inactive</h1>":
-            logger.error("cannot claim access token, developer inactive (%s)" % respone.url)
-            raise AuthorizationFailedException("Insufficient Permissions on API endpoint")
-
-        elif respone.text == "<h1>Gateway Timeout</h1>":
-            logger.error("cannot claim access token, Gateway timeout (%s)" % respone.url)
-            raise AuthorizationFailedException("API endpoint temporary unreachable")
+        # depending on the API endpoint error contents may vary
+        errmsgs = {
+            # value to match : error message to raise
+            "<h1>Not Authorized</h1>": {
+                "log_message": "cannot claim access token, authorization failed (%s)",
+                "exception_message": "User authorization failed"
+            },
+            "<h1>Developer Inactive</h1>": {
+                "log_message": "cannot claim access token, developer inactive (%s)",
+                "exception_message": "Insufficient Permissions on API endpoint"
+            },
+            "<h1>Gateway Timeout</h1>": {
+                "log_message": "cannot claim access token, Gateway timeout (%s)",
+                "exception_message": "API endpoint temporary unreachable"
+            }
+        }
+        for match_value, msgs in errmsgs.items():
+            if response.text == match_value or match_value in response.text:
+                logger.error(msgs["log_message"] % response.url)
+                raise AuthorizationFailedException(msgs["exception_message"])
 
     def load_client_credentials(self):
         logger.debug("load client credentials from configuration")
@@ -138,7 +149,11 @@ class BaseCiscoApiConsole:
                     response = requests.post(self.AUTHENTICATION_URL, params=authz_header, proxies=self.proxies)
 
                 except Exception as ex:
-                    logger.error("cannot contact authentication server at %s" % self.AUTHENTICATION_URL, exc_info=True)
+                    logger.error("cannot contact authentication server at %s (%s)" % (
+                        self.AUTHENTICATION_URL,
+                        ex
+                    ), exc_info=True)
+                    logger.exception(ex)
                     raise ConnectionFailedException("cannot contact authentication server") from ex
 
                 self.__check_response_for_errors__(response)
@@ -222,9 +237,13 @@ class BaseCiscoApiConsole:
         try:
             jdata = response.json()
 
-        except:
-            logger.debug(response.text)
+        except JSONDecodeError as ex:
+            logger.warning("url %s doesn't return valid json, returning an empty dictionary instead")
+            jdata = {}
+
+        except Exception as ex:
             logger.error("unexpected response from API endpoint (malformed JSON content)")
+            logger.exception(ex)
             raise CiscoApiCallFailed("unexpected content from API endpoint")
 
         return jdata
