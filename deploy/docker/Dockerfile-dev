@@ -1,5 +1,7 @@
 # development container used as remote interpreter
-FROM ubuntu:18.04
+FROM ubuntu:20.04
+
+ARG DEBIAN_FRONTEND=noninteractive
 
 ENV LANG C.UTF-8
 ENV LC_ALL C.UTF-8
@@ -15,6 +17,7 @@ ENV SERVER_PORT 443
 ENV SERVER_PROTOCOL "https"
 ENV PDB_DEBUG "true"
 
+# DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \
         libsasl2-dev \
         libldap2-dev \

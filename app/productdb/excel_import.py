@@ -48,7 +48,7 @@ class BaseExcelImporter:
 
     def _load_workbook(self):
         try:
-            self.workbook = pd.ExcelFile(self.path_to_excel_file)
+            self.workbook = pd.ExcelFile(self.path_to_excel_file, engine="xlrd")
 
         except XLRDError as ex:
             logger.error("invalid format of excel file '%s' (%s)" % (self.path_to_excel_file, ex), exc_info=True)
@@ -74,6 +74,7 @@ class BaseExcelImporter:
     def verify_file(self):
         if self.workbook is None:
             self._load_workbook()
+
         self.valid_file = False
 
         sheets = self.workbook.sheet_names
@@ -108,7 +109,7 @@ class BaseExcelImporter:
             if row_key in row:
                 currval = getattr(product, target_key)
                 if not pd.isnull(row[row_key]):
-                    if (type(row[row_key]) is pd.tslib.Timestamp) or (type(row[row_key]) is datetime.datetime):
+                    if (type(row[row_key]) is pd.Timestamp) or (type(row[row_key]) is datetime.datetime):
                         newval = row[row_key].date()
 
                     else:

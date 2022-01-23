@@ -1,4 +1,4 @@
-FROM ubuntu:18.04
+FROM ubuntu:20.04
 
 ENV LC_ALL C.UTF-8
 ENV LANG C.UTF-8
@@ -25,7 +25,6 @@ RUN echo \
         python3.7 \
         python3-pip \
         python3-dev \
-        python-psycopg2 \
         libpq-dev \
         libsasl2-dev \
         libldap2-dev \
@@ -33,11 +32,12 @@ RUN echo \
         curl \
     && rm -rf /var/lib/apt/lists/*
 
-ADD . /var/www/productdb/source
+COPY requirements.txt /tmp/requirements.txt
 RUN echo \
-    && pip3 install --no-cache-dir -r /var/www/productdb/source/requirements.txt \
-    && mkdir /var/www/productdb/logs
+    && pip3 install --no-cache-dir -r /tmp/requirements.txt \
+    && mkdir -p /var/www/productdb/logs
 
+COPY . /var/www/productdb/source
 WORKDIR /var/www/productdb/source
 
 EXPOSE 8443

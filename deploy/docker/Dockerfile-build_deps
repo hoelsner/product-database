@@ -1,4 +1,4 @@
-FROM ubuntu:18.04
+FROM ubuntu:20.04
 
 ENV LC_ALL C.UTF-8
 ENV LANG C.UTF-8
@@ -35,28 +35,29 @@ RUN echo \
     && curl -sL https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - \
     && apt-get update  \
     && apt-get install -y nodejs postgresql-client-12 \
-    && rm -rf /var/lib/apt/lists/*  \
+    && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
-ADD . /var/www/productdb/source
-RUN echo \
-    && pip3 install --no-cache-dir -r /var/www/productdb/source/requirements.txt \
-    && mkdir /var/www/productdb/logs
+COPY requirements.txt /tmp/requirements.txt
+RUN pip3 install --no-cache-dir -r /tmp/requirements.txt
 
 VOLUME /var/www/productdb/static
 
 WORKDIR /var/www/productdb/source
+COPY . /var/www/productdb/source
+COPY ./deploy/docker/django/initialimport.sh /usr/local/bin/initialimport
+COPY ./deploy/docker/django/initialimportstatus.sh /usr/local/bin/initialimportstatus
 
 # install frontend deprendencies as part of the image (for later offline use)
 RUN npm install \
     && /var/www/productdb/source/node_modules/.bin/grunt copy \
     && /var/www/productdb/source/node_modules/.bin/grunt clean \
     && rm -rf /var/www/productdb/source/node_modules \
-    && rm -rf /var/www/productdb/source/node_modules \
-    && rm -rf /var/lib/apt/lists/*
-ADD ./deploy/docker/django/initialimport.sh /usr/local/bin/initialimport
-ADD ./deploy/docker/django/initialimportstatus.sh /usr/local/bin/initialimportstatus
+    && rm -rf /var/lib/apt/lists/* \
+    && mkdir -p /var/www/productdb/logs \
+    && mkdir -p /var/www/productdb/static
 
+# ensure proper permissions
 RUN chmod +x ./deploy/docker/build_deps/build_dependencies.sh
 
 CMD ./deploy/docker/build_deps/build_dependencies.sh
