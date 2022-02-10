@@ -1,5 +1,5 @@
 celery==5.2.3
-Django==2.2.26
+Django==2.2.27
 django-annoying==0.10.6
 django-datatables-view==1.19.1
 drf-yasg==1.20.0
