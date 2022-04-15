@@ -1,9 +1,10 @@
 import datetime
 import logging
+from zipfile import BadZipFile
+
 import pandas as pd
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from xlrd import XLRDError
 from app.productdb.models import Product, CURRENCY_CHOICES, ProductGroup, ProductMigrationSource, ProductMigrationOption
 from app.productdb.models import Vendor
 
@@ -48,9 +49,9 @@ class BaseExcelImporter:
 
     def _load_workbook(self):
         try:
-            self.workbook = pd.ExcelFile(self.path_to_excel_file, engine="xlrd")
+            self.workbook = pd.ExcelFile(self.path_to_excel_file, engine="openpyxl")
 
-        except XLRDError as ex:
+        except BadZipFile as ex:
             logger.error("invalid format of excel file '%s' (%s)" % (self.path_to_excel_file, ex), exc_info=True)
             raise InvalidExcelFileFormat("invalid file format") from ex
 

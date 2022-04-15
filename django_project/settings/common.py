@@ -133,7 +133,7 @@ SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "PlsChgMe")
 DATABASE_NAME = os.getenv("PDB_DATABASE_NAME", os.getenv("POSTGRES_DB", "productdb"))
 DATABASE_USER = os.getenv("PDB_DATABASE_USER", os.getenv("POSTGRES_USER", "postgres"))
 DATABASE_PASSWORD = os.getenv("PDB_DATABASE_PASSWORD", os.getenv("POSTGRES_PASSWORD", "postgres"))
-DATABASE_HOST = os.getenv("PDB_DATABASE_HOST", "127.0.0.1")
+DATABASE_HOST = os.getenv("PDB_DATABASE_HOST", "database")
 DATABASE_PORT = os.getenv("PDB_DATABASE_PORT", "5432")
 
 DATABASES = {

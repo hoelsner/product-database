@@ -40,6 +40,10 @@ export PDB_TESTING=1
 export TEST_CISCO_API_CLIENT_ID=client_id
 export TEST_CISCO_API_CLIENT_SECRET=client_secret
 
+# if you use a local postgres and redis server, you need to update the following configuration variables
+export PDB_DATABASE_HOST=localhost
+export PDB_REDIS_HOST=localhost
+
 pytest
 ```
 

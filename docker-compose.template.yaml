@@ -18,7 +18,6 @@ services:
       POSTGRES_USER: productdb
       POSTGRES_PASSWORD: plschgme
       PDB_REDIS_PASSWORD: plschgme
-      PDB_REDIS_HOST: redis
       # only required for the initial build, the certificates can be changed afterwards within the ssl_files volume
       #HTTPS_SELF_SIGNED_CERT_COUNTRY: DE
       #HTTPS_SELF_SIGNED_CERT_FQDN: productdb
