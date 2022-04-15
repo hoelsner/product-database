@@ -50,7 +50,7 @@ if os.getenv("PDB_DEBUG", False) and os.getenv("PDB_DEBUG_NO_CACHE", False):
     CACHEOPS_ENABLED = False  # disable cacheops for debugging
 
 else:
-    redis_server = os.environ.get("PDB_REDIS_HOST", "127.0.0.1")
+    redis_server = os.environ.get("PDB_REDIS_HOST", "redis")
     redis_port = os.environ.get("PDB_REDIS_PORT", "6379")
     redis_pass = os.environ.get("PDB_REDIS_PASSWORD", "PlsChgMe")
     CACHES = {
