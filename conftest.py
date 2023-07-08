@@ -125,7 +125,7 @@ def mock_cisco_api_authentication_server(monkeypatch):
     monkeypatch.setattr(
         requests,
         "post",
-        lambda url, params=None, proxies=None: mock_post_response()
+        lambda url, params=None, proxies=None, headers=None: mock_post_response()
     )
 
 

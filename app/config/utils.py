@@ -42,7 +42,7 @@ def check_cisco_eox_api_access(client_id, client_secret, drop_credentials=True):
         base_api.client_id = client_id
         base_api.client_secret = client_secret
 
-        base_api.query_product("WS-C2960-24T")
+        base_api.query_product("WS-C2960-24T*")
 
         return True
 

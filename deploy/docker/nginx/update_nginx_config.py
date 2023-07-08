@@ -2,11 +2,11 @@
 small script that creates a nginx configuration with all reachable web container for the product database
 """
 import os
-from docker import Client
+import docker
 
 
 if __name__ == "__main__":
-    cli = Client(base_url='unix://var/run/docker.sock')
+    cli = docker.APIClient(base_url='unix://var/run/docker.sock')
     hosts = []
     for c in cli.containers(filters={"label": "productdb=web"}):
         # get a valid hostname for the nginx configuration, reachability on the same network is expected

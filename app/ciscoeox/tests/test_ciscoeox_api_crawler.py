@@ -8,6 +8,7 @@ import datetime
 import requests
 from copy import deepcopy
 from requests import Response
+import requests_mock
 from app.ciscoeox import api_crawler
 from app.ciscoeox.exception import CiscoApiCallFailed, ConnectionFailedException
 from app.productdb import models as productdb_models

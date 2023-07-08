@@ -1,3 +1,4 @@
+import os
 import datetime
 import json
 import logging
@@ -20,7 +21,8 @@ class BaseCiscoApiConsole:
     caches the resulting access token.
     """
     AUTH_TOKEN_CACHE_KEY = "cisco_api_auth_token"
-    AUTHENTICATION_URL = "https://cloudsso.cisco.com/as/token.oauth2"
+    AUTHENTICATION_URL = ""
+    BASE_URL = "https://apix.cisco.com"
 
     client_id = None
     client_secret = None
@@ -35,6 +37,13 @@ class BaseCiscoApiConsole:
           "http": settings.HTTP_PROXY_SERVER,
           "https": settings.HTTPS_PROXY_SERVER,
         }
+        # set to https://cloudsso.cisco.com/as/token.oauth2 for old API version according to
+        # https://apiconsole.cisco.com/docs/read/overview/Migrating_Applications
+        self.AUTHENTICATION_URL = os.environ.get("CISCO_TOKEN_AUTHENTICATION_URL",
+                                                 "https://id.cisco.com/oauth2/default/v1/token")
+        # old API URL https://api.cisco.com
+        self.BASE_URL = os.environ.get("CISCO_API_BASE_URL",
+                                       "https://apix.cisco.com")
 
     def __del__(self):
         if self._session is not None:
@@ -146,7 +155,15 @@ class BaseCiscoApiConsole:
             else:
                 logger.debug("cached token invalid or not existing (force:%s)" % force_new_token)
                 try:
-                    response = requests.post(self.AUTHENTICATION_URL, params=authz_header, proxies=self.proxies)
+                    response = requests.post(
+                        self.AUTHENTICATION_URL,
+                        headers={
+                            "accept": "application/json",
+                            "content-type": "application/x-www-form-urlencoded",
+                        },
+                        params=authz_header,
+                        proxies=self.proxies
+                    )
 
                 except Exception as ex:
                     logger.error("cannot contact authentication server at %s (%s)" % (
@@ -253,7 +270,12 @@ class CiscoHelloApi(BaseCiscoApiConsole):
     """
     Implementation of the Cisco Hello API endpoint (only for testing)
     """
-    HELLO_API_URL = "https://api.cisco.com/hello"
+    HELLO_API_URL = ""
+
+    def __init__(self, *args, **kwargs):
+        super(CiscoHelloApi, self).__init__()
+        # old URL is https://api.cisco.com/hello
+        self.HELLO_API_URL = f"{self.BASE_URL}/hello"
 
     def hello_api_call(self):
         if self.is_ready_for_use():
@@ -266,12 +288,16 @@ class CiscoEoxApi(BaseCiscoApiConsole):
     """
     Implementation for the Cisco EoX API Version 5 endpoint
     """
-    EOX_API_URL = "https://api.cisco.com/supporttools/eox/rest/5/EOXByProductID/%d/%s"
-    EOX_YEAR_API_URL = "https://api.cisco.com/supporttools/eox/rest/5/EOXByDates/" \
-                       "%(pageIndex)d/%(startDate)s/%(endDate)s"
-
+    EOX_API_URL = ""
+    EOX_YEAR_API_URL = ""
     last_json_result = None
     last_page_call = 0
+
+    def __init__(self):
+        super(CiscoEoxApi, self).__init__()
+        self.EOX_API_URL = f"{self.BASE_URL}/supporttools/eox/rest/5/EOXByProductID/%d/%s"
+        self.EOX_YEAR_API_URL = f"{self.BASE_URL}/supporttools/eox/rest/5/EOXByDates/" \
+                                "%(pageIndex)d/%(startDate)s/%(endDate)s"
 
     def query_product(self, product_id, page=1):
         """
@@ -290,8 +316,7 @@ class CiscoEoxApi(BaseCiscoApiConsole):
             # check for API error
             if self.has_api_error():
                 # if the API error message only states that no EoX information are available, just return nothing
-                if not self.get_api_error_message().startswith("EOX information does not exist for the following "
-                                                               "product ID(s):"):
+                if not self.get_api_error_message().startswith("Incorrect PID:") and not self.get_api_error_message().startswith("EOX information does not exist for the following product ID(s):"):
                     msg = "Cisco EoX API error: %s" % self.get_api_error_message()
                     logger.fatal(msg)
                     raise CiscoApiCallFailed(msg)
@@ -334,22 +359,33 @@ class CiscoEoxApi(BaseCiscoApiConsole):
         if self.last_json_result is None:
             return 0
 
-        return int(self.last_json_result['PaginationResponseRecord']['LastIndex'])
+        if "PaginationResponseRecord" in self.last_json_result.keys():
+            return int(self.last_json_result['PaginationResponseRecord']['LastIndex'])
+
+        return 1
 
     def amount_of_total_records(self):
         if self.last_json_result is None:
             return 0
 
-        if int(self.last_json_result['PaginationResponseRecord']['TotalRecords']) == 1:
-            return self.get_page_record_count()
+        if "PaginationResponseRecord" in self.last_json_result.keys():
+            if int(self.last_json_result['PaginationResponseRecord']['TotalRecords']) == 1:
+                return self.get_page_record_count()
 
-        return int(self.last_json_result['PaginationResponseRecord']['TotalRecords'])
+            else:
+                return int(self.last_json_result['PaginationResponseRecord']['TotalRecords'])
+
+        else:
+            return 0
 
     def get_current_page(self):
         if self.last_json_result is None:
             return 0
 
-        return int(self.last_json_result['PaginationResponseRecord']['PageIndex'])
+        if "PaginationResponseRecord" in self.last_json_result.keys():
+            return int(self.last_json_result['PaginationResponseRecord']['PageIndex'])
+
+        return 1
 
     def get_page_record_count(self):
         if self.last_json_result is None:

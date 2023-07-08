@@ -158,7 +158,7 @@ class TestCiscoHelloApi:
             r.status_code = 401
             return r
 
-        monkeypatch.setattr(requests, "post", lambda x, params, proxies=None: get_invalid_authentication_response())
+        monkeypatch.setattr(requests, "post", lambda x, params, proxies=None, headers=None: get_invalid_authentication_response())
 
         cisco_hello_api = CiscoHelloApi()
         cisco_hello_api.load_client_credentials()
@@ -187,7 +187,7 @@ class TestCiscoHelloApi:
             r._content = "<h1>Not Authorized</h1>".encode("utf-8")
             return r
 
-        monkeypatch.setattr(requests, "post", lambda x, params, proxies=None: get_invalid_authentication_response())
+        monkeypatch.setattr(requests, "post", lambda x, params, proxies=None, headers=None: get_invalid_authentication_response())
 
         cisco_hello_api = CiscoHelloApi()
         cisco_hello_api.load_client_credentials()
@@ -211,7 +211,7 @@ class TestCiscoHelloApi:
 """.encode("utf-8")
             return r
 
-        monkeypatch.setattr(requests, "post", lambda x, params, proxies=None: get_invalid_authentication_response())
+        monkeypatch.setattr(requests, "post", lambda x, params, proxies=None, headers=None: get_invalid_authentication_response())
 
         cisco_hello_api = CiscoHelloApi()
         cisco_hello_api.load_client_credentials()
@@ -227,7 +227,7 @@ class TestCiscoHelloApi:
             r._content = "<h1>Developer Inactive</h1>".encode("utf-8")
             return r
 
-        monkeypatch.setattr(requests, "post", lambda x, params, proxies=None: get_invalid_authentication_response())
+        monkeypatch.setattr(requests, "post", lambda x, params, proxies=None, headers=None: get_invalid_authentication_response())
 
         cisco_hello_api = CiscoHelloApi()
         cisco_hello_api.load_client_credentials()
@@ -251,7 +251,7 @@ class TestCiscoHelloApi:
 """.encode("utf-8")
             return r
 
-        monkeypatch.setattr(requests, "post", lambda x, params, proxies=None: get_invalid_authentication_response())
+        monkeypatch.setattr(requests, "post", lambda x, params, proxies=None, headers=None: get_invalid_authentication_response())
 
         cisco_hello_api = CiscoHelloApi()
         cisco_hello_api.load_client_credentials()
@@ -267,7 +267,7 @@ class TestCiscoHelloApi:
             r._content = "".encode("utf-8")
             return r
 
-        monkeypatch.setattr(requests, "post", lambda x, params, proxies=None: get_invalid_authentication_response())
+        monkeypatch.setattr(requests, "post", lambda x, params, proxies=None, headers=None: get_invalid_authentication_response())
 
         cisco_hello_api = CiscoHelloApi()
         cisco_hello_api.load_client_credentials()
@@ -283,7 +283,7 @@ class TestCiscoHelloApi:
             r._content = "<h1>Gateway Timeout</h1>".encode("utf-8")
             return r
 
-        monkeypatch.setattr(requests, "post", lambda x, params, proxies=None: get_invalid_authentication_response())
+        monkeypatch.setattr(requests, "post", lambda x, params, proxies=None, headers=None: get_invalid_authentication_response())
 
         cisco_hello_api = CiscoHelloApi()
         cisco_hello_api.load_client_credentials()
@@ -307,7 +307,7 @@ class TestCiscoHelloApi:
 """.encode("utf-8")
             return r
 
-        monkeypatch.setattr(requests, "post", lambda x, params, proxies=None: get_invalid_authentication_response())
+        monkeypatch.setattr(requests, "post", lambda x, params, proxies=None, headers=None: get_invalid_authentication_response())
 
         cisco_hello_api = CiscoHelloApi()
         cisco_hello_api.load_client_credentials()
@@ -323,7 +323,7 @@ class TestCiscoHelloApi:
             r._content = "My invalid JSON string".encode("utf-8")
             return r
 
-        monkeypatch.setattr(requests, "post", lambda x, params, proxies=None: get_invalid_authentication_response())
+        monkeypatch.setattr(requests, "post", lambda x, params, proxies=None, headers=None: get_invalid_authentication_response())
 
         cisco_hello_api = CiscoHelloApi()
         cisco_hello_api.load_client_credentials()
@@ -606,8 +606,7 @@ class TestCiscoEoxApi:
         assert cisco_eox_api.amount_of_total_records() == 0
         assert cisco_eox_api.get_page_record_count() == 0
         assert cisco_eox_api.has_api_error() is True
-        assert cisco_eox_api.get_api_error_message() == "EOX information does not exist for the following product " \
-                                                        "ID(s): NOTHING (SSA_ERR_026)"
+        assert cisco_eox_api.get_api_error_message() == "Incorrect PID: [NOTHING] (SSA_ERR_021_Pid)"
 
     def test_offline_query_product_no_results(self, monkeypatch):
         class MockSession:

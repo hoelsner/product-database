@@ -172,7 +172,7 @@ class TestExecuteTaskToSynchronizeCiscoEoxStateTask:
         expected_status_message = '<p style="text-align: left;">The following queries were executed:<br>' \
                                   '<ul style="text-align: left;">' \
                                   '<li class="text-danger"><code>yxcz</code> (failed, cannot contact API endpoint ' \
-                                  'at https://api.cisco.com/supporttools/eox/rest/5/EOXByProductID/1/yxcz)</li>' \
+                                  'at https://apix.cisco.com/supporttools/eox/rest/5/EOXByProductID/1/yxcz)</li>' \
                                   '</ul></p>'
 
         assert task is not None
@@ -201,7 +201,7 @@ class TestExecuteTaskToSynchronizeCiscoEoxStateTask:
         expected_status_message = '<p style="text-align: left;">The following queries were executed:<br>' \
                                   '<ul style="text-align: left;"><li class="text-danger"><code>yxcz</code> ' \
                                   '(failed, cannot contact API endpoint at ' \
-                                  'https://api.cisco.com/supporttools/eox/rest/5/EOXByProductID/1/yxcz)</li></ul></p>'
+                                  'https://apix.cisco.com/supporttools/eox/rest/5/EOXByProductID/1/yxcz)</li></ul></p>'
 
         assert task is not None
         assert task.status == "SUCCESS", task.traceback
@@ -229,7 +229,7 @@ class TestExecuteTaskToSynchronizeCiscoEoxStateTask:
         expected_status_message = "<p style=\"text-align: left;\">The following queries were executed:<br>" \
                                   "<ul style=\"text-align: left;\"><li class=\"text-danger\"><code>yxcz</code> " \
                                   "(failed, cannot contact API endpoint at " \
-                                  "https://api.cisco.com/supporttools/eox/rest/5/EOXByProductID/1/yxcz)</li></ul></p>"
+                                  "https://apix.cisco.com/supporttools/eox/rest/5/EOXByProductID/1/yxcz)</li></ul></p>"
 
         assert task is not None
         assert task.status == "SUCCESS", task.traceback

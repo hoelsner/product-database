@@ -15,6 +15,8 @@ The following diagram shows an overview about the web service and the usage-opti
 
 ![Product Database overview](static/images/overview.png)
 
+**Please Note:** Due to changes to the Cisco Support APIs, you need to recreate your credentials if they were created before the March 1, 2023 (see https://apiconsole.cisco.com/docs/read/overview/Migrating_Applications for more details).
+
 ## Setup & Installation
 
 To create a quick demo instance, just run the following commands:
