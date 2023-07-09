@@ -35,6 +35,7 @@ RUN echo \
 
 COPY requirements.txt /tmp/requirements.txt
 RUN echo \
+    && pip3 install --upgrade pip \
     && pip3 install --no-cache-dir -r /tmp/requirements.txt \
     && mkdir -p /var/www/productdb/logs
 
